@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Hotel Hero{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <a class="button secondary" href="{{ url_for('catalog.index') }}">Back to rooms</a>
+</section>
+{% endblock %}

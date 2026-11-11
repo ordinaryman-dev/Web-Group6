@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Hotel Hero{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>{{ title }}</h1>
+  <form method="post" class="stack">
+    {{ form.hidden_tag() }}
+    {% for field in form if field.type != 'CSRFTokenField' %}
+      <div>
+        {{ field.label }}
+        {% if field.name == 'email' %}
+          {{ field(type="email", autocomplete="email") }}
+        {% elif field.type == 'PasswordField' %}
+          {{ field(autocomplete="current-password" if field.name == "current_password" or submit == "Sign in" else "new-password") }}
+        {% else %}
+          {{ field() }}
+        {% endif %}
+        {% for error in field.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit">{{ submit }}</button>
+  </form>
+  {% if submit == "Sign in" %}
+    <p>New guest? <a href="{{ url_for('accounts.register') }}">Create an account</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}
