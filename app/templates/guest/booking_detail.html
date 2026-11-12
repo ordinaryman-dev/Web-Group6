@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ booking.reference }} · The Harbour Hotel{% endblock %}
+{% block content %}
+<p class="back-link"><a href="{{ url_for('guest.bookings') }}">← My bookings</a></p>
+
+<section class="confirmation">
+  <div class="confirmation-head">
+    <div>
+      <p class="eyebrow">BOOKING CONFIRMATION</p>
+      <h1>{{ booking.room_type.name }}</h1>
+      <p class="muted">{{ booking.reference }} · booked {% if booking.created_at %}{{ booking.created_at|localtime }}{% endif %}</p>
+    </div>
+    <span class="status large {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-card">
+      <p class="eyebrow">YOUR STAY</p>
+      <div class="kv"><span>Check in</span><b>{{ booking.check_in.strftime('%A, %d %B %Y') }} · from 14:00</b></div>
+      <div class="kv"><span>Check out</span><b>{{ booking.check_out.strftime('%A, %d %B %Y') }} · before 12:00</b></div>
+      <div class="kv"><span>Nights</span><b>{{ booking.nights }}</b></div>
+      <div class="kv"><span>Guests</span><b>{{ booking.guests }}</b></div>
+      <div class="kv"><span>Room</span><b>{{ booking.room_type.name }} · {{ booking.room.number }}</b></div>
+      <div class="kv"><span>Guest</span><b>{{ booking.customer.name }}</b></div>
+      {% if booking.note %}
+        <div class="booking-note"><span>Note</span><p>{{ booking.note }}</p></div>
+      {% endif %}
+    </div>
+
+    <div class="detail-card">
+      <p class="eyebrow">PRICE</p>
+      <table class="price-table">
+        <tbody>
+          {% for line in booking.price_lines %}
+            <tr>
+              <td>{{ line.stay_date.strftime('%a, %d %b') }}</td>
+              <td>¥{{ line.amount|money }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="detail-total"><span>Total</span><b>¥{{ booking.total|money }}</b></div>
+      <p class="side-note">Payment is taken at the front desk at check-in. This build records the booking, not the payment.</p>
+    </div>
+  </div>
+
+  <div class="confirmation-actions">
+    <a class="button" href="{{ url_for('guest.index') }}">Book another stay</a>
+    <a class="button secondary" href="{{ url_for('guest.bookings') }}">All my bookings</a>
+  </div>
+</section>
+{% endblock %}

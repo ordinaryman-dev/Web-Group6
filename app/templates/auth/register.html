@@ -1,0 +1,72 @@
+{% extends "auth_layout.html" %}
+{% block title %}Create account · The Harbour Hotel{% endblock %}
+{% block content %}
+<main class="auth-shell">
+  <section class="auth-brand">
+    <div class="brand-lockup">
+      <span class="brand-mark light">HH</span>
+      <span><b>THE HARBOUR HOTEL</b><small>Hangzhou · 68 rooms</small></span>
+    </div>
+
+    <div class="auth-hero">
+      <p class="eyebrow light">GUEST ACCOUNT</p>
+      <h1>Your stay<br>starts here.</h1>
+      <p class="auth-lead">Create a guest account to search live availability, book a room and follow your own bookings.</p>
+    </div>
+
+    <ul class="role-list" aria-label="What a guest account can do">
+      <li><span class="dot guest"></span><div><b>Search and quote</b><small>See every night of the stay and the total before booking</small></div></li>
+      <li><span class="dot guest"></span><div><b>Book with confidence</b><small>One room covers the whole stay, confirmed immediately</small></div></li>
+      <li><span class="dot guest"></span><div><b>Your own records</b><small>Only your bookings are visible to you</small></div></li>
+    </ul>
+
+    <p class="auth-foot">This form creates a guest account only. Receptionist and manager accounts are created by a manager.</p>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <p class="eyebrow">REGISTER</p>
+      <h2>Create your account</h2>
+      <p class="muted">It takes less than a minute.</p>
+
+      <form method="post" class="stack" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="field">
+          {{ form.name.label }}
+          {{ form.name(autocomplete="name", placeholder="Your full name") }}
+          {% for error in form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.email.label }}
+          {{ form.email(type="email", autocomplete="email", placeholder="you@example.com") }}
+          {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.phone.label }}
+          {{ form.phone(autocomplete="tel", placeholder="Optional") }}
+          {% for error in form.phone.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.password.label }}
+          {{ form.password(autocomplete="new-password", placeholder="At least 8 characters") }}
+          {% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.confirm.label }}
+          {{ form.confirm(autocomplete="new-password", placeholder="Repeat your password") }}
+          {% for error in form.confirm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        {{ form.submit(class="button full") }}
+      </form>
+
+      <p class="auth-alt">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in →</a></p>
+    </div>
+  </section>
+</main>
+{% endblock %}

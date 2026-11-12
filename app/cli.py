@@ -6,37 +6,19 @@ from flask.cli import with_appcontext
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
-from .accounts import normalize_email
-from .audit import record_audit
-from .catalog import hotel_now
+from .booking import hotel_now
 from .extensions import db
-from .models import MANAGER, PriceRule, Room, RoomType, User
+from .models import Customer, GUEST, PriceRule, Room, RoomType, User
 
 
-@click.command("bootstrap-manager")
-@click.argument("email")
-@click.option("--password", envvar="BOOTSTRAP_MANAGER_PASSWORD", prompt=True,
-              hide_input=True, confirmation_prompt=True)
-@with_appcontext
-def bootstrap_manager(email, password):
-    """Create a manager from a trusted server shell."""
-    email = normalize_email(email)
-    if not email or "@" not in email or len(email) > 254 or not 8 <= len(password) <= 128:
-        raise click.ClickException("Supply an email and an 8–128 character password.")
-    with Session(db.engine) as session, session.begin():
-        if session.scalar(db.select(User.id).where(User.email == email)) is not None:
-            raise click.ClickException("An account with this email already exists.")
-        user = User(email=email, password_hash=generate_password_hash(password), role=MANAGER)
-        session.add(user)
-        session.flush()
-        record_audit(session, user.id, "bootstrap_manager", "user", user.id)
-    click.echo("Manager account created.")
+DEMO_GUEST_EMAIL = "guest@example.test"
+DEMO_GUEST_PASSWORD = "Guest2026!"
 
 
 @click.command("seed-demo")
 @with_appcontext
 def seed_demo():
-    """Add sample rooms and price rules to a development database."""
+    """Add sample rooms, prices and a demo guest to a development database."""
     today = hotel_now().date()
     demo_types = [
         ("demo-single", "Classic Single", "A quiet room for a short stay.", 1, "280.00", ["D101", "D102"]),
@@ -49,8 +31,12 @@ def seed_demo():
             if room_type is not None:
                 continue
             room_type = RoomType(
-                code=code, name=name, description=description, capacity=capacity,
-                base_price=Decimal(price), listed=True,
+                code=code,
+                name=name,
+                description=description,
+                capacity=capacity,
+                base_price=Decimal(price),
+                listed=True,
             )
             session.add(room_type)
             session.flush()
@@ -60,12 +46,32 @@ def seed_demo():
             )
             session.add_all([
                 PriceRule(
-                    room_type_id=room_type.id, kind="season", start_date=today,
-                    end_date=today + timedelta(days=7), amount=Decimal(price) + Decimal("40.00"),
+                    room_type_id=room_type.id,
+                    kind="season",
+                    start_date=today,
+                    end_date=today + timedelta(days=7),
+                    amount=Decimal(price) + Decimal("40.00"),
                 ),
                 PriceRule(
-                    room_type_id=room_type.id, kind="date", start_date=today + timedelta(days=2),
-                    end_date=today + timedelta(days=3), amount=Decimal(price) + Decimal("90.00"),
+                    room_type_id=room_type.id,
+                    kind="date",
+                    start_date=today + timedelta(days=2),
+                    end_date=today + timedelta(days=3),
+                    amount=Decimal(price) + Decimal("90.00"),
                 ),
             ])
-    click.echo("Demo catalogue ready.")
+
+        guest = session.scalar(db.select(User).where(User.email == DEMO_GUEST_EMAIL))
+        if guest is None:
+            guest = User(
+                email=DEMO_GUEST_EMAIL,
+                password_hash=generate_password_hash(DEMO_GUEST_PASSWORD),
+                role=GUEST,
+            )
+            session.add(guest)
+            session.flush()
+            session.add(Customer(user=guest, name="Demo Guest", phone="13800000000"))
+        elif session.scalar(db.select(Customer).where(Customer.user_id == guest.id)) is None:
+            session.add(Customer(user=guest, name="Demo Guest", phone="13800000000"))
+
+    click.echo("Demo catalogue and guest account are ready.")

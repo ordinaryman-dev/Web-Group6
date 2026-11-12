@@ -1,42 +1,105 @@
-# Hotel Hero
+# The Harbour Hotel — Guest Portal
 
-Hotel Hero is the Group 6 hotel booking project for COMP3019J. Increment 1 delivers the shared Flask application, guest registration, login and password management for three roles, manager staff-account controls, room catalogue, whole-stay availability and nightly quotes. Business writes record audit entries from the first increment.
+COMP3019J Group 6. This build keeps the database layer and implements only two pages:
 
-## Run locally
+- **Sign in / register** — one entrance for all roles; guests continue to the portal.
+- **Guest portal** — search whole-stay availability, quote nightly prices, create a booking,
+  and view only the signed-in guest's own bookings.
 
-Use Python 3.12 and MySQL Community Server 8.0.45 with InnoDB. The browser uses Jinja templates, HTML, CSS and plain JavaScript. The search form also works with JavaScript disabled.
+The front-desk and manager workspaces are intentionally not built yet. Receptionist and
+manager accounts can sign in, but land on a "workspace not in this build" page. There is no
+cancellation, change-request, payment or reporting flow in this increment.
 
-Create a development database with the `utf8mb4` character set and use a MySQL account with access to that schema. From the repository root, run the following in PowerShell, replacing the database credentials with your own. URL-encode special characters in the password.
+## Stack
+
+- Flask 3, Jinja templates, plain HTML/CSS (no JavaScript required)
+- Flask-Login, Flask-WTF/CSRF, Flask-SQLAlchemy, Flask-Migrate
+- MySQL 8 / InnoDB, `utf8mb4`
+
+## Local start
+
+The repository includes the local portable-MySQL scripts used during development:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-$env:DATABASE_URL = 'mysql+pymysql://hero_app:YOUR_PASSWORD@127.0.0.1:3306/hero?charset=utf8mb4'
-$env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+.\start_mysql.ps1      # local MySQL on 127.0.0.1:3306
+.\run_dev.ps1          # sets SECRET_KEY and DATABASE_URL, then starts Flask
+```
+
+`run_dev.ps1` uses the local development values already configured on this machine. To set
+them yourself:
+
+```powershell
+$env:SECRET_KEY  = 'dev-secret-key-change-me'
+$env:DATABASE_URL = 'mysql+pymysql://hero_app:HeroApp2026@127.0.0.1:3306/hero?charset=utf8mb4'
 .\.venv\Scripts\python.exe -m flask --app app db upgrade
 .\.venv\Scripts\python.exe -m flask --app app seed-demo
-.\.venv\Scripts\python.exe -m flask --app app bootstrap-manager manager@example.test
-.\.venv\Scripts\python.exe -m flask --app app run
+.\.venv\Scripts\python.exe -m flask --app app run --host 127.0.0.1 --port 5000
 ```
 
-Open `http://127.0.0.1:5000`. Register a guest through the site. The manager command prompts for a password. Sign in as the manager to create a front-desk staff account. Re-running the catalogue seed preserves existing demo records.
+Open `http://127.0.0.1:5000`.
 
-Set `SESSION_COOKIE_SECURE=1` when serving the app over HTTPS. Keep the secret key and database credentials in the deployment environment.
+### Demo accounts
 
-## Integration points
+| Role | Email | Password | Landing page |
+|---|---|---|---|
+| Guest | `guest@example.test` | `Guest2026!` | `/guest/` |
+| Manager | `manager@example.test` | `Passw0rd!` | `/workspace` placeholder |
 
-- `app/__init__.py` creates the Flask app and initializes extensions. Account and catalogue blueprints share the base template and database configuration.
-- `app/accounts.py` loads active accounts for Flask-Login, enforces role permissions and resolves the guest's customer record. The manager account controls operate on staff accounts.
-- `app/catalog.py` supplies the read-only catalogue and availability endpoint. It checks Beijing arrival dates and capacity, finds one physical room for the full half-open stay, and quotes date-specific, seasonal and base rates in that order. Quotes use decimal amounts and display consecutive nights at the same rate together.
-- `app/audit.py` writes audit entries using the caller's transaction. `app/blacklist.py` checks effective restrictions on a customer record.
-- `app/allocation.py` provides the internal guest allocation used for the three checks scheduled before increment 2. It uses a dedicated READ COMMITTED session, candidate-room locking, per-night uniqueness and actor-scoped idempotency. The public booking workflow is scheduled for increment 2. Manager audit queries, blacklist administration and reporting are scheduled for later increments.
+`seed-demo` creates the guest account. The manager account above already exists in this local
+database from the earlier increment; a fresh database only needs a guest account for this
+scope. Public registration creates guest accounts only. Staff accounts are not part of this
+build.
 
-## Verify with MySQL
+## Routes
 
-The integration suite uses a dedicated MySQL 8 instance. It creates an isolated schema per test, applies the committed migration, and drops that schema at teardown. Use a test-server account allowed to create and drop those schemas. The suite exercises account permissions, CSRF, seed data, whole-stay search, price priority and date boundaries. Two independent database sessions verify last-room competition, a failure after a night has been written and duplicate request replay.
+| Route | Method | Access | Purpose |
+|---|---|---|---|
+| `/` | GET | public | Redirects to sign-in, guest portal or placeholder |
+| `/login` | GET/POST | public | Sign in |
+| `/register` | GET/POST | public | Create a guest account |
+| `/logout` | POST | signed in | Sign out |
+| `/workspace` | GET | staff/manager | Placeholder for the unbuilt workspaces |
+| `/guest/` | GET | guest | Search, quote and room cards |
+| `/guest/book` | POST | guest | Create a booking |
+| `/guest/bookings` | GET | guest | List the guest's own bookings |
+| `/guest/bookings/<id>` | GET | guest | Booking confirmation/detail |
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-$env:TEST_DATABASE_URL = 'mysql+pymysql://test_user:YOUR_PASSWORD@127.0.0.1:3306/?charset=utf8mb4'
-.\.venv\Scripts\python.exe -m pytest -q
-```
+## Database
+
+The existing MySQL schema is kept and migrated forward. Migration
+`20261112_01_add_booking_note.py` adds two columns to `bookings`:
+
+- `note VARCHAR(100)` — optional guest note, shown in the confirmation.
+- `created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP` — booking timestamp, displayed in
+  Beijing time.
+
+No extra table was needed for this scope. Login/registration use `users` and `customers`;
+search and booking use `room_types`, `rooms`, `price_rules`, `room_blocks`, `bookings`,
+`room_nights`, `booking_price_lines` and `audit_logs`. If request/cancellation or payment
+flows are added later, they will need their own request/payment records rather than
+overloading `bookings`.
+
+## Behaviour implemented
+
+- Search is read-only: it does not hold a room and returns nothing when no single physical
+  room covers every night.
+- Check-in is limited to today through 14 days ahead; same-day searches close at 22:00
+  Beijing time; check-out is exclusive.
+- Nightly price priority is date-specific rule, then season rule, then the room type's base
+  price. A booking stores one price line per night.
+- Booking writes the booking, its room nights and price lines in one transaction, with
+  `READ COMMITTED`, pessimistic room locks and an idempotency key. A replay returns the same
+  booking; a conflicting key is rejected.
+- The guest can see only bookings whose `actor_user_id` is their own.
+- Blacklisted customers cannot create a booking.
+
+## Deliberately not built
+
+- Front-desk arrivals/departures, check-in/out, walk-ins, maintenance blocks.
+- Manager catalogue/price/account/blacklist/report screens.
+- Change, extension, cancellation and refund requests.
+- Simulated payments and occupancy reports.
+- Automated test suite (the old increment-one tests were removed with the old code).
+
+The previous full increment-one implementation remains recoverable in git commit `e749d53`
+and on the local branch `backup/pre-client-reset`.
