@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}Front desk · The Harbour Hotel{% endblock %}
+{% block body_class %}desk-page{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}">
+<div class="desk">
+
+  <aside class="desk-nav" aria-label="Desk sections">
+    <div class="desk-brand">
+      <span class="desk-brand-mark">FD</span>
+      <span>
+        <b>FRONT DESK</b>
+        <small>The Harbour Hotel</small>
+      </span>
+    </div>
+    <nav>
+      <a class="desk-link is-active" href="#arrivals">
+        <span>Arrivals</span><b>{{ arrivals|length }}</b>
+      </a>
+      <a class="desk-link" href="#in-house">
+        <span>In house</span><b>{{ in_house|length }}</b>
+      </a>
+      <a class="desk-link" href="#departures">
+        <span>Departures</span><b>{{ departures|length }}</b>
+      </a>
+      <a class="desk-link" href="#walkin"><span>Walk-in</span></a>
+      <a class="desk-link" href="#blocks">
+        <span>Maintenance blocks</span><b>{{ blocks|length }}</b>
+      </a>
+      <a class="desk-link" href="#requests">
+        <span>Requests</span><b>{{ pending|length }}</b>
+      </a>
+    </nav>
+    <div class="desk-identity">
+      <b>{{ current_user.email }}</b>
+      <small>Front desk · shift open</small>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="desk-signout" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <section class="desk-work">
+    <header class="desk-head">
+      <div>
+        <p class="eyebrow">TODAY</p>
+        <h1>Today's desk</h1>
+        <p class="muted desk-clock">{{ now.strftime('%a %d %b %Y') }} · {{ now.strftime('%H:%M') }} Beijing time</p>
+      </div>
+      <a class="desk-refresh" href="{{ url_for('frontdesk.index') }}">Refresh</a>
+    </header>
+
+    <div class="desk-kpis">
+      <article class="kpi">
+        <p class="kpi-label">Arrivals today</p>
+        <p class="kpi-value">{{ arrivals|length }}<span>rooms</span></p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">In house</p>
+        <p class="kpi-value">{{ in_house|length }}<span>rooms</span></p>
+      </article>
+      <article class="kpi">
+        <p class="kpi-label">Departures today</p>
+        <p class="kpi-value">{{ departures|length }}<span>rooms</span></p>
+      </article>
+    </div>
+
+    <section class="desk-card" id="arrivals">
+      <div class="desk-card-head">
+        <h2>Arrivals</h2>
+        <span class="muted small">Confirmed bookings arriving today</span>
+      </div>
+      {% if arrivals %}
+      <table class="desk-table">
+        <thead>
+          <tr><th>Booking</th><th>Guest</th><th>Room type · Room</th><th>Expected</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for booking in arrivals %}
+          <tr class="{{ 'is-selected' if selected and selected.id == booking.id }}">
+            <td class="mono">{{ booking.reference }}</td>
+            <td>{{ booking.customer.name }}</td>
+            <td>{{ booking.room_type.name }} · <b>{{ booking.room.number }}</b></td>
+            <td class="mono">{{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}</td>
+            <td><span class="chip chip-{{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span></td>
+            <td class="row-actions">
+              <a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a>
+              <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=booking.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini primary" type="submit">Check in</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="desk-empty">No arrivals left today.</p>
+      {% endif %}
+    </section>
+
+    {% if conflicts %}
+    <section class="desk-alert" role="alert">
+      <p class="desk-alert-title">Maintenance conflicts {{ conflicts|length }}</p>
+      {% for item in conflicts %}
+      <p>
+        Room <b>{{ item.block.room.number }}</b> is blocked
+        {{ item.block.start_date.strftime('%d %b') }}–{{ item.block.end_date.strftime('%d %b') }},
+        affecting <b>{{ item.booking.reference }}</b> ({{ item.booking.customer.name }}).
+        <a href="{{ url_for('frontdesk.index', booking=item.booking.id) }}">Open and reassign</a>
+      </p>
+      {% endfor %}
+      <p class="muted small">The original booking is kept; nothing is overwritten silently.</p>
+    </section>
+    {% endif %}
+
+    <section class="desk-card" id="in-house">
+      <div class="desk-card-head">
+        <h2>In house</h2>
+        <span class="muted small">Checked in and not yet departed</span>
+      </div>
+      {% if in_house %}
+      <table class="desk-table">
+        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for booking in in_house %}
+          <tr class="{{ 'is-selected' if selected and selected.id == booking.id }}">
+            <td class="mono">{{ booking.reference }}</td>
+            <td>{{ booking.customer.name }}</td>
+            <td><b>{{ booking.room.number }}</b></td>
+            <td>{{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}</td>
+            <td><span class="chip chip-{{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span></td>
+            <td class="row-actions"><a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="desk-empty">No guests are in house.</p>{% endif %}
+    </section>
+
+    <section class="desk-card" id="departures">
+      <div class="desk-card-head">
+        <h2>Departures</h2>
+        <span class="muted small">Due out today</span>
+      </div>
+      {% if departures %}
+      <table class="desk-table">
+        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Balance</th><th></th></tr></thead>
+        <tbody>
+        {% for booking in departures %}
+          <tr>
+            <td class="mono">{{ booking.reference }}</td>
+            <td>{{ booking.customer.name }}</td>
+            <td><b>{{ booking.room.number }}</b></td>
+            <td class="mono">¥{{ booking.total|money }}</td>
+            <td class="row-actions">
+              <a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a>
+              <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=booking.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini primary" type="submit">Check out</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="desk-empty">No departures today.</p>{% endif %}
+    </section>
+
+    <section class="desk-card" id="board">
+      <div class="desk-card-head">
+        <h2>Room board</h2>
+        <span class="muted small">Room × date · maintenance blocks warn, they never overwrite a booking</span>
+      </div>
+      <div class="board-wrap">
+        <table class="board">
+          <thead>
+            <tr>
+              <th class="board-room-head">Room</th>
+              {% for day in days %}<th>{{ day.strftime('%d/%m') }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in board %}
+            <tr>
+              <th class="board-room">{{ row.room.number }}</th>
+              {% for cell in row.cells %}
+              <td class="cell cell-{{ cell.state }}">{{ cell.state.replace('_', ' ') }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="board-legend">
+        <span class="dot dot-in_house"></span> In house
+        <span class="dot dot-arriving"></span> Arriving
+        <span class="dot dot-reserved"></span> Reserved
+        <span class="dot dot-departing"></span> Departing
+        <span class="dot dot-blocked"></span> Blocked
+        <span class="dot dot-free"></span> Free
+      </p>
+    </section>
+
+    <section class="desk-card" id="walkin">
+      <div class="desk-card-head">
+        <h2>Walk-in</h2>
+        <span class="muted small">Uses the same allocation and price rules as the guest portal</span>
+      </div>
+      <form method="post" action="{{ url_for('frontdesk.walk_in') }}" class="desk-form">
+        {{ walk_form.hidden_tag() }}
+        <div class="field">{{ walk_form.name.label }}{{ walk_form.name(class_="input") }}</div>
+        <div class="field">{{ walk_form.phone.label }}{{ walk_form.phone(class_="input") }}</div>
+        <div class="field">{{ walk_form.room_type_id.label }}{{ walk_form.room_type_id(class_="input") }}</div>
+        <div class="field">{{ walk_form.check_in.label }}{{ walk_form.check_in(class_="input") }}</div>
+        <div class="field">{{ walk_form.check_out.label }}{{ walk_form.check_out(class_="input") }}</div>
+        <div class="field">{{ walk_form.guests.label }}{{ walk_form.guests(class_="input") }}</div>
+        <div class="field field-wide">{{ walk_form.note.label }}{{ walk_form.note(class_="input") }}</div>
+        <div class="field field-submit">{{ walk_form.submit(class_="btn") }}</div>
+      </form>
+    </section>
+
+    <section class="desk-card" id="blocks">
+      <div class="desk-card-head">
+        <h2>Maintenance</h2>
+        <span class="muted small">Block a room and keep every existing booking visible</span>
+      </div>
+      <form method="post" action="{{ url_for('frontdesk.create_block') }}" class="desk-form">
+        {{ block_form.hidden_tag() }}
+        <div class="field">{{ block_form.room_id.label }}{{ block_form.room_id(class_="input") }}</div>
+        <div class="field">{{ block_form.start_date.label }}{{ block_form.start_date(class_="input") }}</div>
+        <div class="field">{{ block_form.end_date.label }}{{ block_form.end_date(class_="input") }}</div>
+        <div class="field field-wide">{{ block_form.reason.label }}{{ block_form.reason(class_="input") }}</div>
+        <div class="field field-submit">{{ block_form.submit(class_="btn") }}</div>
+      </form>
+      {% if blocks %}
+      <ul class="block-list">
+        {% for block in blocks %}
+        <li>
+          <span>
+            <b>Room {{ block.room.number }}</b>
+            {{ block.start_date.strftime('%d %b') }}–{{ block.end_date.strftime('%d %b') }}
+            <span class="muted">· {{ block.reason }}</span>
+          </span>
+          <form method="post" action="{{ url_for('frontdesk.cancel_block', block_id=block.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="mini" type="submit">Cancel block</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+
+    <section class="desk-card" id="requests">
+      <div class="desk-card-head">
+        <h2>Requests</h2>
+        <span class="muted small">A request is applied only when approved; any failure leaves the booking untouched</span>
+      </div>
+      {% if pending %}
+      <table class="desk-table">
+        <thead><tr><th>Booking</th><th>Guest</th><th>Request</th><th>Detail</th><th>Decision</th></tr></thead>
+        <tbody>
+        {% for item in pending %}
+          <tr>
+            <td class="mono">{{ item.booking.reference }}</td>
+            <td>{{ item.booking.customer.name }}</td>
+            <td><span class="chip chip-{{ item.kind }}">{{ item.kind.replace('_', ' ') }}</span></td>
+            <td class="small">
+              {% if item.kind == 'dates' and item.target %}
+                {{ item.target.check_in }} → {{ item.target.check_out }}
+              {% elif item.target and item.target.reason %}
+                {{ item.target.reason }}
+              {% else %}{{ item.reason or '—' }}{% endif %}
+            </td>
+            <td class="row-actions">
+              <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini primary" type="submit">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="mini" type="submit">Reject</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="desk-empty">No pending requests.</p>{% endif %}
+    </section>
+  </section>
+
+  <aside class="desk-rail" aria-label="Booking detail">
+    {% if selected %}
+    <section class="desk-card detail">
+      <div class="desk-card-head">
+        <h2>Booking detail</h2>
+        <span class="chip chip-{{ selected.status }}">{{ selected.status.replace('_', ' ') }}</span>
+      </div>
+      <p class="detail-ref mono">{{ selected.reference }}</p>
+      <p class="detail-guest">{{ selected.customer.name }} · {{ selected.guests }} guest{{ '' if selected.guests == 1 else 's' }}</p>
+      <p class="muted small">
+        {{ selected.check_in.strftime('%d %b') }} → {{ selected.check_out.strftime('%d %b') }}
+        · {{ selected.nights }} night{{ '' if selected.nights == 1 else 's' }}
+        · {{ selected.room_type.name }} · Room {{ selected.room.number }}
+      </p>
+      <p class="detail-total">Total ¥{{ selected.total|money }}</p>
+
+      {% if selected.status == 'confirmed' %}
+      <div class="checks">
+        <p class="checks-title">Check-in checks</p>
+        <ul>
+          {% for label, ok, detail in checks %}
+          <li class="{{ 'ok' if ok else 'bad' }}">
+            <span class="mark">{{ '✓' if ok else '!' }}</span>
+            <span>{{ label }}<small>{{ detail }}</small></span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% elif selected.status == 'checked_in' %}
+      <div class="checks">
+        <p class="checks-title">In house</p>
+        <ul>
+          <li class="ok"><span class="mark">✓</span><span>Checked in<small>{{ selected.checked_in_at|localtime('%d %b %Y, %H:%M') }} · room {{ selected.room.number }}</small></span></li>
+          <li class="ok"><span class="mark">✓</span><span>Payment recorded<small>Paid ¥{{ paid|money }}</small></span></li>
+        </ul>
+      </div>
+      {% else %}
+      <div class="checks">
+        <p class="checks-title">Stay closed</p>
+        <ul>
+          <li class="ok"><span class="mark">✓</span><span>{{ selected.status.replace('_', ' ')|capitalize }}<small>{{ selected.checked_out_at|localtime('%d %b %Y, %H:%M') if selected.checked_out_at else '' }}</small></span></li>
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="pay">
+        <p class="small muted">Paid ¥{{ paid|money }} · outstanding ¥{{ due|money }}</p>
+        {% if due > 0 and selected.status in ('confirmed', 'checked_in') %}
+        <form method="post" action="{{ url_for('frontdesk.pay', booking_id=selected.id) }}" class="pay-form">
+          {{ payment_form.hidden_tag() }}
+          {{ payment_form.amount(class_="input", placeholder=due|money) }}
+          <button class="btn small-btn" type="submit">Record payment</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if selected.status == 'confirmed' %}
+      <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=selected.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn wide" type="submit">Check in</button>
+      </form>
+      {% elif selected.status == 'checked_in' %}
+      <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=selected.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn wide" type="submit">Check out</button>
+      </form>
+      {% endif %}
+
+      {% if selected.status == 'confirmed' and selected.check_in < today %}
+      <form method="post" action="{{ url_for('frontdesk.no_show', booking_id=selected.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="mini wide-mini" type="submit">Mark as no-show</button>
+      </form>
+      {% endif %}
+
+      {% if selected.status in ('confirmed', 'checked_in') %}
+      <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=selected.id) }}" class="reassign">
+        <p class="checks-title">Reassign room</p>
+        {{ reassign_form.hidden_tag() }}
+        {{ reassign_form.reason(class_="input", placeholder="Reason, e.g. bathroom leak") }}
+        <button class="mini" type="submit">Move to a free room</button>
+      </form>
+      {% endif %}
+
+      <p class="detail-note small muted">No price change and no account creation happen on this page.</p>
+    </section>
+    {% else %}
+    <section class="desk-card"><p class="desk-empty">Select a booking to open its detail.</p></section>
+    {% endif %}
+
+    <section class="desk-card rules">
+      <h2>How this page works</h2>
+      <ol>
+        <li><b>Four checks before check-in</b><span>Confirmed, arriving today, no block, payment recorded.</span></li>
+        <li><b>One transaction</b><span>Status, payment and timestamps are written together.</span></li>
+        <li><b>Walk-in, same rules</b><span>One allocation path and one price table.</span></li>
+        <li><b>Permission boundary</b><span>No price edits, no accounts, no late cancellation.</span></li>
+      </ol>
+      <p class="rules-title">Not done here</p>
+      <p class="muted small">Overwriting a block silently, skipping the payment record, or making a manager exception.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

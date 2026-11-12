@@ -103,6 +103,8 @@ class RoomBlock(db.Model):
     reason = db.Column(db.String(240), nullable=False)
     effective = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
 
+    room = db.relationship("Room")
+
 
 class Booking(db.Model):
     __tablename__ = "bookings"
@@ -125,6 +127,7 @@ class Booking(db.Model):
     total = db.Column(db.Numeric(12, 2), nullable=False)
     note = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    expected_arrival = db.Column(db.Time)
     checked_in_at = db.Column(db.DateTime)
     checked_out_at = db.Column(db.DateTime)
 
@@ -208,6 +211,9 @@ class BookingRequest(db.Model):
     handled_by = db.Column(db.ForeignKey("users.id"))
     handled_at = db.Column(db.DateTime)
     comment = db.Column(db.String(240))
+
+    booking = db.relationship("Booking")
+    submitter = db.relationship("User", foreign_keys=[submitted_by])
 
 
 class PaymentRecord(db.Model):

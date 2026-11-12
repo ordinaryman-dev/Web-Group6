@@ -81,7 +81,7 @@ def role_required(*roles):
 
 
 def destination(user):
-    return {GUEST: "guest.index", STAFF: "auth.not_ready", MANAGER: "manager.overview"}[user.role]
+    return {GUEST: "guest.index", STAFF: "frontdesk.index", MANAGER: "manager.overview"}[user.role]
 
 
 def safe_next(target, user):
@@ -156,10 +156,6 @@ def logout():
 
 
 @auth.get("/workspace")
-@auth.get("/frontdesk")
 @login_required
 def not_ready():
-    if current_user.role != STAFF:
-        return redirect(url_for(destination(current_user)))
-    titles = {STAFF: "Front desk", MANAGER: "Manager console"}
-    return render_template("auth/not_ready.html", role_title=titles.get(current_user.role, "Workspace"))
+    return redirect(url_for(destination(current_user)))

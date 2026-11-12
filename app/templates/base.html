@@ -1,13 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" content="notranslate">
   <title>{% block title %}The Harbour Hotel{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   {% block styles %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   {% block shell %}
   <header class="site-header">
     <div class="header-inner">
@@ -26,7 +27,7 @@
           {% elif current_user.role == 'manager' %}
             <a href="{{ url_for('manager.overview') }}">Manager console</a>
           {% else %}
-            <a href="{{ url_for('auth.not_ready') }}">Workspace</a>
+            <a href="{{ url_for('frontdesk.index') }}">Front desk</a>
           {% endif %}
           <span class="user-chip" title="{{ current_user.email }}">{{ current_user.email }}</span>
           <form class="inline-form" method="post" action="{{ url_for('auth.logout') }}">
