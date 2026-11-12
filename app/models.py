@@ -80,7 +80,7 @@ class PriceRule(db.Model):
         db.CheckConstraint("end_date > start_date", name="ck_price_rules_range"),
         db.CheckConstraint("kind IN ('season', 'date')", name="ck_price_rules_kind"),
         db.CheckConstraint("amount >= 0", name="ck_price_rules_amount"),
-        db.UniqueConstraint("room_type_id", "kind", "start_date", name="uq_price_rules_start"),
+        db.Index("ix_price_rules_scope", "room_type_id", "kind", "active", "start_date"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -89,6 +89,7 @@ class PriceRule(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
 
 
 class RoomBlock(db.Model):
@@ -100,6 +101,7 @@ class RoomBlock(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     reason = db.Column(db.String(240), nullable=False)
+    effective = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
 
 
 class Booking(db.Model):
@@ -123,6 +125,8 @@ class Booking(db.Model):
     total = db.Column(db.Numeric(12, 2), nullable=False)
     note = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    checked_in_at = db.Column(db.DateTime)
+    checked_out_at = db.Column(db.DateTime)
 
     customer = db.relationship(Customer, lazy="joined")
     room = db.relationship(Room, lazy="joined")
@@ -175,6 +179,7 @@ class AuditLog(db.Model):
     occurred_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     reason = db.Column(db.String(240))
     details = db.Column(db.JSON)
+    actor = db.relationship(User)
 
 
 class BlacklistEntry(db.Model):
@@ -186,3 +191,39 @@ class BlacklistEntry(db.Model):
     reason = db.Column(db.String(240), nullable=False)
     effective_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     removed_at = db.Column(db.DateTime)
+    customer = db.relationship(Customer)
+
+
+class BookingRequest(db.Model):
+    __tablename__ = "booking_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.ForeignKey("bookings.id"), nullable=False, index=True)
+    kind = db.Column(db.String(24), nullable=False)
+    target = db.Column(db.JSON)
+    reason = db.Column(db.String(240))
+    submitted_by = db.Column(db.ForeignKey("users.id"), nullable=False)
+    submitted_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    status = db.Column(db.String(20), nullable=False, default="pending", index=True)
+    handled_by = db.Column(db.ForeignKey("users.id"))
+    handled_at = db.Column(db.DateTime)
+    comment = db.Column(db.String(240))
+
+
+class PaymentRecord(db.Model):
+    __tablename__ = "payment_records"
+    __table_args__ = (
+        db.CheckConstraint("kind IN ('payment', 'refund')", name="ck_payment_records_kind"),
+        db.CheckConstraint("amount > 0", name="ck_payment_records_amount"),
+        db.CheckConstraint("result IN ('success', 'failed')", name="ck_payment_records_result"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.ForeignKey("bookings.id"), nullable=False, index=True)
+    request_id = db.Column(db.ForeignKey("booking_requests.id"))
+    kind = db.Column(db.String(12), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    actor_user_id = db.Column(db.ForeignKey("users.id"), nullable=False)
+    result = db.Column(db.String(12), nullable=False, default="success")
+    occurred_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    reference = db.Column(db.String(64), nullable=False, unique=True)

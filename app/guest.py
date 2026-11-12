@@ -16,12 +16,13 @@ from .booking import (
     get_booking,
     hotel_now,
     listed_room_types,
+    quote_token,
     recent_bookings,
     search_results,
     stay_error,
 )
 from .extensions import db
-from .models import Booking, GUEST
+from .models import Booking, BookingRequest, Customer, GUEST, PaymentRecord
 
 
 guest = Blueprint("guest", __name__, url_prefix="/guest")
@@ -30,7 +31,7 @@ guest = Blueprint("guest", __name__, url_prefix="/guest")
 class SearchForm(FlaskForm):
     check_in = DateField("Check-in", validators=[InputRequired()])
     check_out = DateField("Check-out", validators=[InputRequired()])
-    guests = IntegerField("Guests", validators=[InputRequired(), NumberRange(min=1, max=6)])
+    guests = IntegerField("Guests", validators=[InputRequired(), NumberRange(min=1, max=2147483647)])
     submit = SubmitField("Search rooms")
 
 
@@ -39,10 +40,11 @@ class BookForm(FlaskForm):
     check_in = DateField(widget=HiddenInput(), validators=[InputRequired()])
     check_out = DateField(widget=HiddenInput(), validators=[InputRequired()])
     guests = IntegerField(
-        widget=HiddenInput(), validators=[InputRequired(), NumberRange(min=1, max=6)]
+        widget=HiddenInput(), validators=[InputRequired(), NumberRange(min=1, max=2147483647)]
     )
     note = StringField("Note (optional)", validators=[Optional(), Length(max=100)])
     idempotency_key = StringField(widget=HiddenInput(), validators=[InputRequired(), Length(max=64)])
+    quote = StringField(widget=HiddenInput(), validators=[InputRequired()])
     submit = SubmitField("Book this room")
 
 
@@ -82,7 +84,10 @@ def index():
         stay, error = parse_search(form, now)
         if not error:
             offers = [
-                {"room_type": quote.room_type, "total": quote.total, "rates": quote.rates, "key": str(uuid4())}
+                {
+                    "room_type": quote.room_type, "total": quote.total, "rates": quote.rates,
+                    "key": str(uuid4()), "quote": quote_token(quote.room_type.id, stay, quote.rates),
+                }
                 for quote in search_results(db.session, stay)
             ]
     else:
@@ -120,6 +125,7 @@ def book():
             stay,
             form.idempotency_key.data,
             note=form.note.data,
+            confirmed_quote=form.quote.data,
         )
     except BookingRejected as exc:
         flash(str(exc), "error")
@@ -132,7 +138,8 @@ def book():
             )
         )
 
-    flash(f"Booking BK-{result.id:06d} is confirmed.", "success")
+    if result.status == "confirmed":
+        flash(f"Booking BK-{result.id:06d} is confirmed.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=result.id))
 
 
@@ -141,7 +148,7 @@ def book():
 def bookings():
     own = db.session.scalars(
         db.select(Booking)
-        .where(Booking.actor_user_id == current_user.id)
+        .where(Booking.customer.has(Customer.user_id == current_user.id))
         .order_by(Booking.created_at.desc(), Booking.id.desc())
     ).all()
     return render_template("guest/bookings.html", bookings=own)
@@ -153,4 +160,10 @@ def booking_detail(booking_id):
     booking = get_booking(db.session, booking_id, current_user.id)
     if booking is None:
         abort(404)
-    return render_template("guest/booking_detail.html", booking=booking)
+    payments = db.session.scalars(db.select(PaymentRecord).where(
+        PaymentRecord.booking_id == booking.id, PaymentRecord.result == "success",
+    ).order_by(PaymentRecord.id)).all()
+    changes = db.session.scalars(db.select(BookingRequest).where(
+        BookingRequest.booking_id == booking.id,
+    ).order_by(BookingRequest.id.desc())).all()
+    return render_template("guest/booking_detail.html", booking=booking, payments=payments, changes=changes)

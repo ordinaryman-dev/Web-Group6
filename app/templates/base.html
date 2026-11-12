@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}The Harbour Hotel{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  {% block styles %}{% endblock %}
 </head>
 <body>
+  {% block shell %}
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="{{ url_for('auth.index') }}">
@@ -21,6 +23,8 @@
           {% if current_user.role == 'guest' %}
             <a href="{{ url_for('guest.index') }}">Rooms</a>
             <a href="{{ url_for('guest.bookings') }}">My bookings</a>
+          {% elif current_user.role == 'manager' %}
+            <a href="{{ url_for('manager.overview') }}">Manager console</a>
           {% else %}
             <a href="{{ url_for('auth.not_ready') }}">Workspace</a>
           {% endif %}
@@ -38,9 +42,7 @@
   </header>
 
   <main class="page">
-    {% for category, message in get_flashed_messages(with_categories=true) %}
-      <p class="flash {{ category }}" role="status">{{ message }}</p>
-    {% endfor %}
+    {% include 'flashes.html' %}
     {% block content %}{% endblock %}
   </main>
 
@@ -48,5 +50,6 @@
     <span>The Harbour Hotel · Hangzhou</span>
     <span>Guest portal · course project</span>
   </footer>
+  {% endblock %}
 </body>
 </html>

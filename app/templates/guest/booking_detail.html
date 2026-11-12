@@ -6,7 +6,7 @@
 <section class="confirmation">
   <div class="confirmation-head">
     <div>
-      <p class="eyebrow">BOOKING CONFIRMATION</p>
+      <p class="eyebrow">BOOKING DETAILS</p>
       <h1>{{ booking.room_type.name }}</h1>
       <p class="muted">{{ booking.reference }} · booked {% if booking.created_at %}{{ booking.created_at|localtime }}{% endif %}</p>
     </div>
@@ -40,8 +40,24 @@
         </tbody>
       </table>
       <div class="detail-total"><span>Total</span><b>¥{{ booking.total|money }}</b></div>
-      <p class="side-note">Payment is taken at the front desk at check-in. This build records the booking, not the payment.</p>
+      {% if payments %}
+        <p class="eyebrow">SIMULATED PAYMENTS</p>
+        {% for payment in payments %}
+          <div class="kv"><span>{{ payment.kind|capitalize }} · {{ payment.occurred_at|localtime }}</span><b>¥{{ payment.amount|money }}</b></div>
+        {% endfor %}
+      {% elif booking.status == 'confirmed' %}
+        <p class="side-note">Payment is recorded at the front desk at check-in.</p>
+      {% endif %}
     </div>
+    {% if changes %}
+      <div class="detail-card">
+        <p class="eyebrow">BOOKING REQUESTS</p>
+        {% for change in changes %}
+          <div class="kv"><span>{{ change.kind|replace('_', ' ')|capitalize }}</span><b>{{ change.status|capitalize }}</b></div>
+          {% if change.comment %}<p class="side-note">{{ change.comment }}</p>{% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
 
   <div class="confirmation-actions">

@@ -1,14 +1,39 @@
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 
 import click
 from flask.cli import with_appcontext
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
+from .audit import record_audit
 from .booking import hotel_now
 from .extensions import db
-from .models import Customer, GUEST, PriceRule, Room, RoomType, User
+from .models import Customer, GUEST, MANAGER, PriceRule, Room, RoomType, User
+
+
+@click.command("create-manager")
+@click.argument("email")
+@click.password_option()
+@with_appcontext
+def create_manager(email, password):
+    """Create a manager from the local application CLI."""
+    email = email.strip().casefold()
+    if len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise click.ClickException("Enter a valid email address.")
+    if not 8 <= len(password) <= 128:
+        raise click.ClickException("The password must contain 8 to 128 characters.")
+    try:
+        with Session(db.engine) as session, session.begin():
+            manager = User(email=email, password_hash=generate_password_hash(password), role=MANAGER)
+            session.add(manager)
+            session.flush()
+            record_audit(session, manager.id, "create_manager", "user", manager.id, details={"source": "local_cli"})
+    except IntegrityError as exc:
+        raise click.ClickException("This email already has an account.") from exc
+    click.echo(f"Manager account created for {email}.")
 
 
 DEMO_GUEST_EMAIL = "guest@example.test"

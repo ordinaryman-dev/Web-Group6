@@ -1,0 +1,14 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import fields %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1>{% if request.endpoint == 'manager.profile' %}<p>{{ current_user.email }} · Manager</p>{% endif %}</div>
+  <a class="manager-button secondary" href="{{ url_for('manager.overview') if request.endpoint == 'manager.profile' else back }}">Back</a>
+</header>
+<section class="manager-panel manager-form-panel">
+  <form method="post" class="manager-form">
+    {{ fields(form) }}
+    <button type="submit" class="manager-button">{{ 'Change password' if request.endpoint == 'manager.profile' else 'Save' }}</button>
+  </form>
+</section>
+{% endblock %}

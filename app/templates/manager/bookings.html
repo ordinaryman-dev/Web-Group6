@@ -1,0 +1,24 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import status as badge, pagination %}
+{% set title = "Bookings" %}
+{% block content %}
+<header class="manager-heading"><div><h1>{{ title }}</h1><p>Find orders by booking reference, customer name or status.</p></div></header>
+<section class="manager-panel">
+  <form method="get" class="manager-filters">
+    <label for="booking-query">Reference or customer <input type="search" name="q" id="booking-query" value="{{ query }}"></label>
+    <label for="booking-status">Status <select name="status" id="booking-status"><option value="">All statuses</option>
+      {% for option in statuses %}<option value="{{ option }}"{% if status == option %} selected{% endif %}>{{ option|replace('_', ' ')|capitalize }}</option>{% endfor %}
+    </select></label>
+    <button class="manager-button secondary" type="submit">Filter</button>
+  </form>
+  {% if page.items %}<div class="manager-table-wrap"><table class="manager-table">
+    <thead><tr><th>Reference</th><th>Customer</th><th>Room</th><th>Stay dates</th><th>Status</th><th>Total</th></tr></thead>
+    <tbody>{% for booking in page.items %}<tr>
+      <td><a class="manager-reference" href="{{ url_for('manager.booking_detail', booking_id=booking.id) }}">{{ booking.reference }}</a></td>
+      <td>{{ booking.customer.name }}</td><td>{{ booking.room.number }} · {{ booking.room_type.name }}</td>
+      <td class="manager-nowrap">{{ booking.check_in }} – {{ booking.check_out }}</td><td>{{ badge(booking.status) }}</td><td>¥{{ booking.total|money }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>{% else %}<p class="manager-empty">No matching bookings.</p>{% endif %}
+  {{ pagination(page, 'manager.bookings', {'q':query, 'status':status}) }}
+</section>
+{% endblock %}

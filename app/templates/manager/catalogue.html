@@ -1,0 +1,61 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import status %}
+{% set title = {'types':'Room types', 'rooms':'Rooms', 'prices':'Price rules'}[section] %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1>
+    {% if section == 'prices' %}<p>Date-specific prices take priority over seasonal prices and the base rate.</p>{% endif %}
+  </div>
+  {% if section == 'types' %}<a class="manager-button" href="{{ url_for('manager.room_type_form') }}">Add room type</a>
+  {% elif section == 'rooms' %}<a class="manager-button" href="{{ url_for('manager.room_form') }}">Add room</a>
+  {% else %}<a class="manager-button" href="{{ url_for('manager.price_form') }}">Add price rule</a>{% endif %}
+</header>
+<section class="manager-panel">
+  {% if section == 'rooms' %}
+    <form method="get" class="manager-filters">
+      <label for="day">Room status on <input type="date" id="day" name="day" value="{{ day }}" required></label>
+      <button class="manager-button secondary" type="submit">View date</button>
+    </form>
+  {% endif %}
+  {% if not items %}<p class="manager-empty">No {{ title|lower }} to display.</p>
+  {% else %}
+  <div class="manager-table-wrap">
+  <table class="manager-table">
+    {% if section == 'types' %}
+      <thead><tr><th>Room type</th><th>Code</th><th>Capacity</th><th>Base rate</th><th>Sales</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>{% for item in items %}<tr>
+        <td><strong>{{ item.name }}</strong></td><td>{{ item.code }}</td><td>{{ item.capacity }}</td><td>¥{{ item.base_price|money }}</td>
+        <td>{{ status('listed' if item.listed else 'delisted') }}</td><td><a href="{{ url_for('manager.room_type_form', record_id=item.id) }}">Edit</a></td>
+      </tr>{% endfor %}</tbody>
+    {% elif section == 'rooms' %}
+      <thead><tr><th>Room number</th><th>Room type</th><th>First operating date</th><th>First unavailable date</th><th>Night status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>{% for item, type_name in items %}<tr>
+        <td><strong>{{ item.number }}</strong></td><td>{{ type_name }}</td><td>{{ item.operational_from }}</td><td>{{ item.operational_until or '—' }}</td>
+        <td>
+          {% if item.operational_from > day or (item.operational_until and item.operational_until <= day) %}{{ status('out_of_service') }}
+          {% elif item.id in blocked and item.id in bookings_by_room %}{{ status('maintenance_conflict') }}
+          {% elif item.id in blocked %}{{ status('maintenance') }}
+          {% elif item.id in bookings_by_room %}
+            {{ status('occupied' if day <= today and bookings_by_room[item.id] in ('checked_in', 'checked_out') else 'reserved') }}
+          {% else %}{{ status('available') }}{% endif %}
+        </td>
+        <td><a href="{{ url_for('manager.room_form', record_id=item.id) }}">Edit</a></td>
+      </tr>{% endfor %}</tbody>
+    {% else %}
+      <thead><tr><th>Room type</th><th>Rule</th><th>First night</th><th>End (excluded)</th><th>Rate</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>{% for item, type_name in items %}<tr>
+        <td><strong>{{ type_name }}</strong></td><td>{{ 'Date-specific' if item.kind == 'date' else 'Seasonal' }}</td><td>{{ item.start_date }}</td><td>{{ item.end_date }}</td>
+        <td>¥{{ item.amount|money }}</td><td>{{ status('active' if item.active else 'retired') }}</td>
+        <td>{% if item.active %}<div class="manager-row-actions">
+          <a href="{{ url_for('manager.price_form', rule_id=item.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('manager.retire_price', rule_id=item.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-button" type="submit">Retire</button>
+          </form>
+        </div>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    {% endif %}
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

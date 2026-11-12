@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · The Harbour Hotel{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}">{% endblock %}
+{% block shell %}
+<div class="manager-shell">
+  <aside class="manager-sidebar">
+    <a class="manager-brand" href="{{ url_for('manager.overview') }}">
+      <span class="manager-mark" aria-hidden="true">HH</span>
+      <span><strong>Manager console</strong><small>The Harbour Hotel</small></span>
+    </a>
+    <nav class="manager-nav" aria-label="Manager navigation">
+      {% set entries = [
+        ('overview', 'Overview', []), ('room_types', 'Room types', ['room_type_form']),
+        ('rooms', 'Rooms', ['room_form']), ('prices', 'Price rules', ['price_form']),
+        ('accounts', 'Staff accounts', ['staff_form']), ('blacklist', 'Blacklist', ['remove_blacklist']),
+        ('bookings', 'Bookings', ['booking_detail', 'cancel_booking']),
+        ('reports', 'Reports', []), ('audit', 'Audit log', [])
+      ] %}
+      {% for endpoint, label, extra in entries %}
+        {% set active = request.endpoint.removeprefix('manager.') in [endpoint] + extra %}
+        <a href="{{ url_for('manager.' ~ endpoint) }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="manager-user">
+      <a href="{{ url_for('manager.profile') }}" title="{{ current_user.email }}">
+        <span class="manager-avatar" aria-hidden="true">{{ current_user.email[0]|upper }}</span>
+        <span><strong>My profile</strong><small>{{ current_user.email }}</small></span>
+      </a>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="link-button">Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <main class="manager-main" id="manager-main">
+    {% include 'flashes.html' %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

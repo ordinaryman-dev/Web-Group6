@@ -1,0 +1,37 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import fields, pagination, status %}
+{% set title = "Customer blacklist" %}
+{% block content %}
+<header class="manager-heading"><div><h1>{{ title }}</h1><p>Restrictions apply to new bookings, walk-ins and extensions. Existing confirmed bookings remain active.</p></div></header>
+<div class="manager-grid">
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Find a customer</h2></div>
+    <form method="get" class="manager-filters">
+      <label for="customer-query">Name, phone or email <input type="search" name="q" id="customer-query" value="{{ search }}"></label>
+      <button class="manager-button secondary" type="submit">Search</button>
+    </form>
+    {% if customers %}<div class="manager-table-wrap"><table class="manager-table">
+      <thead><tr><th>Customer</th><th>Phone</th><th>ID</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>{% for customer in customers %}<tr><td>{{ customer.name }}</td><td>{{ customer.phone or '—' }}</td><td>{{ customer.id }}</td>
+        <td><a href="{{ url_for('manager.blacklist', customer=customer.id, q=search) }}#add-blacklist">Select</a></td></tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="manager-empty">No matching customers.</p>{% endif %}
+  </section>
+  <section class="manager-panel" id="add-blacklist">
+    <div class="manager-panel-title"><h2>Add restriction</h2></div>
+    <form method="post" class="manager-form">{{ fields(form) }}<button class="manager-button" type="submit">Add to blacklist</button></form>
+  </section>
+</div>
+<section class="manager-panel manager-lower">
+  <div class="manager-panel-title"><h2>Restriction history</h2></div>
+  {% if entries.items %}<div class="manager-table-wrap"><table class="manager-table">
+    <thead><tr><th>Customer</th><th>Reason</th><th>Effective</th><th>Removed</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for entry in entries.items %}<tr>
+      <td>{{ entry.customer.name }} · #{{ entry.customer_id }}</td><td>{{ entry.reason }}</td>
+      <td>{{ entry.effective_at|localtime }}</td><td>{{ (entry.removed_at|localtime) if entry.removed_at else '—' }}</td>
+      <td>{{ status('removed' if entry.removed_at else 'active') }}</td>
+      <td>{% if not entry.removed_at %}<a href="{{ url_for('manager.remove_blacklist', customer_id=entry.customer_id) }}">Remove</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>{% else %}<p class="manager-empty">No restrictions have been recorded.</p>{% endif %}
+  {{ pagination(entries, 'manager.blacklist', {'q':search}) }}
+</section>
+{% endblock %}

@@ -32,11 +32,14 @@ def create_app(config=None):
     csrf.init_app(app)
 
     from .auth import auth
-    from .cli import seed_demo
+    from .cli import create_manager, seed_demo
     from .guest import guest
+    from .manager import manager
 
     app.register_blueprint(auth)
     app.register_blueprint(guest)
+    app.register_blueprint(manager)
+    app.cli.add_command(create_manager)
     app.cli.add_command(seed_demo)
 
     @app.template_filter("money")

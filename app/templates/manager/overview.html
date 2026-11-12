@@ -1,0 +1,66 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import audit_table, percent %}
+{% set title = "Operations overview" %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1><p>Week of {{ weekly.start.strftime('%d %b %Y') }} · {{ now.strftime('%d %b, %H:%M') }} Beijing time</p></div>
+  <a class="manager-button secondary" href="{{ url_for('manager.export_report', period='week', anchor=now.date().isoformat()) }}">Export CSV</a>
+</header>
+<section class="manager-metrics" aria-label="Hotel operations">
+  <article><span>Occupancy this week</span><strong>{{ percent(weekly.total.occupancy) }}</strong></article>
+  <article><span>Rooms in house</span><strong>{{ in_house }}</strong></article>
+  <article><span>Arrivals due today</span><strong>{{ arrivals }}</strong></article>
+  <article><span>Pending requests</span><strong>{{ pending }}</strong></article>
+</section>
+<div class="manager-grid">
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Occupancy · last 14 nights</h2><span>{{ percent(trend.total.occupancy) }} overall</span></div>
+    <div class="manager-chart">
+      <div class="manager-chart-scale" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div>
+      <ul aria-label="Occupancy by night">
+        {% for day, occupancy in trend.trend %}
+          {% set height = [occupancy or 0, 100]|min %}
+          <li title="{{ day.strftime('%d %b') }} · {{ percent(occupancy) }}">
+            <span class="visually-hidden">{{ day.strftime('%d %b') }} · {{ percent(occupancy) }}</span>
+            <span aria-hidden="true" class="manager-chart-bar{% if occupancy is none %} missing{% endif %}" style="--height: {{ height }}%"></span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="manager-chart-dates"><span>{{ trend.start.strftime('%d %b') }}</span><span>{{ trend.trend[-1][0].strftime('%d %b') }}</span></div>
+  </section>
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Room types this week</h2><a href="{{ url_for('manager.reports') }}">View report</a></div>
+    <div class="manager-table-wrap">
+      <table class="manager-table">
+        <thead><tr><th>Room type</th><th>Occupied nights</th><th>Occupancy</th><th>Avg. nightly rate</th></tr></thead>
+        <tbody>
+        {% for row in weekly.rows|sort(attribute='occupied', reverse=true) %}
+          <tr><td>{{ row.name }}</td><td>{{ row.occupied }}</td><td>{{ percent(row.occupancy) }}</td>
+            <td>{{ '¥' ~ (row.average_price|money) if row.average_price is not none else '—' }}</td></tr>
+        {% else %}<tr><td colspan="4">No room types have been configured.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="manager-panel manager-danger-panel">
+    <div class="manager-panel-title"><h2>Exception cancellation</h2><a href="{{ url_for('manager.bookings', status='confirmed') }}">Find a booking</a></div>
+    {% if candidate %}
+      <p><a class="manager-reference" href="{{ url_for('manager.booking_detail', booking_id=candidate.id) }}">{{ candidate.reference }}</a> · {{ candidate.customer.name }} · {{ candidate.check_in.strftime('%d %b') }}–{{ candidate.check_out.strftime('%d %b') }}</p>
+      <form class="manager-exception-form" method="post" action="{{ url_for('manager.cancel_booking', booking_id=candidate.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="source" value="exception">
+        <div class="manager-field"><label for="exception-reason">Cancellation reason</label><textarea name="reason" id="exception-reason" maxlength="240" required rows="2"></textarea></div>
+        <div class="manager-exception-footer">
+          <button class="manager-button danger" type="submit">Cancel and refund</button>
+          <span><strong>¥{{ refund|money }}</strong> estimated simulated refund</span>
+        </div>
+      </form>
+    {% else %}<p class="manager-empty">No confirmed booking is past the normal cancellation deadline.</p>{% endif %}
+  </section>
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Recent audit</h2><a href="{{ url_for('manager.audit') }}">View all</a></div>
+    {{ audit_table(latest) }}
+  </section>
+</div>
+{% endblock %}

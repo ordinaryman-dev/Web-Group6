@@ -1,0 +1,63 @@
+{% macro fields(form) %}
+  {{ form.hidden_tag() }}
+  {% for field in form if field.type not in ('CSRFTokenField', 'HiddenField') %}
+    <div class="manager-field">
+      {% if field.type == 'BooleanField' %}
+        <label class="manager-checkbox">{{ field() }} {{ field.label.text }}</label>
+      {% else %}
+        {{ field.label }}
+        {% if field.type == 'DecimalField' %}
+          {{ field(type='number', min='0', step='0.01') }}
+        {% elif field.type == 'PasswordField' %}
+          {{ field(autocomplete='current-password' if field.name == 'current_password' else 'new-password') }}
+        {% else %}
+          {{ field() }}
+        {% endif %}
+      {% endif %}
+      {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    </div>
+  {% endfor %}
+{% endmacro %}
+
+{% macro status(value) %}
+  <span class="manager-status {{ value }}">{{ value|replace('_', ' ')|capitalize }}</span>
+{% endmacro %}
+
+{% macro percent(value) %}{{ ('%.1f'|format(value) ~ '%') if value is not none else '—' }}{% endmacro %}
+
+{% macro audit_table(items, details=false) %}
+  {% if items %}
+    <div class="manager-table-wrap">
+      <table class="manager-table">
+        <thead><tr><th>Time (Beijing)</th><th>Actor</th><th>Action</th><th>Object</th>{% if details %}<th>Result</th><th>Reason and changes</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for entry in items %}
+            <tr>
+              <td class="manager-nowrap">{{ entry.occurred_at|localtime('%d %b, %H:%M') }}</td>
+              <td>{{ entry.actor.email }}</td><td>{{ entry.action|replace('_', ' ')|capitalize }}</td>
+              <td>{{ entry.object_type|replace('_', ' ')|capitalize }} #{{ entry.object_id }}</td>
+              {% if details %}
+                <td>{{ status(entry.result) }}</td>
+                <td>
+                  {% if entry.reason %}<p>{{ entry.reason }}</p>{% endif %}
+                  {% if entry.details %}<details><summary>View changes</summary><pre>{{ entry.details|tojson(indent=2) }}</pre></details>{% endif %}
+                  {% if not entry.reason and not entry.details %}—{% endif %}
+                </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}<p class="manager-empty">No matching audit entries.</p>{% endif %}
+{% endmacro %}
+
+{% macro pagination(page, endpoint, filters={}) %}
+  {% if page.pages > 1 %}
+    <nav class="manager-pagination" aria-label="Pagination">
+      {% if page.has_prev %}<a href="{{ url_for(endpoint, page=page.prev_num, **filters) }}">Previous</a>{% endif %}
+      <span>Page {{ page.page }} of {{ page.pages }}</span>
+      {% if page.has_next %}<a href="{{ url_for(endpoint, page=page.next_num, **filters) }}">Next</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endmacro %}

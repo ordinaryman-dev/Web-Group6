@@ -23,7 +23,7 @@
     </div>
     <div class="field">
       <label for="guests">Guests</label>
-      {{ form.guests(id="guests", min=1, max=6) }}
+      {{ form.guests(id="guests", min=1) }}
     </div>
     <button class="button search-button" type="submit">Search rooms →</button>
   </form>
@@ -78,6 +78,7 @@
               <input type="hidden" name="check_out" value="{{ stay.check_out.isoformat() }}">
               <input type="hidden" name="guests" value="{{ stay.guests }}">
               <input type="hidden" name="idempotency_key" value="{{ offer.key }}">
+              <input type="hidden" name="quote" value="{{ offer.quote }}">
               <label class="note-input">
                 Note (optional)
                 <input type="text" name="note" maxlength="100" placeholder="Up to 100 characters">

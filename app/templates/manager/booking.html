@@ -1,0 +1,58 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import status, fields %}
+{% set title = booking.reference %}
+{% block content %}
+<header class="manager-heading"><div><h1>{{ title }}</h1><p>{{ booking.customer.name }} · {{ booking.room_type.name }} · Room {{ booking.room.number }}</p></div>
+  <a class="manager-button secondary" href="{{ url_for('manager.bookings') }}">All bookings</a></header>
+<div class="manager-grid">
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Reservation</h2>{{ status(booking.status) }}</div>
+    <dl class="manager-facts">
+      <dt>Stay dates</dt><dd>{{ booking.check_in }} – {{ booking.check_out }}</dd>
+      <dt>Guests</dt><dd>{{ booking.guests }}</dd>
+      <dt>Booked at</dt><dd>{{ booking.created_at|localtime }}</dd>
+      <dt>Confirmed total</dt><dd>¥{{ booking.total|money }}</dd>
+      <dt>Guest note</dt><dd>{{ booking.note or '—' }}</dd>
+      <dt>Checked in</dt><dd>{{ booking.checked_in_at|localtime or '—' }}</dd>
+      <dt>Checked out</dt><dd>{{ booking.checked_out_at|localtime or '—' }}</dd>
+    </dl>
+  </section>
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Simulated payments</h2></div>
+    {% if payments %}<div class="manager-table-wrap"><table class="manager-table">
+      <thead><tr><th>Time (Beijing)</th><th>Type</th><th>Amount</th><th>Result</th></tr></thead>
+      <tbody>{% for payment in payments %}<tr><td>{{ payment.occurred_at|localtime }}</td><td>{{ payment.kind|capitalize }}</td>
+        <td>¥{{ payment.amount|money }}</td><td>{{ status(payment.result) }}</td></tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="manager-empty">No payment or refund records.</p>{% endif %}
+  </section>
+  {% if booking.status == 'confirmed' and not booking.checked_in_at %}
+  <section class="manager-panel manager-danger-panel">
+    <div class="manager-panel-title"><h2>Cancel booking</h2></div>
+    <p>Normal cancellation deadline {{ deadline.strftime('%d %b %Y, %H:%M') }} Beijing time.</p>
+    {% if not exception_available %}<p class="muted">The late exception becomes available after this deadline. Hotel-initiated cancellation is available for a hotel reason.</p>{% endif %}
+    <p>Estimated simulated refund <strong>¥{{ refundable|money }}</strong></p>
+    <form method="post" class="manager-form manager-lower" action="{{ url_for('manager.cancel_booking', booking_id=booking.id) }}">
+      {{ fields(form) }}
+      <button class="manager-button danger" type="submit">Cancel and refund</button>
+    </form>
+  </section>
+  {% endif %}
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Confirmed nightly prices</h2></div>
+    {% if booking.price_lines %}<div class="manager-table-wrap"><table class="manager-table">
+      <thead><tr><th>Stay date</th><th>Confirmed price</th></tr></thead>
+      <tbody>{% for line in booking.price_lines %}<tr><td>{{ line.stay_date }}</td><td>¥{{ line.amount|money }}</td></tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="manager-empty">No nightly price records.</p>{% endif %}
+  </section>
+  <section class="manager-panel">
+    <div class="manager-panel-title"><h2>Booking requests</h2></div>
+    {% if changes %}<div class="manager-table-wrap"><table class="manager-table">
+      <thead><tr><th>Submitted (Beijing)</th><th>Request</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>{% for change in changes %}<tr><td>{{ change.submitted_at|localtime }}</td>
+        <td>{{ change.kind|replace('_', ' ')|capitalize }}</td><td>{{ status(change.status) }}</td>
+        <td>{{ change.reason or '—' }}{% if change.comment %}<p>{{ change.comment }}</p>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="manager-empty">No requests recorded for this booking.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

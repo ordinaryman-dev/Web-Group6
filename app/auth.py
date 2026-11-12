@@ -1,4 +1,6 @@
 from functools import wraps
+from posixpath import normpath
+from urllib.parse import unquote, urlsplit
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -79,11 +81,20 @@ def role_required(*roles):
 
 
 def destination(user):
-    return "guest.index" if user.role == GUEST else "auth.not_ready"
+    return {GUEST: "guest.index", STAFF: "auth.not_ready", MANAGER: "manager.overview"}[user.role]
 
 
-def safe_next(target):
-    return target if target and target.startswith("/") and not target.startswith("//") else None
+def safe_next(target, user):
+    if not target or not target.startswith("/") or target.startswith("//"):
+        return None
+    try:
+        path = normpath(unquote(urlsplit(target).path))
+    except ValueError:
+        return None
+    if "\\" in path or any(ord(character) < 32 for character in path):
+        return None
+    root = {GUEST: "/guest", STAFF: "/frontdesk", MANAGER: "/manage"}[user.role]
+    return target if path == root or path.startswith(root + "/") else None
 
 
 @auth.get("/")
@@ -103,7 +114,7 @@ def login():
         user = db.session.scalar(db.select(User).where(User.email == form.email.data))
         if user and user.active and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            return redirect(safe_next(request.args.get("next")) or url_for(destination(user)))
+            return redirect(safe_next(request.args.get("next"), user) or url_for(destination(user)))
         form.password.errors.append("Email or password is incorrect.")
 
     status = 401 if form.is_submitted() else 200
@@ -145,9 +156,10 @@ def logout():
 
 
 @auth.get("/workspace")
+@auth.get("/frontdesk")
 @login_required
 def not_ready():
-    if current_user.role == GUEST:
-        return redirect(url_for("guest.index"))
+    if current_user.role != STAFF:
+        return redirect(url_for(destination(current_user)))
     titles = {STAFF: "Front desk", MANAGER: "Manager console"}
     return render_template("auth/not_ready.html", role_title=titles.get(current_user.role, "Workspace"))

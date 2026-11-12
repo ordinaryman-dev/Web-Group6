@@ -1,105 +1,52 @@
-# The Harbour Hotel — Guest Portal
+# The Harbour Hotel
 
-COMP3019J Group 6. This build keeps the database layer and implements only two pages:
+COMP3019J Group 6. The Flask application shares one MySQL 8 / InnoDB database across
+the guest portal and manager console. Pages use server-rendered Jinja, HTML and CSS.
+Forms use Flask-WTF CSRF protection and Flask-Login sessions.
 
-- **Sign in / register** — one entrance for all roles; guests continue to the portal.
-- **Guest portal** — search whole-stay availability, quote nightly prices, create a booking,
-  and view only the signed-in guest's own bookings.
+## Local setup
 
-The front-desk and manager workspaces are intentionally not built yet. Receptionist and
-manager accounts can sign in, but land on a "workspace not in this build" page. There is no
-cancellation, change-request, payment or reporting flow in this increment.
-
-## Stack
-
-- Flask 3, Jinja templates, plain HTML/CSS (no JavaScript required)
-- Flask-Login, Flask-WTF/CSRF, Flask-SQLAlchemy, Flask-Migrate
-- MySQL 8 / InnoDB, `utf8mb4`
-
-## Local start
-
-The repository includes the local portable-MySQL scripts used during development:
+Use Python 3.12 and a MySQL 8 database with the utf8mb4 character set. From the
+repository root, with a local virtual environment activated and its dependencies installed:
 
 ```powershell
-.\start_mysql.ps1      # local MySQL on 127.0.0.1:3306
-.\run_dev.ps1          # sets SECRET_KEY and DATABASE_URL, then starts Flask
+python -m pip install -r requirements.txt
+$env:SECRET_KEY = '<your randomly generated development secret>'
+$env:DATABASE_URL = 'mysql+pymysql://<user>:<password>@127.0.0.1:3306/<database>?charset=utf8mb4'
+python -m flask --app app db upgrade
+python -m flask --app app seed-demo
+python -m flask --app app create-manager manager@example.test
+python -m flask --app app run --host 127.0.0.1 --port 5000
 ```
 
-`run_dev.ps1` uses the local development values already configured on this machine. To set
-them yourself:
+The manager command prompts for a password. Run it once for the initial manager.
+Sign in at http://127.0.0.1:5000/login. Guests can create accounts at /register.
+Managers can create front-desk accounts from Staff accounts.
 
-```powershell
-$env:SECRET_KEY  = 'dev-secret-key-change-me'
-$env:DATABASE_URL = 'mysql+pymysql://hero_app:HeroApp2026@127.0.0.1:3306/hero?charset=utf8mb4'
-.\.venv\Scripts\python.exe -m flask --app app db upgrade
-.\.venv\Scripts\python.exe -m flask --app app seed-demo
-.\.venv\Scripts\python.exe -m flask --app app run --host 127.0.0.1 --port 5000
-```
+## Workspaces
 
-Open `http://127.0.0.1:5000`.
+- /guest/ — search and quote an entire stay, submit a reservation and view your own
+  bookings. Quotes are recalculated on submission. A changed price requires a fresh
+  confirmation. A confirmed reservation stores an amount for each night.
+- /manage — operations overview, room types and room inventory, seasonal and
+  date-specific prices, staff accounts, customer blacklist, bookings, exception
+  cancellation, audit, occupancy reports and CSV export. Manager writes are transactional.
+  Staff accounts are disabled without removing their historical references.
+- /frontdesk — sign-in destination for front-desk accounts. Check-in, check-out,
+  walk-ins, request approval and collection of simulated payments remain front-desk
+  integration work. The manager console uses the shared request, payment and actual-stay
+  records and shows zero or an empty state when they have no data.
 
-### Demo accounts
+The occupancy report uses completed Beijing-time nights from each room's operating
+period and actual stay records, with effective maintenance deducted once per room
+and night. Upcoming reservations appear separately. The CSV calls the same report
+function as the page. Cancellation refunds the net successful simulated payments and
+releases allocated nights in the same transaction, retaining the original booking and
+price lines. No real payment provider is used.
 
-| Role | Email | Password | Landing page |
-|---|---|---|---|
-| Guest | `guest@example.test` | `Guest2026!` | `/guest/` |
-| Manager | `manager@example.test` | `Passw0rd!` | `/workspace` placeholder |
+## MySQL integration tests
 
-`seed-demo` creates the guest account. The manager account above already exists in this local
-database from the earlier increment; a fresh database only needs a guest account for this
-scope. Public registration creates guest accounts only. Staff accounts are not part of this
-build.
-
-## Routes
-
-| Route | Method | Access | Purpose |
-|---|---|---|---|
-| `/` | GET | public | Redirects to sign-in, guest portal or placeholder |
-| `/login` | GET/POST | public | Sign in |
-| `/register` | GET/POST | public | Create a guest account |
-| `/logout` | POST | signed in | Sign out |
-| `/workspace` | GET | staff/manager | Placeholder for the unbuilt workspaces |
-| `/guest/` | GET | guest | Search, quote and room cards |
-| `/guest/book` | POST | guest | Create a booking |
-| `/guest/bookings` | GET | guest | List the guest's own bookings |
-| `/guest/bookings/<id>` | GET | guest | Booking confirmation/detail |
-
-## Database
-
-The existing MySQL schema is kept and migrated forward. Migration
-`20261112_01_add_booking_note.py` adds two columns to `bookings`:
-
-- `note VARCHAR(100)` — optional guest note, shown in the confirmation.
-- `created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP` — booking timestamp, displayed in
-  Beijing time.
-
-No extra table was needed for this scope. Login/registration use `users` and `customers`;
-search and booking use `room_types`, `rooms`, `price_rules`, `room_blocks`, `bookings`,
-`room_nights`, `booking_price_lines` and `audit_logs`. If request/cancellation or payment
-flows are added later, they will need their own request/payment records rather than
-overloading `bookings`.
-
-## Behaviour implemented
-
-- Search is read-only: it does not hold a room and returns nothing when no single physical
-  room covers every night.
-- Check-in is limited to today through 14 days ahead; same-day searches close at 22:00
-  Beijing time; check-out is exclusive.
-- Nightly price priority is date-specific rule, then season rule, then the room type's base
-  price. A booking stores one price line per night.
-- Booking writes the booking, its room nights and price lines in one transaction, with
-  `READ COMMITTED`, pessimistic room locks and an idempotency key. A replay returns the same
-  booking; a conflicting key is rejected.
-- The guest can see only bookings whose `actor_user_id` is their own.
-- Blacklisted customers cannot create a booking.
-
-## Deliberately not built
-
-- Front-desk arrivals/departures, check-in/out, walk-ins, maintenance blocks.
-- Manager catalogue/price/account/blacklist/report screens.
-- Change, extension, cancellation and refund requests.
-- Simulated payments and occupancy reports.
-- Automated test suite (the old increment-one tests were removed with the old code).
-
-The previous full increment-one implementation remains recoverable in git commit `e749d53`
-and on the local branch `backup/pre-client-reset`.
+Install requirements-dev.txt and create a separate empty MySQL database. Point
+TEST_DATABASE_URL to it before running python -m pytest. The test suite applies the
+migrations to the empty database and leaves the test data in place. Use another empty
+test database for the next run. Without this variable the MySQL tests are skipped.

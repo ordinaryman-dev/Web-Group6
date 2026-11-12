@@ -1,0 +1,20 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import status %}
+{% set title = "Staff accounts" %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1><p>Inactive accounts retain their booking and audit history.</p></div>
+  <a class="manager-button" href="{{ url_for('manager.staff_form') }}">Create account</a>
+</header>
+<section class="manager-panel">
+  {% if staff %}<div class="manager-table-wrap"><table class="manager-table">
+    <thead><tr><th>Email</th><th>Role</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>{% for user in staff %}<tr>
+      <td><strong>{{ user.email }}</strong></td><td>Front desk</td><td>{{ status('active' if user.active else 'inactive') }}</td>
+      <td>{% if user.active %}<form method="post" action="{{ url_for('manager.disable_staff', staff_id=user.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="link-button">Disable</button>
+      </form>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>{% else %}<p class="manager-empty">No front-desk accounts.</p>{% endif %}
+</section>
+{% endblock %}

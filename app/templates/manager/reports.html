@@ -1,0 +1,30 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import percent %}
+{% set title = "Occupancy reports" %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1><p>{{ report.start.strftime('%d %b %Y') }} – {{ last_day.strftime('%d %b %Y') }} · Beijing time</p></div>
+  <a class="manager-button secondary" href="{{ url_for('manager.export_report', period='custom', start=report.start.isoformat(), end=last_day.isoformat()) }}">Export CSV</a>
+</header>
+<section class="manager-panel">
+  <form method="get" class="manager-filters">
+    <label for="period">Period <select name="period" id="period">
+      {% for option, label in [('week', 'Week'), ('month', 'Month'), ('quarter', 'Quarter'), ('custom', 'Custom range')] %}
+        <option value="{{ option }}"{% if period == option %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select></label>
+    <label for="anchor">Date within period <input type="date" name="anchor" id="anchor" value="{{ request.args.get('anchor') or today }}"></label>
+    <label for="start">Custom start <input type="date" name="start" id="start" value="{{ request.args.get('start', '') }}"></label>
+    <label for="end">Custom end (inclusive) <input type="date" name="end" id="end" value="{{ request.args.get('end', '') }}"></label>
+    <button type="submit" class="manager-button secondary">Run report</button>
+  </form>
+  <div class="manager-table-wrap"><table class="manager-table">
+    <thead><tr><th>Room type</th><th>Sellable past nights</th><th>Occupied nights</th><th>Occupancy</th><th>Upcoming reserved nights</th><th>Avg. confirmed nightly price</th></tr></thead>
+    <tbody>{% for row in [report.total] + report.rows %}<tr{% if loop.first %} class="manager-total"{% endif %}>
+      <td>{{ row.name }}</td><td>{{ row.sellable }}</td><td>{{ row.occupied }}</td><td>{{ percent(row.occupancy) }}</td><td>{{ row.reserved }}</td>
+      <td>{{ '¥' ~ (row.average_price|money) if row.average_price is not none else '—' }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="manager-footnote">Occupancy uses actual occupied nights divided by sellable past nights. Upcoming reservations are shown separately. A dash means no denominator or no recorded stay.</p>
+</section>
+{% endblock %}

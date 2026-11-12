@@ -1,15 +1,16 @@
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from hashlib import sha256
 from time import sleep
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from flask import current_app
-from sqlalchemy import exists, or_
+from itsdangerous import BadData, URLSafeSerializer
+from sqlalchemy import case, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, lazyload
 
 from .audit import record_audit
 from .extensions import db
@@ -17,8 +18,10 @@ from .models import (
     BlacklistEntry,
     Booking,
     BookingPriceLine,
+    BookingRequest,
     Customer,
     GUEST,
+    PaymentRecord,
     PriceRule,
     Room,
     RoomBlock,
@@ -64,6 +67,7 @@ class BookingRejected(Exception):
 class BookingResult:
     id: int
     total: str
+    status: str
 
 
 def hotel_now():
@@ -107,6 +111,7 @@ def nightly_rates(session, room_type, stay):
     rules = session.scalars(
         db.select(PriceRule).where(
             PriceRule.room_type_id == room_type.id,
+            PriceRule.active.is_(True),
             PriceRule.start_date < stay.check_out,
             PriceRule.end_date > stay.check_in,
         )
@@ -130,6 +135,23 @@ def nightly_rates(session, room_type, stay):
 
 def total_for_rates(rates):
     return sum((rate.amount * (rate.end - rate.start).days for rate in rates), Decimal("0.00"))
+
+
+def quote_signature(room_type_id, stay, rates):
+    segments = []
+    for rate in rates:
+        amount = format(rate.amount, ".2f")
+        if segments and segments[-1][2] == amount:
+            segments[-1][1] = rate.end.isoformat()
+        else:
+            segments.append([rate.start.isoformat(), rate.end.isoformat(), amount])
+    return [room_type_id, stay.check_in.isoformat(), stay.check_out.isoformat(), stay.guests, segments]
+
+
+def quote_token(room_type_id, stay, rates):
+    return URLSafeSerializer(current_app.secret_key, salt="guest-booking-quote").dumps(
+        quote_signature(room_type_id, stay, rates)
+    )
 
 
 def search_results(session, stay):
@@ -175,7 +197,7 @@ def existing_booking(session, actor_id, key):
 def booking_result(booking, digest):
     if booking.request_digest != digest:
         raise BookingRejected("IDEMPOTENCY_MISMATCH", "This request key belongs to a different booking.")
-    return BookingResult(booking.id, format(booking.total, ".2f"))
+    return BookingResult(booking.id, format(booking.total, ".2f"), booking.status)
 
 
 def add_night(session, booking, day, rate):
@@ -190,7 +212,7 @@ def add_night(session, booking, day, rate):
     ])
 
 
-def allocate_once(session, actor_id, room_type_id, stay, key, digest, note):
+def allocate_once(session, actor_id, room_type_id, stay, key, digest, note, expected_quote):
     actor = session.get(User, actor_id)
     if not actor or not actor.active or actor.role != GUEST:
         raise BookingRejected("FORBIDDEN", "An active guest account is required.")
@@ -202,14 +224,22 @@ def allocate_once(session, actor_id, room_type_id, stay, key, digest, note):
     customer = session.scalar(
         db.select(Customer).where(Customer.user_id == actor_id).with_for_update(read=True)
     )
+    existing = existing_booking(session, actor_id, key)
+    if existing:
+        return booking_result(existing, digest)
     if not customer or customer_is_blocked(session, customer.id, utc_now()):
         raise BookingRejected("FORBIDDEN", "This customer cannot make a new booking.")
 
     room_type = session.scalar(
         db.select(RoomType).where(RoomType.id == room_type_id).with_for_update(read=True)
     )
+    existing = existing_booking(session, actor_id, key)
+    if existing:
+        return booking_result(existing, digest)
     if not room_type or not room_type.listed or room_type.capacity < stay.guests:
         raise BookingRejected("SOLD_OUT", "The room type is unavailable for this stay.")
+
+    rates = nightly_rates(session, room_type, stay)
 
     candidates = session.scalars(
         db.select(Room.id).where(Room.room_type_id == room_type_id).order_by(Room.id)
@@ -225,7 +255,9 @@ def allocate_once(session, actor_id, room_type_id, stay, key, digest, note):
             db.select(Room.id).where(Room.id == room_id, *free_room_conditions(stay))
         )
         if available is not None:
-            rates = nightly_rates(session, room_type, stay)
+            if expected_quote is not None and expected_quote != quote_signature(room_type_id, stay, rates):
+                total = format(total_for_rates(rates), ",.2f")
+                raise BookingRejected("PRICE_CHANGED", f"The price changed to ¥{total}. Review the updated quote and book again.")
             booking = Booking(
                 actor_user_id=actor_id,
                 customer_id=customer.id,
@@ -246,13 +278,14 @@ def allocate_once(session, actor_id, room_type_id, stay, key, digest, note):
                 while day < rate.end:
                     add_night(session, booking, day, rate)
                     day += timedelta(days=1)
-            record_audit(session, actor_id, "create_booking", "booking", booking.id)
+            record_audit(session, actor_id, "create_booking", "booking", booking.id,
+                         details={"source": "guest_portal", "confirmation": "automatic"})
             return booking_result(booking, digest)
 
     raise BookingRejected("SOLD_OUT", "No single room covers the entire stay.")
 
 
-def create_booking(actor_id, room_type_id, stay, idempotency_key, note=None):
+def create_booking(actor_id, room_type_id, stay, idempotency_key, note=None, *, confirmed_quote=None):
     error = stay_error(stay, hotel_now())
     if error:
         raise BookingRejected("INVALID_REQUEST", error)
@@ -266,15 +299,21 @@ def create_booking(actor_id, room_type_id, stay, idempotency_key, note=None):
     except (ValueError, TypeError, AttributeError) as exc:
         raise BookingRejected("INVALID_REQUEST", "A request key is required.") from exc
 
-    digest = sha256(
-        f"{room_type_id}|{stay.check_in}|{stay.check_out}|{stay.guests}|{note or ''}".encode()
-    ).hexdigest()
+    expected_quote = None
+    digest_fields = f"{room_type_id}|{stay.check_in}|{stay.check_out}|{stay.guests}|{note or ''}"
+    if confirmed_quote is not None:
+        try:
+            expected_quote = URLSafeSerializer(current_app.secret_key, salt="guest-booking-quote").loads(confirmed_quote)
+        except BadData as exc:
+            raise BookingRejected("INVALID_REQUEST", "Search again to confirm a current quote.") from exc
+        digest_fields += "|" + confirmed_quote
+    digest = sha256(digest_fields.encode()).hexdigest()
     engine = db.engine.execution_options(isolation_level="READ COMMITTED")
 
     for attempt in range(3):
         try:
             with Session(engine) as session, session.begin():
-                result = allocate_once(session, actor_id, room_type_id, stay, key, digest, note)
+                result = allocate_once(session, actor_id, room_type_id, stay, key, digest, note, expected_quote)
         except IntegrityError as exc:
             if not exc.orig.args or exc.orig.args[0] != 1062:
                 raise
@@ -297,14 +336,67 @@ def create_booking(actor_id, room_type_id, stay, idempotency_key, note=None):
 
 def get_booking(session, booking_id, user_id):
     return session.scalar(
-        db.select(Booking).where(Booking.id == booking_id, Booking.actor_user_id == user_id)
+        db.select(Booking).where(Booking.id == booking_id, Booking.customer.has(Customer.user_id == user_id))
     )
 
 
 def recent_bookings(session, user_id, limit=3):
     return session.scalars(
         db.select(Booking)
-        .where(Booking.actor_user_id == user_id)
+        .where(Booking.customer.has(Customer.user_id == user_id))
         .order_by(Booking.created_at.desc(), Booking.id.desc())
         .limit(limit)
     ).all()
+
+
+def refundable_amount(session, booking_id):
+    balance = session.scalar(
+        select(func.sum(case((PaymentRecord.kind == "payment", PaymentRecord.amount), else_=-PaymentRecord.amount)))
+        .where(PaymentRecord.booking_id == booking_id, PaymentRecord.result == "success")
+    )
+    return max(balance or Decimal("0.00"), Decimal("0.00"))
+
+
+def cancellation_deadline(booking):
+    return datetime.combine(booking.check_in - timedelta(days=1), time(18))
+
+
+def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now):
+    # Front-desk flows that write payment records must take the same booking lock.
+    booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
+    if booking is None:
+        raise BookingRejected("NOT_FOUND", "This booking could not be found.")
+    if booking.status != "confirmed" or booking.checked_in_at is not None:
+        raise BookingRejected("STATE_CONFLICT", "Only a confirmed booking that has not checked in can be cancelled here.")
+    reason = (reason or "").strip()
+    if source not in {"exception", "hotel"} or not 1 <= len(reason) <= 240:
+        raise BookingRejected("INVALID_REQUEST", "Choose a cancellation type and enter a reason.")
+    if source == "exception" and now.replace(tzinfo=None) <= cancellation_deadline(booking):
+        raise BookingRejected("STATE_CONFLICT", "The normal cancellation window is still open.")
+    session.get(Room, booking.room_id, with_for_update=True)
+    cancelled_at = now.astimezone(timezone.utc).replace(tzinfo=None, microsecond=0)
+    refund = refundable_amount(session, booking.id)
+    if refund > 0:
+        session.add(PaymentRecord(
+            booking_id=booking.id, kind="refund", amount=refund, actor_user_id=actor_id,
+            occurred_at=cancelled_at, reference=f"refund-{uuid4()}",
+        ))
+    session.execute(delete(RoomNight).where(RoomNight.booking_id == booking.id))
+    pending = session.scalars(select(BookingRequest).where(
+        BookingRequest.booking_id == booking.id, BookingRequest.status == "pending",
+    ))
+    for booking_request in pending:
+        booking_request.status = "closed"
+        booking_request.handled_at = cancelled_at
+        booking_request.handled_by = actor_id
+        booking_request.comment = "Closed because the booking was cancelled."
+    booking.status = "cancelled"
+    record_audit(
+        session, actor_id, "cancel_booking", "booking", booking.id, reason=reason,
+        details={
+            "source": source, "previous_status": "confirmed", "status": "cancelled",
+            "room_id": booking.room_id, "check_in": booking.check_in.isoformat(),
+            "check_out": booking.check_out.isoformat(), "simulated_refund": format(refund, ".2f"),
+        },
+    )
+    return refund
