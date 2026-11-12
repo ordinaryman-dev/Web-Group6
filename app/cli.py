@@ -80,17 +80,18 @@ def seed_desk():
                          details={"email": DEMO_STAFF_EMAIL, "source": "seed"})
 
         room_types = [
-            ("harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00",
+            ("harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00", "king",
              ["301", "302", "305"]),
-            ("city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00",
+            ("city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00", "twin",
              ["303", "304"]),
         ]
         created = {}
-        for code, name, description, capacity, price, numbers in room_types:
+        for code, name, description, capacity, price, bed_type, numbers in room_types:
             room_type = session.scalar(db.select(RoomType).where(RoomType.code == code))
             if room_type is None:
                 room_type = RoomType(code=code, name=name, description=description,
-                                     capacity=capacity, base_price=Decimal(price), listed=True)
+                                     capacity=capacity, base_price=Decimal(price),
+                                     bed_type=bed_type, listed=True)
                 session.add(room_type)
                 session.flush()
             created[code] = room_type
@@ -184,12 +185,12 @@ def seed_demo():
     """Add sample rooms, prices and a demo guest to a development database."""
     today = hotel_now().date()
     demo_types = [
-        ("demo-single", "Classic Single", "A quiet room for a short stay.", 1, "280.00", ["D101", "D102"]),
-        ("demo-double", "Comfort Double", "A double room for two guests.", 2, "420.00", ["D201", "D202"]),
-        ("demo-family", "Family Suite", "A suite with space for a small family.", 4, "680.00", ["D301"]),
+        ("demo-single", "Classic Single", "A quiet room for a short stay.", 1, "280.00", "single", ["D101", "D102"]),
+        ("demo-double", "Comfort Double", "A double room for two guests.", 2, "420.00", "double", ["D201", "D202"]),
+        ("demo-family", "Family Suite", "A suite with space for a small family.", 4, "680.00", "suite", ["D301"]),
     ]
     with Session(db.engine) as session, session.begin():
-        for code, name, description, capacity, price, numbers in demo_types:
+        for code, name, description, capacity, price, bed_type, numbers in demo_types:
             room_type = session.scalar(db.select(RoomType).where(RoomType.code == code))
             if room_type is not None:
                 continue
@@ -199,6 +200,7 @@ def seed_demo():
                 description=description,
                 capacity=capacity,
                 base_price=Decimal(price),
+                bed_type=bed_type,
                 listed=True,
             )
             session.add(room_type)

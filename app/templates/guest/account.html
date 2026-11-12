@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Account · The Harbour Hotel{% endblock %}
+{% block content %}
+<section class="profile-banner">
+  <div class="profile-avatar">{{ (customer.name[:1] if customer and customer.name else current_user.email[:1])|upper }}</div>
+  <div>
+    <h1>{{ customer.name if customer else 'Guest' }}</h1>
+    <p>{{ current_user.email }}{% if customer and customer.phone %} · {{ customer.phone }}{% endif %}</p>
+  </div>
+  {% if blocked %}
+    <div class="restricted">Account restricted — new bookings are blocked</div>
+  {% endif %}
+</section>
+
+<div class="account-simple">
+  <details class="account-panel">
+    <summary>
+      <span>
+        <b>Change password</b>
+        <small>Update the password you use to sign in</small>
+      </span>
+      <span class="summary-arrow">›</span>
+    </summary>
+    <form method="post" action="{{ url_for('guest.change_password') }}" class="stack">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.current_password.label }}
+        {{ form.current_password(autocomplete="current-password") }}
+        {% for error in form.current_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.new_password.label }}
+        {{ form.new_password(autocomplete="new-password") }}
+        {% for error in form.new_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.confirm.label }}
+        {{ form.confirm(autocomplete="new-password") }}
+        {% for error in form.confirm.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {{ form.submit(class="button") }}
+    </form>
+  </details>
+
+  <section class="account-panel">
+    <p class="eyebrow">CANCELLATION &amp; REFUND RULES</p>
+    <div class="kv"><span>Cancellation request deadline</span><b>18:00 on the day before arrival</b></div>
+    <div class="kv"><span>After the deadline</span><b>Only a manager can cancel with a reason</b></div>
+    <div class="kv"><span>Refund</span><b>All unrefunded simulated payments, no fee</b></div>
+    <div class="kv"><span>Payment</span><b>Recorded at the front desk at check-in</b></div>
+    <p class="side-note">A request does not change the booking until the front desk approves it.</p>
+  </section>
+</div>
+{% endblock %}

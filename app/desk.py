@@ -4,11 +4,12 @@ Every write runs in the caller's transaction, so a rule failure leaves the
 booking, its room nights, its payments and its requests exactly as they were.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
 from sqlalchemy import select
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session, lazyload
 
 from .audit import record_audit
@@ -350,7 +351,13 @@ def approve_request(session, request_id, actor_id, comment=None):
         if booking.status != CONFIRMED or booking.checked_in_at is not None:
             raise DeskError("Only a confirmed, not yet checked-in booking can be cancelled.")
         # A request submitted after the deadline is a manager decision, not a desk one.
-        if row.submitted_at and row.submitted_at > cancellation_deadline(booking):
+        submitted_local = (
+            row.submitted_at.replace(tzinfo=timezone.utc)
+            .astimezone(ZoneInfo("Asia/Shanghai"))
+            .replace(tzinfo=None)
+            if row.submitted_at else None
+        )
+        if submitted_local and submitted_local > cancellation_deadline(booking):
             raise DeskError("This cancellation arrived after the deadline; only a manager can approve it.")
         refund = refundable_amount(session, booking.id)
         if refund > 0:
@@ -381,6 +388,35 @@ def approve_request(session, request_id, actor_id, comment=None):
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "room_type",
                                                  "room_type_id": room_type_id})
+    elif row.kind == "extend":
+        if booking.status not in (CONFIRMED, CHECKED_IN):
+            raise DeskError("This booking can no longer be extended.")
+        try:
+            new_check_out = date.fromisoformat(str(target.get("check_out")))
+        except (TypeError, ValueError):
+            raise DeskError("The requested extension date is invalid.")
+        if new_check_out <= booking.check_out:
+            raise DeskError("The new check-out must be later than the current one.")
+        added = Stay(booking.check_out, new_check_out, booking.guests)
+        room = session.scalar(
+            select(Room.id).where(Room.id == booking.room_id, *free_room_conditions(added))
+        )
+        if room is None:
+            raise DeskError("The room is not free for the added nights. The booking is unchanged.")
+        rates = nightly_rates(session, booking.room_type, added)
+        old_check_out = booking.check_out
+        for rate in rates:
+            day = rate.start
+            while day < rate.end:
+                add_night(session, booking, day, rate)
+                day += timedelta(days=1)
+        booking.check_out = new_check_out
+        booking.total = booking.total + total_for_rates(rates)
+        record_audit(session, actor_id, "apply_request", "booking", booking.id,
+                     reason=row.reason, details={"request_id": row.id, "kind": "extend",
+                                                 "old_check_out": old_check_out.isoformat(),
+                                                 "new_check_out": new_check_out.isoformat(),
+                                                 "added_total": format(total_for_rates(rates), ".2f")})
     else:
         raise DeskError("This request type cannot be approved here.")
     row.status = "approved"

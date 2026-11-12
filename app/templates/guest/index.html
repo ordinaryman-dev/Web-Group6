@@ -1,21 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Rooms · The Harbour Hotel{% endblock %}
+{% block body_class %}guest-home{% endblock %}
+{% block title %}Find a room · The Harbour Hotel{% endblock %}
 {% block content %}
-<section class="guest-hero">
-  <div>
-    <p class="eyebrow">GUEST PORTAL</p>
-    <h1>Find your room</h1>
-    <p>Check availability for every night of your stay, with one room covering the whole booking.</p>
+<section class="home-hero">
+  <div class="home-hero-inner">
+    <p class="eyebrow light">THE HARBOUR HOTEL · HANGZHOU</p>
+    <h1>Stay by the harbour.</h1>
+    <p>Sixty-eight rooms, one calm base for the city.</p>
   </div>
-  <div class="hero-stamp">14-day window · same-day cutoff 22:00</div>
 </section>
 
-<section class="search-card" aria-labelledby="search-title">
+<section class="search-card search-float" id="search" aria-labelledby="search-title">
   <h2 id="search-title" class="visually-hidden">Search rooms</h2>
-  <form method="get" action="{{ url_for('guest.index') }}" class="search-form">
+  <form method="get" action="{{ url_for('guest.index') }}" class="search-form"
+        data-after-cutoff="{{ '1' if after_cutoff else '0' }}" data-tomorrow="{{ tomorrow.isoformat() }}">
+    {% if selected_bed_type != 'all' %}
+      <input type="hidden" name="bed_type" value="{{ selected_bed_type }}">
+    {% endif %}
     <div class="field">
       <label for="check_in">Check in</label>
-      {{ form.check_in(id="check_in", min=today.isoformat(), max=last_arrival.isoformat()) }}
+      {{ form.check_in(id="check_in", min=(tomorrow if after_cutoff else today).isoformat(), max=last_arrival.isoformat()) }}
     </div>
     <div class="field">
       <label for="check_out">Check out</label>
@@ -31,10 +35,23 @@
 {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
 <p class="hint">Check-in can be up to 14 days ahead. Same-day searches close at 22:00 Beijing time.</p>
 
+<div class="filter-bar" aria-label="Filter by bed type">
+  <span class="filter-label">Room type</span>
+  {% for value, label in bed_types %}
+    {% if searched and stay %}
+      <a class="filter-chip {% if selected_bed_type == value %}active{% endif %}" data-bed-filter="{{ value }}"
+         href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests, bed_type=value) }}#search">{{ label }}</a>
+    {% else %}
+      <a class="filter-chip {% if selected_bed_type == value %}active{% endif %}" data-bed-filter="{{ value }}"
+         href="{{ url_for('guest.index', bed_type=value) }}#search">{{ label }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+
 <div class="guest-layout">
   <section class="results" aria-labelledby="results-title">
     <div class="section-head">
-      <h2 id="results-title">{% if searched %}Available room types{% else %}Room types{% endif %}</h2>
+      <h2 id="results-title">{% if searched %}Available rooms{% else %}Our rooms{% endif %}</h2>
       <span>
         {% if searched and stay %}
           {{ stay.check_in.strftime('%d %b') }} – {{ stay.check_out.strftime('%d %b') }} ·
@@ -45,70 +62,68 @@
       </span>
     </div>
 
-    {% for offer in offers %}
-    <article class="room-card">
-      <div class="room-visual tone-{{ loop.index0 % 3 }}">
-        <span class="room-visual-label">{{ offer.room_type.name }}</span>
-        <span class="room-visual-code">HARBOUR COLLECTION</span>
-      </div>
-      <div class="room-body">
-        <div class="room-head">
-          <div>
-            <h3>{{ offer.room_type.name }}</h3>
-            <p>{{ offer.room_type.description }}</p>
-          </div>
-          <span class="pill">{{ offer.room_type.capacity }} guest{% if offer.room_type.capacity != 1 %}s{% endif %}</span>
+    <div class="room-grid">
+      {% for offer in offers %}
+      {% if searched %}
+        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests) %}
+      {% else %}
+        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=form.check_in.data.isoformat(), check_out=form.check_out.data.isoformat(), guests=form.guests.data) %}
+      {% endif %}
+      <a class="room-card" data-bed-type="{{ offer.room_type.bed_type }}" href="{{ card_url }}">
+        <div class="room-visual tone-{{ loop.index0 % 3 }}">
+          <span class="room-visual-label">{{ offer.room_type.name }}</span>
+          <span class="room-visual-code">{{ offer.room_type.bed_type|upper }} ROOM</span>
         </div>
+        <div class="room-body">
+          <div class="room-head">
+            <div>
+              <h3>{{ offer.room_type.name }}</h3>
+              <p>{{ offer.room_type.description }}</p>
+            </div>
+            <span class="pill">{{ offer.room_type.capacity }} guest{% if offer.room_type.capacity != 1 %}s{% endif %}</span>
+          </div>
 
-        {% if searched %}
-          <div class="rate-lines">
-            {% for rate in offer.rates %}
-              <span>{{ rate.start.strftime('%d %b') }} – {{ rate.end.strftime('%d %b') }} · {{ (rate.end - rate.start).days }} night(s) × ¥{{ rate.amount|money }}</span>
-            {% endfor %}
-          </div>
-          <div class="room-foot">
-            <div class="price">
-              <b>¥{{ offer.total|money }}</b>
-              <small>total · tax included</small>
-            </div>
-            <form method="post" action="{{ url_for('guest.book') }}" class="book-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="room_type_id" value="{{ offer.room_type.id }}">
-              <input type="hidden" name="check_in" value="{{ stay.check_in.isoformat() }}">
-              <input type="hidden" name="check_out" value="{{ stay.check_out.isoformat() }}">
-              <input type="hidden" name="guests" value="{{ stay.guests }}">
-              <input type="hidden" name="idempotency_key" value="{{ offer.key }}">
-              <input type="hidden" name="quote" value="{{ offer.quote }}">
-              <label class="note-input">
-                Note (optional)
-                <input type="text" name="note" maxlength="100" placeholder="Up to 100 characters">
-              </label>
-              <button class="button" type="submit">Book this room</button>
-            </form>
-          </div>
-        {% else %}
-          <div class="room-foot">
-            <div class="price">
-              <b>¥{{ offer.room_type.base_price|money }}</b>
-              <small>per night</small>
-            </div>
-            <span class="muted small">Search dates to book</span>
-          </div>
-        {% endif %}
-      </div>
-    </article>
-    {% else %}
-      <div class="empty-state">
-        <h3>{% if searched %}No room type covers this stay{% else %}No room types are on sale{% endif %}</h3>
-        <p class="muted">
           {% if searched %}
-            Try different dates or fewer guests. One physical room must cover every night.
+            <div class="rate-lines">
+              {% for rate in offer.rates %}
+                <span>{{ rate.start.strftime('%d %b') }} – {{ rate.end.strftime('%d %b') }} · {{ (rate.end - rate.start).days }} night(s) × ¥{{ rate.amount|money }}</span>
+              {% endfor %}
+            </div>
+            <div class="room-foot">
+              <div class="price">
+                <b>¥{{ offer.total|money }}</b>
+                <small>total · tax included</small>
+              </div>
+              <span class="button">Select room →</span>
+            </div>
           {% else %}
-            Ask a manager to publish the room catalogue.
+            <div class="room-foot">
+              <div class="price">
+                <b>¥{{ offer.room_type.base_price|money }}</b>
+                <small>per night</small>
+              </div>
+              <span class="button">Select room →</span>
+            </div>
           {% endif %}
-        </p>
-      </div>
-    {% endfor %}
+        </div>
+      </a>
+      {% else %}
+        <div class="empty-state">
+          <h3>{% if searched %}No room covers this stay{% else %}No rooms in this filter{% endif %}</h3>
+          <p class="muted">
+            {% if searched %}
+              Try different dates, more flexible bed types or fewer guests.
+            {% else %}
+              Choose another room type filter.
+            {% endif %}
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="empty-state filter-empty" hidden>
+      <h3>No rooms in this filter</h3>
+      <p class="muted">Choose another room type or clear the filter.</p>
+    </div>
   </section>
 
   <aside class="side">
@@ -146,8 +161,8 @@
     <div class="side-card quiet">
       <p class="eyebrow">GOOD TO KNOW</p>
       <p class="small muted">
-        Check-in is from 14:00. Payment is taken at the front desk. Changes and cancellations
-        will be handled by reception in a later increment.
+        Check-in is from 14:00. Payment is taken at the front desk. Open a booking to edit its
+        note or request a room-type, date, extension or cancellation change.
       </p>
     </div>
   </aside>

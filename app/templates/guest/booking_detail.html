@@ -13,51 +13,124 @@
     <span class="status large {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
   </div>
 
-  <div class="detail-grid">
-    <div class="detail-card">
-      <p class="eyebrow">YOUR STAY</p>
-      <div class="kv"><span>Check in</span><b>{{ booking.check_in.strftime('%A, %d %B %Y') }} · from 14:00</b></div>
-      <div class="kv"><span>Check out</span><b>{{ booking.check_out.strftime('%A, %d %B %Y') }} · before 12:00</b></div>
-      <div class="kv"><span>Nights</span><b>{{ booking.nights }}</b></div>
-      <div class="kv"><span>Guests</span><b>{{ booking.guests }}</b></div>
-      <div class="kv"><span>Room</span><b>{{ booking.room_type.name }} · {{ booking.room.number }}</b></div>
-      <div class="kv"><span>Guest</span><b>{{ booking.customer.name }}</b></div>
-      {% if booking.note %}
-        <div class="booking-note"><span>Note</span><p>{{ booking.note }}</p></div>
-      {% endif %}
+  <div class="detail-shell">
+    <div class="detail-main">
+      <div class="detail-card">
+        <p class="eyebrow">YOUR STAY</p>
+        <div class="kv"><span>Check in</span><b>{{ booking.check_in.strftime('%A, %d %B %Y') }} · from 14:00</b></div>
+        <div class="kv"><span>Check out</span><b>{{ booking.check_out.strftime('%A, %d %B %Y') }} · before 12:00</b></div>
+        <div class="kv"><span>Nights</span><b>{{ booking.nights }}</b></div>
+        <div class="kv"><span>Guests</span><b>{{ booking.guests }}</b></div>
+        <div class="kv"><span>Room</span><b>{{ booking.room_type.name }} · {{ booking.room.number }}</b></div>
+        <div class="kv"><span>Guest</span><b>{{ booking.customer.name }}</b></div>
+        <div class="kv">
+          <span>Expected arrival</span>
+          <b>{% if booking.expected_arrival %}{{ booking.expected_arrival.strftime('%H:%M') }}{% else %}To be confirmed{% endif %}</b>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="note-head">
+          <p class="eyebrow">YOUR NOTE</p>
+          {% if note_editable %}
+            <button class="action-button" type="button" data-open="modal-note" style="width:auto">Edit note</button>
+          {% endif %}
+        </div>
+        {% if booking.note %}
+          <p class="readonly-note">{{ booking.note }}</p>
+        {% else %}
+          <p class="muted small">No note. Add anything the front desk should know before arrival.</p>
+        {% endif %}
+        <p class="side-note">
+          {% if note_editable %}Editable while confirmed or in house.{% else %}Read-only after cancellation, no-show or check-out.{% endif %}
+          Maximum 100 Unicode characters.
+        </p>
+      </div>
+
+      <div class="detail-card">
+        <p class="eyebrow">REQUESTS</p>
+        {% if changes %}
+          <div class="request-list">
+            {% for change in changes %}
+              <div class="request-item">
+                <div class="request-item-head">
+                  <b>{{ change.kind|replace('_', ' ')|capitalize }}</b>
+                  <span class="status {{ change.status }}">{{ change.status.replace('_', ' ') }}</span>
+                </div>
+                {% if change.reason %}<p>{{ change.reason }}</p>{% endif %}
+                {% if change.comment %}<p class="side-note">Reply: {{ change.comment }}</p>{% endif %}
+                {% if change.submitted_at %}<span class="request-time">Submitted {{ change.submitted_at|localtime }}</span>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted small">No requests yet. Use the actions on the right to ask for a change.</p>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="detail-card">
-      <p class="eyebrow">PRICE</p>
-      <table class="price-table">
-        <tbody>
-          {% for line in booking.price_lines %}
-            <tr>
-              <td>{{ line.stay_date.strftime('%a, %d %b') }}</td>
-              <td>¥{{ line.amount|money }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <div class="detail-total"><span>Total</span><b>¥{{ booking.total|money }}</b></div>
-      {% if payments %}
-        <p class="eyebrow">SIMULATED PAYMENTS</p>
-        {% for payment in payments %}
-          <div class="kv"><span>{{ payment.kind|capitalize }} · {{ payment.occurred_at|localtime }}</span><b>¥{{ payment.amount|money }}</b></div>
-        {% endfor %}
-      {% elif booking.status == 'confirmed' %}
-        <p class="side-note">Payment is recorded at the front desk at check-in.</p>
-      {% endif %}
-    </div>
-    {% if changes %}
+    <aside class="detail-side">
       <div class="detail-card">
-        <p class="eyebrow">BOOKING REQUESTS</p>
-        {% for change in changes %}
-          <div class="kv"><span>{{ change.kind|replace('_', ' ')|capitalize }}</span><b>{{ change.status|capitalize }}</b></div>
-          {% if change.comment %}<p class="side-note">{{ change.comment }}</p>{% endif %}
-        {% endfor %}
+        <p class="eyebrow">PRICE</p>
+        <table class="price-table">
+          <tbody>
+            {% for line in booking.price_lines %}
+              <tr>
+                <td>{{ line.stay_date.strftime('%a, %d %b') }}</td>
+                <td>¥{{ line.amount|money }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="detail-total"><span>Total</span><b>¥{{ booking.total|money }}</b></div>
+        {% if payments %}
+          <p class="eyebrow">SIMULATED PAYMENTS</p>
+          {% for payment in payments %}
+            <div class="kv"><span>{{ payment.kind|capitalize }} · {{ payment.occurred_at|localtime }}</span><b>¥{{ payment.amount|money }}</b></div>
+          {% endfor %}
+        {% elif booking.status == 'confirmed' %}
+          <p class="side-note">Payment is recorded at the front desk at check-in.</p>
+        {% endif %}
       </div>
-    {% endif %}
+
+      <div class="detail-card action-panel">
+        <p class="eyebrow">ACTIONS</p>
+        {% if pending %}
+          <p class="request-notice">
+            A {{ pending.kind|replace('_', ' ') }} request is pending. The booking stays unchanged until the front desk replies.
+          </p>
+        {% elif booking.status not in ('confirmed', 'checked_in') %}
+          <p class="action-note">This booking is closed. No further changes are available.</p>
+        {% else %}
+          <div class="action-list">
+            {% if can_request and room_type_choices %}
+              <button class="action-button" type="button" data-open="modal-room-type">Change room type <span>›</span></button>
+            {% endif %}
+            {% if can_request %}
+              <button class="action-button" type="button" data-open="modal-dates">Change dates <span>›</span></button>
+            {% endif %}
+            {% if can_extend %}
+              <button class="action-button" type="button" data-open="modal-extension">Extend stay <span>›</span></button>
+            {% endif %}
+            {% if can_cancel %}
+              <button class="action-button danger" type="button" data-open="modal-cancel">Request cancellation <span>›</span></button>
+            {% elif booking.status == 'confirmed' and deadline_passed %}
+              <button class="action-button danger" type="button" disabled
+                      title="The online cancellation deadline has passed. Contact the hotel; only a manager can cancel.">
+                Request cancellation <span>closed</span>
+              </button>
+            {% endif %}
+          </div>
+          <p class="action-note">
+            {% if booking.status == 'checked_in' %}
+              Room-type, date and cancellation changes close after check-in. Only the same room can be extended.
+            {% else %}
+              Requests are queued for the front desk. They do not change the booking until approved.
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </aside>
   </div>
 
   <div class="confirmation-actions">
@@ -65,4 +138,119 @@
     <a class="button secondary" href="{{ url_for('guest.bookings') }}">All my bookings</a>
   </div>
 </section>
+
+{% if note_editable %}
+<dialog class="modal" id="modal-note">
+  <form method="post" action="{{ url_for('guest.update_note', booking_id=booking.id) }}" class="modal-card">
+    {{ note_form.csrf_token }}
+    <div class="modal-head">
+      <div><h2>Edit note</h2><p>Up to 100 Unicode characters. The front desk can see this note.</p></div>
+      <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      {{ note_form.note(id="booking-note", rows=4, data_max_codepoints="100", placeholder="Anything the front desk should know?") }}
+    </div>
+    <div class="modal-actions">
+      <button class="button secondary" type="button" data-close>Cancel</button>
+      {{ note_form.submit(class="button") }}
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if can_request and room_type_choices %}
+<dialog class="modal" id="modal-room-type">
+  <form method="post" action="{{ url_for('guest.request_room_type', booking_id=booking.id) }}" class="modal-card">
+    {{ room_type_form.csrf_token }}
+    <div class="modal-head">
+      <div><h2>Change room type</h2><p>Before arrival only. The original booking stays unchanged until approval.</p></div>
+      <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      {{ room_type_form.target_room_type_id.label(for="room-type-select") }}
+      {{ room_type_form.target_room_type_id(id="room-type-select") }}
+    </div>
+    <div class="field">
+      {{ room_type_form.reason.label(for="room-type-reason") }}
+      {{ room_type_form.reason(id="room-type-reason", rows=3, maxlength=240, placeholder="Why do you need a different room type?") }}
+    </div>
+    <div class="modal-actions">
+      <button class="button secondary" type="button" data-close>Cancel</button>
+      {{ room_type_form.submit(class="button") }}
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if can_request %}
+<dialog class="modal" id="modal-dates">
+  <form method="post" action="{{ url_for('guest.request_dates', booking_id=booking.id) }}" class="modal-card">
+    {{ dates_form.csrf_token }}
+    <div class="modal-head">
+      <div><h2>Change dates</h2><p>Before arrival only. New dates are checked again before approval.</p></div>
+      <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      {{ dates_form.check_in.label(for="dates-check-in") }}
+      {{ dates_form.check_in(id="dates-check-in") }}
+    </div>
+    <div class="field">
+      {{ dates_form.check_out.label(for="dates-check-out") }}
+      {{ dates_form.check_out(id="dates-check-out") }}
+    </div>
+    <div class="field">
+      {{ dates_form.reason.label(for="dates-reason") }}
+      {{ dates_form.reason(id="dates-reason", rows=3, maxlength=240, placeholder="Why do the dates need to change?") }}
+    </div>
+    <div class="modal-actions">
+      <button class="button secondary" type="button" data-close>Cancel</button>
+      {{ dates_form.submit(class="button") }}
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if can_extend %}
+<dialog class="modal" id="modal-extension">
+  <form method="post" action="{{ url_for('guest.request_extension', booking_id=booking.id) }}" class="modal-card">
+    {{ extension_form.csrf_token }}
+    <div class="modal-head">
+      <div><h2>Extend stay</h2><p>{% if booking.status == 'checked_in' %}Only the same room can be extended.{% else %}The same room must be free for the added nights.{% endif %}</p></div>
+      <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      {{ extension_form.check_out.label(for="extension-check-out") }}
+      {{ extension_form.check_out(id="extension-check-out") }}
+    </div>
+    <div class="field">
+      {{ extension_form.reason.label(for="extension-reason") }}
+      {{ extension_form.reason(id="extension-reason", rows=3, maxlength=240, placeholder="Why do you need to stay longer?") }}
+    </div>
+    <div class="modal-actions">
+      <button class="button secondary" type="button" data-close>Cancel</button>
+      {{ extension_form.submit(class="button") }}
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if can_cancel %}
+<dialog class="modal" id="modal-cancel">
+  <form method="post" action="{{ url_for('guest.request_cancel', booking_id=booking.id) }}" class="modal-card">
+    {{ cancel_form.csrf_token }}
+    <div class="modal-head">
+      <div><h2>Request cancellation</h2><p>Free cancellation request until {{ deadline.strftime('%a, %d %b at %H:%M') }} Beijing time.</p></div>
+      <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      {{ cancel_form.reason.label(for="cancel-reason") }}
+      {{ cancel_form.reason(id="cancel-reason", rows=3, maxlength=240, placeholder="Why do you need to cancel?") }}
+    </div>
+    <div class="modal-actions">
+      <button class="button secondary" type="button" data-close>Cancel</button>
+      {{ cancel_form.submit(class="button danger") }}
+    </div>
+  </form>
+</dialog>
+{% endif %}
 {% endblock %}

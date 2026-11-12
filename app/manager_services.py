@@ -50,7 +50,7 @@ def audit_values(record, fields):
 
 
 def save_room_type(session, actor_id, record_id, form):
-    fields = ("code", "name", "description", "capacity", "base_price", "listed")
+    fields = ("code", "name", "description", "capacity", "bed_type", "base_price", "listed")
     room_type = locked_row(session, RoomType, record_id) if record_id else RoomType()
     before = audit_values(room_type, fields) if record_id else None
     for field in fields:

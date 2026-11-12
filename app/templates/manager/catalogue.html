@@ -22,9 +22,9 @@
   <div class="manager-table-wrap">
   <table class="manager-table">
     {% if section == 'types' %}
-      <thead><tr><th>Room type</th><th>Code</th><th>Capacity</th><th>Base rate</th><th>Sales</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <thead><tr><th>Room type</th><th>Code</th><th>Bed</th><th>Capacity</th><th>Base rate</th><th>Sales</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>{% for item in items %}<tr>
-        <td><strong>{{ item.name }}</strong></td><td>{{ item.code }}</td><td>{{ item.capacity }}</td><td>¥{{ item.base_price|money }}</td>
+        <td><strong>{{ item.name }}</strong></td><td>{{ item.code }}</td><td>{{ item.bed_type|capitalize }}</td><td>{{ item.capacity }}</td><td>¥{{ item.base_price|money }}</td>
         <td>{{ status('listed' if item.listed else 'delisted') }}</td><td><a href="{{ url_for('manager.room_type_form', record_id=item.id) }}">Edit</a></td>
       </tr>{% endfor %}</tbody>
     {% elif section == 'rooms' %}
