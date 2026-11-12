@@ -1335,3 +1335,52 @@ section.account-panel { padding: 20px; }
 .account-panel > summary:focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }
 
 [hidden] { display: none !important; }
+
+/* real room photography: 16:9 card media */
+.home-hero { background-size: cover; background-position: center; background-repeat: no-repeat; }
+.room-visual {
+  display: block;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  background: #1c3b33;
+}
+.room-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.room-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  height: auto;
+  background: linear-gradient(180deg, rgba(10, 18, 15, .02) 34%, rgba(10, 18, 15, .74) 100%);
+  z-index: 1;
+}
+.room-visual::after { display: none; }
+.room-visual-label {
+  position: absolute;
+  left: 16px;
+  bottom: 38px;
+  z-index: 2;
+}
+.room-visual-code {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  z-index: 2;
+  color: rgba(255, 255, 255, .72);
+}
+.booking-thumb { background-size: cover; background-position: center; }
+.confirm-room-photo {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}

@@ -22,7 +22,7 @@
   <section class="booking-list" aria-label="Your bookings">
     {% for booking in bookings %}
       <a class="booking-row" href="{{ url_for('guest.booking_detail', booking_id=booking.id) }}">
-        <div class="booking-thumb tone-{{ loop.index0 % 3 }}">{{ booking.room_type.name[:1] }}</div>
+        <div class="booking-thumb" style="background-image:url('{{ booking.room_type.bed_type|room_image }}')" aria-hidden="true"></div>
         <div>
           <span class="ref">{{ booking.reference }}</span>
           <span>{% if booking.created_at %}Booked {{ booking.created_at|localtime }}{% endif %}</span>
