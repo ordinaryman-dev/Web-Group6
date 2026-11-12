@@ -3,9 +3,18 @@ from datetime import timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from flask import Flask, render_template
+from flask import Flask, render_template, url_for
 
 from .extensions import csrf, db, login_manager, migrate
+
+
+ROOM_IMAGE_FILES = {
+    "single": "room-single.jpg",
+    "double": "room-double.jpg",
+    "twin": "room-twin.jpg",
+    "king": "room-king.jpg",
+    "suite": "room-family.jpg",
+}
 
 
 def create_app(config=None):
@@ -46,6 +55,11 @@ def create_app(config=None):
     app.cli.add_command(create_manager)
     app.cli.add_command(seed_demo)
     app.cli.add_command(seed_desk)
+
+    @app.template_filter("room_image")
+    def room_image(bed_type):
+        filename = ROOM_IMAGE_FILES.get(bed_type, "room-double.jpg")
+        return url_for("static", filename=f"images/{filename}")
 
     @app.template_filter("money")
     def money(value):
