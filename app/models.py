@@ -47,6 +47,10 @@ class RoomType(db.Model):
     __table_args__ = (
         db.CheckConstraint("capacity > 0", name="ck_room_types_capacity"),
         db.CheckConstraint("base_price >= 0", name="ck_room_types_price"),
+        db.CheckConstraint(
+            "bed_type IN ('single', 'double', 'twin', 'king', 'suite')",
+            name="ck_room_types_bed_type",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -56,6 +60,7 @@ class RoomType(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     base_price = db.Column(db.Numeric(10, 2), nullable=False)
     listed = db.Column(db.Boolean, nullable=False, default=True)
+    bed_type = db.Column(db.String(20), nullable=False, default="double", index=True)
 
 
 class Room(db.Model):

@@ -23,6 +23,18 @@ class RoomTypeForm(FlaskForm):
     name = StringField("Room type name", filters=[trim], validators=[DataRequired(), Length(max=100)])
     description = TextAreaField("Description", filters=[trim], validators=[DataRequired(), Length(max=4000)])
     capacity = IntegerField("Capacity", validators=[InputRequired(), NumberRange(min=1, max=2147483647)])
+    bed_type = SelectField(
+        "Bed type",
+        choices=[
+            SelectChoice("single", "Single"),
+            SelectChoice("double", "Double"),
+            SelectChoice("twin", "Twin"),
+            SelectChoice("king", "King"),
+            SelectChoice("suite", "Suite"),
+        ],
+        default="double",
+        validators=[InputRequired()],
+    )
     base_price = DecimalField("Base nightly price (CNY)", validators=[InputRequired(), currency])
     listed = BooleanField("Available for new bookings", default=True)
 

@@ -23,19 +23,28 @@ The manager command prompts for a password. Run it once for the initial manager.
 Sign in at http://127.0.0.1:5000/login. Guests can create accounts at /register.
 Managers can create front-desk accounts from Staff accounts.
 
+## Schema
+
+Migrations are applied with `python -m flask --app app db upgrade`. The current head is
+`20261112_04`. Besides the original catalogue and booking tables, the migrations add
+booking notes/timestamps, manager request/payment records and actual-stay fields, the
+front-desk expected-arrival field, and `room_types.bed_type` (`single`, `double`, `twin`,
+`king`, `suite`) used by the guest filter.
+
 ## Workspaces
 
-- /guest/ — search and quote an entire stay, submit a reservation and view your own
-  bookings. Quotes are recalculated on submission. A changed price requires a fresh
-  confirmation. A confirmed reservation stores an amount for each night.
+- /guest/ — hero search with bed-type filters, three-column room grid, a separate
+  confirmation page, status tabs on My bookings, a 70/30 order detail page with note editing
+  and room-type/date/extension/cancellation request modals, and an account dashboard. Quotes
+  are recalculated on submission. A changed price requires a fresh confirmation. A confirmed
+  reservation stores an amount for each night.
 - /manage — operations overview, room types and room inventory, seasonal and
   date-specific prices, staff accounts, customer blacklist, bookings, exception
   cancellation, audit, occupancy reports and CSV export. Manager writes are transactional.
   Staff accounts are disabled without removing their historical references.
-- /frontdesk — sign-in destination for front-desk accounts. Check-in, check-out,
-  walk-ins, request approval and collection of simulated payments remain front-desk
-  integration work. The manager console uses the shared request, payment and actual-stay
-  records and shows zero or an empty state when they have no data.
+- /frontdesk — front-desk workbench with arrivals, in-house and departures lists, a room
+  board, check-in/check-out, walk-ins, simulated payments, maintenance blocks, reassignment
+  and request approval. Check-in and check-out record actual times; no online payment exists.
 
 The occupancy report uses completed Beijing-time nights from each room's operating
 period and actual stay records, with effective maintenance deducted once per room

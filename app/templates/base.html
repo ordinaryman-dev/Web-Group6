@@ -22,8 +22,11 @@
       <nav aria-label="Main navigation">
         {% if current_user.is_authenticated %}
           {% if current_user.role == 'guest' %}
-            <a href="{{ url_for('guest.index') }}">Rooms</a>
-            <a href="{{ url_for('guest.bookings') }}">My bookings</a>
+            <a class="{% if request.endpoint == 'guest.index' %}active{% endif %}" href="{{ url_for('guest.index') }}">Find a room</a>
+            <a class="{% if request.endpoint in ('guest.bookings', 'guest.booking_detail') %}active{% endif %}" href="{{ url_for('guest.bookings') }}">
+              My bookings{% if guest_pending_requests %}<span class="nav-badge">{{ guest_pending_requests }}</span>{% endif %}
+            </a>
+            <a class="{% if request.endpoint == 'guest.account' %}active{% endif %}" href="{{ url_for('guest.account') }}">Account</a>
           {% elif current_user.role == 'manager' %}
             <a href="{{ url_for('manager.overview') }}">Manager console</a>
           {% else %}
@@ -49,8 +52,9 @@
 
   <footer class="site-footer">
     <span>The Harbour Hotel · Hangzhou</span>
-    <span>Guest portal · course project</span>
+    <span>The Harbour Hotel · course project</span>
   </footer>
   {% endblock %}
+  <script defer src="{{ url_for('static', filename='guest.js') }}"></script>
 </body>
 </html>

@@ -7,13 +7,22 @@
     <h1>My bookings</h1>
     <p class="muted">Only your own bookings are shown here.</p>
   </div>
-  <a class="button secondary" href="{{ url_for('guest.index') }}">Search rooms</a>
+  <a class="button secondary" href="{{ url_for('guest.index') }}">Find a room</a>
 </div>
+
+<nav class="tabs" aria-label="Booking status">
+  {% for key, label in [('all', 'All'), ('upcoming', 'Upcoming'), ('in_house', 'In house'), ('pending', 'Requests'), ('past', 'Past'), ('cancelled', 'Cancelled')] %}
+    <a class="tab {% if selected == key %}active{% endif %}" href="{{ url_for('guest.bookings', status=key) }}">
+      {{ label }} <span>{{ counts[key] }}</span>
+    </a>
+  {% endfor %}
+</nav>
 
 {% if bookings %}
   <section class="booking-list" aria-label="Your bookings">
     {% for booking in bookings %}
       <a class="booking-row" href="{{ url_for('guest.booking_detail', booking_id=booking.id) }}">
+        <div class="booking-thumb tone-{{ loop.index0 % 3 }}">{{ booking.room_type.name[:1] }}</div>
         <div>
           <span class="ref">{{ booking.reference }}</span>
           <span>{% if booking.created_at %}Booked {{ booking.created_at|localtime }}{% endif %}</span>
@@ -29,18 +38,26 @@
         <div>
           <b>¥{{ booking.total|money }}</b>
           <span class="status {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
+          {% if booking.id in pending_ids %}<span class="status pending">request pending</span>{% endif %}
         </div>
       </a>
     {% endfor %}
   </section>
 
   <p class="page-note">
-    Open a booking to see its status, confirmed price and any recorded refunds.
+    Open a booking to edit its note, view payments and requests, or submit a room-type, date,
+    extension or cancellation request. A request does not change the booking until it is approved.
   </p>
 {% else %}
   <div class="empty-state">
-    <h3>No bookings yet</h3>
-    <p class="muted">Search your dates, choose a room type and confirm a stay. It will appear here immediately.</p>
+    <h3>No bookings in this view</h3>
+    <p class="muted">
+      {% if selected == 'all' %}
+        Search your dates, choose a room type and confirm a stay. It will appear here immediately.
+      {% else %}
+        There are no bookings with this status.
+      {% endif %}
+    </p>
     <a class="button" href="{{ url_for('guest.index') }}">Find a room</a>
   </div>
 {% endif %}

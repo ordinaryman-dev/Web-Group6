@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Confirm your stay · The Harbour Hotel{% endblock %}
+{% block content %}
+<p class="back-link"><a href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests) }}">← Back to results</a></p>
+
+<div class="confirm-layout">
+  <section class="confirm-main">
+    <p class="eyebrow">CONFIRM YOUR STAY</p>
+    <h1>{{ room_type.name }}</h1>
+    <p class="muted">{{ room_type.description }}</p>
+
+    <div class="stay-facts">
+      <div><span>Check in</span><b>{{ stay.check_in.strftime('%a, %d %b') }} · from 14:00</b></div>
+      <div><span>Check out</span><b>{{ stay.check_out.strftime('%a, %d %b') }} · before 12:00</b></div>
+      <div><span>Nights</span><b>{{ (stay.check_out - stay.check_in).days }}</b></div>
+      <div><span>Guests</span><b>{{ stay.guests }}</b></div>
+    </div>
+
+    <form method="post" action="{{ url_for('guest.book') }}" class="stack confirm-form" novalidate>
+      {{ form.csrf_token }}
+      {{ form.room_type_id() }}
+      {{ form.check_in() }}
+      {{ form.check_out() }}
+      {{ form.guests() }}
+      {{ form.idempotency_key() }}
+      {{ form.quote() }}
+
+      <div class="field">
+        {{ form.expected_arrival.label }}
+        {{ form.expected_arrival() }}
+        <small>Check-in starts at 14:00. Choose the time you expect to arrive.</small>
+        {% for error in form.expected_arrival.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="field">
+        {{ form.note.label }}
+        {{ form.note(rows=3, data_max_codepoints="100", placeholder="Anything the front desk should know? Up to 100 characters.") }}
+        <small>Optional. You can edit it later while the booking is confirmed or in house.</small>
+        {% for error in form.note.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="cancel-note {% if deadline_passed %}warn{% endif %}">
+        {% if deadline_passed %}
+          The online cancellation deadline has passed. After booking, only a manager can cancel with a reason.
+        {% else %}
+          Free cancellation request until {{ cancellation_deadline.strftime('%a, %d %b at %H:%M') }} Beijing time.
+        {% endif %}
+      </div>
+
+      {{ form.submit(class="button full") }}
+    </form>
+  </section>
+
+  <aside class="confirm-side">
+    <div class="side-card">
+      <p class="eyebrow">PRICE</p>
+      {% for rate in quote.rates %}
+        <div class="kv">
+          <span>{{ rate.start.strftime('%d %b') }} – {{ rate.end.strftime('%d %b') }} · {{ (rate.end - rate.start).days }} night(s)</span>
+          <b>¥{{ rate.amount|money }}</b>
+        </div>
+      {% endfor %}
+      <div class="detail-total"><span>Total</span><b>¥{{ quote.total|money }}</b></div>
+      <p class="side-note">The price is locked to these dates and this room type when you confirm.</p>
+    </div>
+
+    <div class="side-card quiet">
+      <p class="eyebrow">GOOD TO KNOW</p>
+      <p class="small muted">
+        One physical room covers every night. The hotel assigns the room number at check-in.
+        Payment is taken at the front desk.
+      </p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
