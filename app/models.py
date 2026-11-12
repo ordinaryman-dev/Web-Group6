@@ -121,6 +121,23 @@ class Booking(db.Model):
     guests = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="confirmed")
     total = db.Column(db.Numeric(12, 2), nullable=False)
+    note = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+
+    customer = db.relationship(Customer, lazy="joined")
+    room = db.relationship(Room, lazy="joined")
+    room_type = db.relationship(RoomType, lazy="joined")
+    price_lines = db.relationship(
+        "BookingPriceLine", order_by="BookingPriceLine.stay_date", lazy="selectin"
+    )
+
+    @property
+    def reference(self):
+        return f"BK-{self.id:06d}"
+
+    @property
+    def nights(self):
+        return (self.check_out - self.check_in).days
 
 
 class RoomNight(db.Model):

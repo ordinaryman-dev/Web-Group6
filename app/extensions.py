@@ -7,5 +7,7 @@ from flask_wtf import CSRFProtect
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = "accounts.login"
+login_manager.login_view = "auth.login"
+login_manager.login_message = "Please sign in to continue."
+login_manager.login_message_category = "info"
 csrf = CSRFProtect()

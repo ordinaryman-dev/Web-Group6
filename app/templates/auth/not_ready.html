@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ role_title }} · The Harbour Hotel{% endblock %}
+{% block content %}
+<section class="panel narrow center-panel">
+  <p class="eyebrow">WORKSPACE NOT IN THIS BUILD</p>
+  <h1>{{ role_title }}</h1>
+  <p class="muted">
+    The {{ role_title }} workspace is not part of the current build. This increment includes
+    the shared sign-in and the guest portal only.
+  </p>
+  <p class="signed-in">Signed in as <strong>{{ current_user.email }}</strong>.</p>
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button secondary" type="submit">Sign out</button>
+  </form>
+</section>
+{% endblock %}

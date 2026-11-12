@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}My bookings · The Harbour Hotel{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">GUEST PORTAL</p>
+    <h1>My bookings</h1>
+    <p class="muted">Only your own bookings are shown here.</p>
+  </div>
+  <a class="button secondary" href="{{ url_for('guest.index') }}">Search rooms</a>
+</div>
+
+{% if bookings %}
+  <section class="booking-list" aria-label="Your bookings">
+    {% for booking in bookings %}
+      <a class="booking-row" href="{{ url_for('guest.booking_detail', booking_id=booking.id) }}">
+        <div>
+          <span class="ref">{{ booking.reference }}</span>
+          <span>{% if booking.created_at %}Booked {{ booking.created_at|localtime }}{% endif %}</span>
+        </div>
+        <div>
+          <b>{{ booking.check_in.strftime('%d %b') }} – {{ booking.check_out.strftime('%d %b %Y') }}</b>
+          <span>{{ booking.nights }} night(s) · {{ booking.guests }} guest(s)</span>
+        </div>
+        <div>
+          <b>{{ booking.room_type.name }}</b>
+          <span>Room {{ booking.room.number }}</span>
+        </div>
+        <div>
+          <b>¥{{ booking.total|money }}</b>
+          <span class="status {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </section>
+
+  <p class="page-note">
+    Changes and cancellations are handled by reception in a later increment. This build keeps
+    the booking record and its nightly price lines unchanged after confirmation.
+  </p>
+{% else %}
+  <div class="empty-state">
+    <h3>No bookings yet</h3>
+    <p class="muted">Search your dates, choose a room type and confirm a stay. It will appear here immediately.</p>
+    <a class="button" href="{{ url_for('guest.index') }}">Find a room</a>
+  </div>
+{% endif %}
+{% endblock %}

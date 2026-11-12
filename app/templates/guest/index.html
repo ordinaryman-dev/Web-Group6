@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Rooms · The Harbour Hotel{% endblock %}
+{% block content %}
+<section class="guest-hero">
+  <div>
+    <p class="eyebrow">GUEST PORTAL</p>
+    <h1>Find your room</h1>
+    <p>Check availability for every night of your stay, with one room covering the whole booking.</p>
+  </div>
+  <div class="hero-stamp">14-day window · same-day cutoff 22:00</div>
+</section>
+
+<section class="search-card" aria-labelledby="search-title">
+  <h2 id="search-title" class="visually-hidden">Search rooms</h2>
+  <form method="get" action="{{ url_for('guest.index') }}" class="search-form">
+    <div class="field">
+      <label for="check_in">Check in</label>
+      {{ form.check_in(id="check_in", min=today.isoformat(), max=last_arrival.isoformat()) }}
+    </div>
+    <div class="field">
+      <label for="check_out">Check out</label>
+      {{ form.check_out(id="check_out") }}
+    </div>
+    <div class="field">
+      <label for="guests">Guests</label>
+      {{ form.guests(id="guests", min=1, max=6) }}
+    </div>
+    <button class="button search-button" type="submit">Search rooms →</button>
+  </form>
+</section>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+<p class="hint">Check-in can be up to 14 days ahead. Same-day searches close at 22:00 Beijing time.</p>
+
+<div class="guest-layout">
+  <section class="results" aria-labelledby="results-title">
+    <div class="section-head">
+      <h2 id="results-title">{% if searched %}Available room types{% else %}Room types{% endif %}</h2>
+      <span>
+        {% if searched and stay %}
+          {{ stay.check_in.strftime('%d %b') }} – {{ stay.check_out.strftime('%d %b') }} ·
+          {{ (stay.check_out - stay.check_in).days }} night(s) · {{ stay.guests }} guest(s)
+        {% else %}
+          Base nightly rates
+        {% endif %}
+      </span>
+    </div>
+
+    {% for offer in offers %}
+    <article class="room-card">
+      <div class="room-visual tone-{{ loop.index0 % 3 }}">
+        <span class="room-visual-label">{{ offer.room_type.name }}</span>
+        <span class="room-visual-code">HARBOUR COLLECTION</span>
+      </div>
+      <div class="room-body">
+        <div class="room-head">
+          <div>
+            <h3>{{ offer.room_type.name }}</h3>
+            <p>{{ offer.room_type.description }}</p>
+          </div>
+          <span class="pill">{{ offer.room_type.capacity }} guest{% if offer.room_type.capacity != 1 %}s{% endif %}</span>
+        </div>
+
+        {% if searched %}
+          <div class="rate-lines">
+            {% for rate in offer.rates %}
+              <span>{{ rate.start.strftime('%d %b') }} – {{ rate.end.strftime('%d %b') }} · {{ (rate.end - rate.start).days }} night(s) × ¥{{ rate.amount|money }}</span>
+            {% endfor %}
+          </div>
+          <div class="room-foot">
+            <div class="price">
+              <b>¥{{ offer.total|money }}</b>
+              <small>total · tax included</small>
+            </div>
+            <form method="post" action="{{ url_for('guest.book') }}" class="book-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="room_type_id" value="{{ offer.room_type.id }}">
+              <input type="hidden" name="check_in" value="{{ stay.check_in.isoformat() }}">
+              <input type="hidden" name="check_out" value="{{ stay.check_out.isoformat() }}">
+              <input type="hidden" name="guests" value="{{ stay.guests }}">
+              <input type="hidden" name="idempotency_key" value="{{ offer.key }}">
+              <label class="note-input">
+                Note (optional)
+                <input type="text" name="note" maxlength="100" placeholder="Up to 100 characters">
+              </label>
+              <button class="button" type="submit">Book this room</button>
+            </form>
+          </div>
+        {% else %}
+          <div class="room-foot">
+            <div class="price">
+              <b>¥{{ offer.room_type.base_price|money }}</b>
+              <small>per night</small>
+            </div>
+            <span class="muted small">Search dates to book</span>
+          </div>
+        {% endif %}
+      </div>
+    </article>
+    {% else %}
+      <div class="empty-state">
+        <h3>{% if searched %}No room type covers this stay{% else %}No room types are on sale{% endif %}</h3>
+        <p class="muted">
+          {% if searched %}
+            Try different dates or fewer guests. One physical room must cover every night.
+          {% else %}
+            Ask a manager to publish the room catalogue.
+          {% endif %}
+        </p>
+      </div>
+    {% endfor %}
+  </section>
+
+  <aside class="side">
+    <div class="side-card">
+      <p class="eyebrow">YOUR SEARCH</p>
+      {% if searched and stay %}
+        <div class="kv"><span>Check in</span><b>{{ stay.check_in.strftime('%a, %d %b') }}</b></div>
+        <div class="kv"><span>Check out</span><b>{{ stay.check_out.strftime('%a, %d %b') }}</b></div>
+        <div class="kv"><span>Nights</span><b>{{ (stay.check_out - stay.check_in).days }}</b></div>
+        <div class="kv"><span>Guests</span><b>{{ stay.guests }}</b></div>
+        <p class="side-note">Searching does not hold a room. Booking locks one room for the whole stay.</p>
+      {% else %}
+        <p class="muted small">Choose dates to see live availability and nightly prices.</p>
+      {% endif %}
+    </div>
+
+    <div class="side-card">
+      <div class="side-head">
+        <p class="eyebrow">MY BOOKINGS</p>
+        <a href="{{ url_for('guest.bookings') }}">View all →</a>
+      </div>
+      {% if recent %}
+        {% for booking in recent %}
+          <a class="mini-booking" href="{{ url_for('guest.booking_detail', booking_id=booking.id) }}">
+            <span class="mini-ref">{{ booking.reference }}</span>
+            <span class="mini-main">{{ booking.check_in.strftime('%d %b') }} – {{ booking.check_out.strftime('%d %b') }} · {{ booking.room_type.name }}</span>
+            <span class="status {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
+          </a>
+        {% endfor %}
+      {% else %}
+        <p class="muted small">No bookings yet. Your confirmed stays will appear here.</p>
+      {% endif %}
+    </div>
+
+    <div class="side-card quiet">
+      <p class="eyebrow">GOOD TO KNOW</p>
+      <p class="small muted">
+        Check-in is from 14:00. Payment is taken at the front desk. Changes and cancellations
+        will be handled by reception in a later increment.
+      </p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
