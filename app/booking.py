@@ -30,6 +30,7 @@ from .models import (
     User,
     utc_now,
 )
+from .pricing import Rate, group_rates, quote
 
 
 HOTEL_ZONE = ZoneInfo("Asia/Shanghai")
@@ -40,14 +41,6 @@ class Stay:
     check_in: date
     check_out: date
     guests: int
-
-
-@dataclass(frozen=True)
-class Rate:
-    start: date
-    end: date
-    amount: Decimal
-    rule_id: int | None
 
 
 @dataclass(frozen=True)
@@ -108,29 +101,14 @@ def free_room_conditions(stay):
 
 
 def nightly_rates(session, room_type, stay):
-    rules = session.scalars(
-        db.select(PriceRule).where(
-            PriceRule.room_type_id == room_type.id,
-            PriceRule.active.is_(True),
-            PriceRule.start_date < stay.check_out,
-            PriceRule.end_date > stay.check_in,
-        )
-    ).all()
-    boundaries = {stay.check_in, stay.check_out}
-    for rule in rules:
-        boundaries.update((max(stay.check_in, rule.start_date), min(stay.check_out, rule.end_date)))
-    days = sorted(boundaries)
-    rates = []
-    for start, end in zip(days, days[1:]):
-        matches = [rule for rule in rules if rule.start_date <= start < rule.end_date]
-        best = max(matches, key=lambda rule: (rule.kind == "date", rule.start_date, rule.id), default=None)
-        amount = best.amount if best else room_type.base_price
-        rule_id = best.id if best else None
-        if rates and (rates[-1].amount, rates[-1].rule_id) == (amount, rule_id):
-            rates[-1] = Rate(rates[-1].start, end, amount, rule_id)
-        else:
-            rates.append(Rate(start, end, amount, rule_id))
-    return rates
+    """Nightly prices for one stay, merged into runs of equal price.
+
+    The pricing itself lives in :mod:`app.pricing`, so search, the JSON API,
+    this display grouping, the quote token and the booking allocation can never
+    disagree about a night.
+    """
+
+    return group_rates(quote(session, room_type.id, stay.check_in, stay.check_out))
 
 
 def total_for_rates(rates):
