@@ -365,3 +365,84 @@
   .desk-rail { grid-column: auto; }
   .desk-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------------- E01 filters, E03 guest lookup, E05 decisions, E08 contact ---------------- */
+
+.board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: #fbfcfb;
+}
+.board-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.board-filters input,
+.board-filters select {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--body);
+}
+.board-filters input[type="search"] { min-width: 150px; }
+.board-filters label:nth-child(5) { flex: 1 1 210px; }
+
+.match-list { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.match {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--body);
+}
+.match:hover { border-color: var(--pine); text-decoration: none; }
+.match .chip { margin-left: 8px; }
+
+.lookup { display: flex; gap: 8px; margin-bottom: 10px; }
+.lookup input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.guest-matches { margin: 0 0 12px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.guest-matches li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+}
+.chosen-guest { margin: 0; padding: 7px 10px; border-radius: 8px; background: var(--pine-soft); font-size: 12.5px; }
+
+.requests .decision { min-width: 230px; }
+.requests .decision form { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.requests .decision form:last-child { margin-bottom: 0; }
+.input.tiny { flex: 1; min-width: 0; padding: 4px 6px; font-size: 11.5px; }
+.requests .decision .mini { flex: 0 0 auto; }
+
+.contact { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.contact-form, .noshow-form { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.contact-form .input, .noshow-form .input { padding: 6px 8px; font-size: 12px; }
+.mini.danger { border-color: var(--danger); color: var(--danger); }
+.mini.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }

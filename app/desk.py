@@ -4,7 +4,7 @@ Every write runs in the caller's transaction, so a rule failure leaves the
 booking, its room nights, its payments and its requests exactly as they were.
 """
 
-from datetime import date, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -42,6 +42,11 @@ CONFIRMED = "confirmed"
 CHECKED_IN = "checked_in"
 CHECKED_OUT = "checked_out"
 CANCELLED = "cancelled"
+NO_SHOW = "no_show"
+
+# House rules: check-in opens at 14:00, standard check-out is before 12:00.
+CHECK_IN_FROM = time(14, 0)
+CHECK_OUT_BY = time(12, 0)
 
 
 class DeskError(Exception):
@@ -78,7 +83,7 @@ def record_payment(session, booking, actor_id, amount=None):
 
 
 def check_in_issues(session, booking, now):
-    """The four checks the panel shows, as (label, ok, detail)."""
+    """The checks the panel shows, as (label, ok, detail)."""
     paid = paid_total(session, booking.id)
     blocked = session.scalar(
         select(RoomBlock.id)
@@ -95,6 +100,8 @@ def check_in_issues(session, booking, now):
          f"Status: {booking.status.replace('_', ' ')}"),
         ("Arrival date is today", booking.check_in == now.date(),
          f"Arrival {booking.check_in:%d %b %Y}"),
+        ("Check-in window is open (from 14:00)", now.time() >= CHECK_IN_FROM,
+         f"Now {now:%H:%M}, check-in opens at 14:00"),
         ("Room has no maintenance block for this stay", blocked is None,
          f"Room {booking.room.number}" if blocked is None else "A block covers this stay"),
         ("Simulated payment recorded", paid >= booking.total,
@@ -132,12 +139,27 @@ def check_out(session, booking_id, actor_id, now):
         raise DeskError("This booking could not be found.")
     if booking.status != CHECKED_IN:
         raise DeskError("Only an in-house booking can be checked out.")
+    today = now.date()
+    planned = booking.check_out
+    late = today == planned and now.time() > CHECK_OUT_BY
+    early = today < planned
     booking.status = CHECKED_OUT
     booking.checked_out_at = utc_now()
+    if early:
+        # The guest left before the booked departure: release the unused nights so the
+        # room is sellable again. The agreed price stays exactly as booked.
+        session.execute(db.delete(RoomNight).where(
+            RoomNight.booking_id == booking.id, RoomNight.stay_date >= today))
+        session.flush()
+        # The booked stay stays on the record (the guest had reserved it); only the
+        # unused nights are released, and the real departure time is recorded above.
     record_audit(session, actor_id, "check_out", "booking", booking.id,
                  details={"room": booking.room.number,
-                          "departure": booking.check_out.isoformat()})
-    return booking
+                          "planned_departure": planned.isoformat(),
+                          "departure": today.isoformat(),
+                          "late": late, "early": early,
+                          "checked_out_at": booking.checked_out_at.isoformat()})
+    return {"late": late, "early": early}
 
 
 def desk_today(session, now):
@@ -159,9 +181,20 @@ def desk_today(session, now):
     return arrivals, in_house, departures
 
 
-def room_board(session, start, days=4):
+def room_board(session, start, days=4, room_type_id=None, room_query=None):
     end = start + timedelta(days=days)
-    rooms = session.scalars(select(Room).order_by(Room.number)).all()
+    room_stmt = select(Room)
+    if room_type_id:
+        room_stmt = room_stmt.where(Room.room_type_id == room_type_id)
+    if room_query:
+        wanted = room_query.strip()
+        exact = session.scalars(select(Room.id).where(Room.number == wanted)).all()
+        if exact:
+            room_stmt = room_stmt.where(Room.id.in_(exact))
+        else:
+            room_stmt = room_stmt.where(Room.number.like(f"%{wanted}%"))
+    rooms = session.scalars(room_stmt.order_by(Room.number)).all()
+    room_ids = [room.id for room in rooms]
     nights = session.execute(
         select(RoomNight.room_id, RoomNight.stay_date, Booking)
         .join(Booking, Booking.id == RoomNight.booking_id)
@@ -187,9 +220,9 @@ def room_board(session, start, days=4):
             if blocked:
                 state = "blocked"
             elif booking is not None:
-                # A night belongs to a checked-in guest once they have arrived, so
-                # the arrival day flips to "in house" instead of staying "arriving".
-                # Future nights of a booking that has not arrived are "reserved".
+                # A night belongs to a checked-in guest once they have arrived, so the
+                # arrival day flips to "in house"; future nights that have not arrived
+                # are "reserved" rather than "in house".
                 if booking.status == CHECKED_IN:
                     state = "in_house"
                 elif booking.check_in == day:
@@ -231,7 +264,8 @@ def create_block(session, room_id, start, end, reason, actor_id):
     room = session.get(Room, room_id)
     if room is None:
         raise DeskError("Choose a room.")
-    block = RoomBlock(room_id=room.id, start_date=start, end_date=end, reason=reason)
+    block = RoomBlock(room_id=room.id, start_date=start, end_date=end, reason=reason,
+                      created_by_id=actor_id)
     session.add(block)
     session.flush()
     conflicts = session.scalars(
@@ -244,6 +278,7 @@ def create_block(session, room_id, start, end, reason, actor_id):
     ).all()
     record_audit(session, actor_id, "create_block", "room_block", block.id, reason=reason,
                  details={"room": room.number, "from": start.isoformat(), "to": end.isoformat(),
+                          "operator": actor_id,
                           "conflicts": [conflict.id for conflict in conflicts]})
     return block, conflicts
 
@@ -275,8 +310,10 @@ def reassign(session, booking_id, actor_id, reason, room_type_id=None):
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
     if booking is None:
         raise DeskError("This booking could not be found.")
-    if booking.status not in (CONFIRMED, CHECKED_IN):
-        raise DeskError("Only an active booking can be reassigned.")
+    if booking.status == CHECKED_IN:
+        raise DeskError("An in-house guest is not moved in the system. Use a room move at the desk only after checking out.")
+    if booking.status != CONFIRMED:
+        raise DeskError("Only a booking that has not arrived yet can be reassigned.")
     reason = (reason or "").strip()
     if not reason:
         raise DeskError("Give a reason for the reassignment.")
@@ -371,8 +408,13 @@ def approve_request(session, request_id, actor_id, comment=None):
                      reason=row.reason, details={"request_id": row.id,
                                                  "refund": format(refund, ".2f")})
     elif row.kind == "dates":
-        stay = Stay(target.get("check_in"), target.get("check_out"), booking.guests)
-        if not stay.check_in or not stay.check_out or stay.check_out <= stay.check_in:
+        try:
+            new_in = date.fromisoformat(str(target.get("check_in")))
+            new_out = date.fromisoformat(str(target.get("check_out")))
+        except (TypeError, ValueError):
+            raise DeskError("The requested dates are invalid.")
+        stay = Stay(new_in, new_out, booking.guests)
+        if stay.check_out <= stay.check_in:
             raise DeskError("The requested dates are invalid.")
         _rehouse(session, booking, stay, booking.room_type_id)
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
@@ -441,40 +483,73 @@ def reject_request(session, request_id, actor_id, comment=None):
     return row
 
 
-def create_walkin(session, actor_id, name, phone, room_type_id, stay, note=None):
-    """Open a room for a guest at the desk; same availability and price rules."""
-    name = (name or "").strip()
-    phone = (phone or "").strip()
-    if not name:
-        raise DeskError("Enter the guest's name.")
-    if not phone:
-        raise DeskError("Enter a contact phone for the walk-in.")
+def find_customers(session, query, limit=8):
+    """Look up a guest record by phone or name for a walk-in."""
+    query = (query or "").strip()
+    if not query:
+        return []
+    like = f"%{query}%"
+    return session.scalars(
+        select(Customer)
+        .where((Customer.phone.like(like)) | (Customer.name.like(like)))
+        .order_by(Customer.name, Customer.id)
+        .limit(limit)
+    ).all()
+
+
+def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
+                  name=None, phone=None, note=None, pay_now=True):
+    """Open a room for a guest at the desk: occupy the nights, take payment, check in.
+
+    Reuses the same availability, capacity and price rules as the guest portal and
+    refuses blacklisted guests, because the desk cannot bypass that check.
+    """
+    from .booking import customer_is_blocked
+
     room_type = session.get(RoomType, room_type_id)
     if room_type is None or not room_type.listed:
         raise DeskError("Choose a listed room type.")
     if room_type.capacity < stay.guests:
         raise DeskError("The room type is too small for that party.")
-    customer = Customer(name=name, phone=phone)
-    session.add(customer)
-    session.flush()
+
+    if customer_id:
+        customer = session.get(Customer, customer_id)
+        if customer is None:
+            raise DeskError("That guest record no longer exists.")
+    else:
+        name = (name or "").strip()
+        phone = (phone or "").strip()
+        if not name:
+            raise DeskError("Enter the guest's name.")
+        if not phone:
+            raise DeskError("Enter a contact phone for the walk-in.")
+        customer = Customer(name=name, phone=phone)
+        session.add(customer)
+        session.flush()
+
+    if customer_is_blocked(session, customer.id, utc_now()):
+        raise DeskError("This guest is blacklisted; the desk cannot book or check them in.")
+
     candidates = free_rooms(session, room_type_id, stay)
     if not candidates:
         raise DeskError("No room covers the whole stay. Nothing was booked.")
     rates = nightly_rates(session, room_type, stay)
+    total = total_for_rates(rates)
+    now = hotel_now()
     booking = Booking(
         customer_id=customer.id,
         room_id=candidates[0],
         room_type_id=room_type_id,
         actor_user_id=actor_id,
         idempotency_key=f"walkin-{uuid4()}",
-        request_digest=f"walkin-{name}-{stay.check_in}-{stay.check_out}",
+        request_digest=f"walkin-{customer.id}-{stay.check_in}-{stay.check_out}",
         check_in=stay.check_in,
         check_out=stay.check_out,
         guests=stay.guests,
-        total=total_for_rates(rates),
+        total=total,
         note=(note or "").strip() or None,
         status=CONFIRMED,
-        expected_arrival=hotel_now().time().replace(second=0, microsecond=0),
+        expected_arrival=now.time().replace(second=0, microsecond=0),
     )
     session.add(booking)
     session.flush()
@@ -483,8 +558,83 @@ def create_walkin(session, actor_id, name, phone, room_type_id, stay, note=None)
         rate = next(rate for rate in rates if rate.start <= day < rate.end)
         add_night(session, booking, day, rate)
         day += timedelta(days=1)
+
+    if pay_now:
+        session.add(PaymentRecord(
+            booking_id=booking.id,
+            kind="payment",
+            amount=total,
+            actor_user_id=actor_id,
+            result="success",
+            reference=f"pay-{uuid4()}",
+            occurred_at=utc_now(),
+        ))
+
+    # A walk-in is standing at the desk, so the booking is checked in immediately.
+    booking.status = CHECKED_IN
+    booking.checked_in_at = utc_now()
     record_audit(session, actor_id, "create_booking", "booking", booking.id,
-                 details={"source": "front_desk_walk_in", "customer": name})
+                 details={"source": "front_desk_walk_in", "customer": customer.name,
+                          "payment": format(total, ".2f") if pay_now else None,
+                          "checked_in": True})
+    return booking
+
+
+def contact_deadline(booking):
+    """When the desk may start chasing a guest: the expected arrival, else end of day."""
+    expected = booking.expected_arrival or time(23, 59)
+    return datetime.combine(booking.check_in, expected)
+
+
+def contact_customer(session, booking_id, actor_id, result, note=None, new_expected=None):
+    """Record that the desk reached (or failed to reach) a guest about a late arrival."""
+    booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
+    if booking is None:
+        raise DeskError("This booking could not be found.")
+    if booking.status != CONFIRMED:
+        raise DeskError("Only a booking that has not arrived can be chased.")
+    result = (result or "").strip()
+    if not result:
+        raise DeskError("Record what happened when you contacted the guest.")
+    booking.last_contact_at = utc_now()
+    booking.last_contact_result = result[:40]
+    if new_expected:
+        booking.expected_arrival = new_expected
+    record_audit(session, actor_id, "contact_customer", "booking", booking.id,
+                 reason=(note or "").strip() or None,
+                 details={"result": result,
+                          "new_expected_arrival": new_expected.isoformat() if new_expected else None})
+    return booking
+
+
+def no_show_ready(booking, now):
+    return booking.status == CONFIRMED and now.replace(tzinfo=None) > contact_deadline(booking)
+
+
+def mark_no_show(session, booking_id, actor_id, reason, now):
+    """Release the room for a guest who confirmed they are not coming (or is unreachable)."""
+    booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
+    if booking is None:
+        raise DeskError("This booking could not be found.")
+    if booking.status != CONFIRMED or booking.checked_in_at is not None:
+        raise DeskError("Only a booking that has not arrived can be marked as a no-show.")
+    reason = (reason or "").strip()
+    if not reason:
+        raise DeskError("Give a reason before marking a no-show.")
+    if not no_show_ready(booking, now):
+        deadline = contact_deadline(booking)
+        raise DeskError(
+            "The expected arrival time has not passed yet "
+            f"({deadline:%d %b %H:%M}). Contact the guest first or update the expected time."
+        )
+    session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
+    booking.status = NO_SHOW
+    booking.no_show_at = utc_now()
+    booking.no_show_reason = reason
+    record_audit(session, actor_id, "mark_no_show", "booking", booking.id, reason=reason,
+                 details={"room": booking.room.number,
+                          "last_contact_result": booking.last_contact_result,
+                          "refund": "0.00"})
     return booking
 
 

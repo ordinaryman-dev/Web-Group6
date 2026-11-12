@@ -106,9 +106,11 @@ class RoomBlock(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     reason = db.Column(db.String(240), nullable=False)
+    created_by_id = db.Column(db.ForeignKey("users.id"))
     effective = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
 
     room = db.relationship("Room")
+    creator = db.relationship("User", foreign_keys=[created_by_id])
 
 
 class Booking(db.Model):
@@ -135,6 +137,10 @@ class Booking(db.Model):
     expected_arrival = db.Column(db.Time)
     checked_in_at = db.Column(db.DateTime)
     checked_out_at = db.Column(db.DateTime)
+    no_show_at = db.Column(db.DateTime)
+    no_show_reason = db.Column(db.String(240))
+    last_contact_at = db.Column(db.DateTime)
+    last_contact_result = db.Column(db.String(40))
 
     customer = db.relationship(Customer, lazy="joined")
     room = db.relationship(Room, lazy="joined")

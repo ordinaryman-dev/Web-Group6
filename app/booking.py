@@ -503,8 +503,8 @@ def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now)
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
     if booking is None:
         raise BookingRejected("NOT_FOUND", "This booking could not be found.")
-    if booking.status != "confirmed" or booking.checked_in_at is not None:
-        raise BookingRejected("STATE_CONFLICT", "Only a confirmed booking that has not checked in can be cancelled here.")
+    if booking.status not in ("confirmed", "no_show") or booking.checked_in_at is not None:
+        raise BookingRejected("STATE_CONFLICT", "Only a confirmed or no-show booking that has not checked in can be cancelled here.")
     reason = (reason or "").strip()
     if source not in {"exception", "hotel"} or not 1 <= len(reason) <= 240:
         raise BookingRejected("INVALID_REQUEST", "Choose a cancellation type and enter a reason.")
@@ -527,11 +527,12 @@ def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now)
         booking_request.handled_at = cancelled_at
         booking_request.handled_by = actor_id
         booking_request.comment = "Closed because the booking was cancelled."
+    previous_status = booking.status
     booking.status = "cancelled"
     record_audit(
         session, actor_id, "cancel_booking", "booking", booking.id, reason=reason,
         details={
-            "source": source, "previous_status": "confirmed", "status": "cancelled",
+            "source": source, "previous_status": previous_status, "status": "cancelled",
             "room_id": booking.room_id, "check_in": booking.check_in.isoformat(),
             "check_out": booking.check_out.isoformat(), "simulated_refund": format(refund, ".2f"),
         },

@@ -228,9 +228,11 @@ def test_walk_in_books_a_room_and_reuses_allocation(app):
         booking = db.session.scalar(
             select(Booking).where(Booking.customer.has(Customer.name == "Walk In"))
         )
-        assert booking is not None and booking.status == "confirmed"
+        assert booking is not None and booking.status == "checked_in"
+        assert booking.checked_in_at is not None
         assert booking.total == Decimal("300.00")
         assert db.session.query(RoomNight).filter_by(booking_id=booking.id).count() == 1
+        assert db.session.query(PaymentRecord).filter_by(booking_id=booking.id).count() == 1
 
 
 def test_request_approval_is_atomic_and_rejection_keeps_the_booking(app):

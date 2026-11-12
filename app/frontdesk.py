@@ -1,9 +1,8 @@
-"""The front desk: today's arrivals, in-house guests, departures and blocks."""
+"""The front desk: today's arrivals, in-house guests, departures, blocks and requests."""
 
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from functools import wraps
-from uuid import uuid4
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -11,20 +10,28 @@ from flask_wtf import FlaskForm
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from wtforms import DateField, DecimalField, IntegerField, SelectField, StringField, SubmitField
+from wtforms import (
+    DateField,
+    DecimalField,
+    HiddenField,
+    IntegerField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TimeField,
+)
 from wtforms.validators import InputRequired, Length, NumberRange, Optional
 
 from . import desk
-from .audit import record_audit
 from .booking import Stay, hotel_now
 from .extensions import db
 from .models import (
     MANAGER,
     Booking,
     BookingRequest,
+    Customer,
     Room,
     RoomBlock,
-    RoomNight,
     RoomType,
     STAFF,
 )
@@ -33,6 +40,7 @@ from .models import (
 frontdesk = Blueprint("frontdesk", __name__)
 
 BOARD_DAYS = 4
+MAX_BOARD_DAYS = 21
 
 
 class PaymentForm(FlaskForm):
@@ -41,14 +49,15 @@ class PaymentForm(FlaskForm):
 
 
 class WalkInForm(FlaskForm):
-    name = StringField("Guest name", validators=[InputRequired(), Length(max=120)])
-    phone = StringField("Phone", validators=[InputRequired(), Length(max=40)])
+    customer_id = HiddenField()
+    name = StringField("Guest name", validators=[Optional(), Length(max=120)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=40)])
     room_type_id = SelectField("Room type", coerce=int, validators=[InputRequired()])
     check_in = DateField("Check-in", validators=[InputRequired()])
     check_out = DateField("Check-out", validators=[InputRequired()])
     guests = IntegerField("Guests", validators=[InputRequired(), NumberRange(min=1, max=6)])
     note = StringField("Note (optional)", validators=[Optional(), Length(max=100)])
-    submit = SubmitField("Open the room")
+    submit = SubmitField("Open the room and check in")
 
 
 class BlockForm(FlaskForm):
@@ -65,8 +74,29 @@ class ReassignForm(FlaskForm):
 
 
 class DecisionForm(FlaskForm):
-    comment = StringField("Note (optional)", validators=[Optional(), Length(max=240)])
+    comment = StringField("Decision note (optional)", validators=[Optional(), Length(max=240)])
     submit = SubmitField("Save")
+
+
+class ContactForm(FlaskForm):
+    result = SelectField(
+        "Contact result",
+        choices=[
+            ("reached_late", "Reached - arriving later"),
+            ("reached_not_coming", "Reached - not coming"),
+            ("no_answer", "No answer"),
+            ("wrong_number", "Wrong number"),
+        ],
+        validators=[InputRequired()],
+    )
+    new_expected = TimeField("New expected arrival", validators=[Optional()])
+    note = StringField("Note (optional)", validators=[Optional(), Length(max=240)])
+    submit = SubmitField("Save contact")
+
+
+class NoShowForm(FlaskForm):
+    reason = StringField("Reason", validators=[InputRequired(), Length(max=240)])
+    submit = SubmitField("Mark no-show")
 
 
 def desk_required(view):
@@ -112,12 +142,43 @@ def _booking_or_404(booking_id):
     return booking
 
 
-def _selected_booking(arrivals, in_house):
+def _parse_date(value, fallback):
+    try:
+        return date.fromisoformat(value) if value else fallback
+    except ValueError:
+        return fallback
+
+
+def _board_filters(now):
+    start = _parse_date(request.args.get("frm"), now.date())
+    days = request.args.get("days", type=int) or BOARD_DAYS
+    days = max(1, min(days, MAX_BOARD_DAYS))
+    room_type_id = request.args.get("type", type=int) or None
+    room_query = (request.args.get("room") or "").strip() or None
+    return start, days, room_type_id, room_query
+
+
+def _search_bookings(query):
+    """Find a booking by reference or guest name, so the desk can open it directly."""
+    query = (query or "").strip()
+    if not query:
+        return []
+    statement = select(Booking).order_by(Booking.id.desc()).limit(10)
+    if query.upper().startswith("BK-") and query[3:].isdigit():
+        return db.session.scalars(statement.where(Booking.id == int(query[3:]))).all()
+    return db.session.scalars(
+        statement.where(Booking.customer.has(Customer.name.ilike(f"%{query}%")))
+    ).all()
+
+
+def _selected_booking(arrivals, in_house, matches):
     wanted = request.args.get("booking", type=int)
     if wanted:
         booking = db.session.get(Booking, wanted)
         if booking is not None:
             return booking
+    if len(matches) == 1:
+        return matches[0]
     return arrivals[0] if arrivals else (in_house[0] if in_house else None)
 
 
@@ -127,13 +188,19 @@ def index():
     now = hotel_now()
     today = now.date()
     arrivals, in_house, departures = desk.desk_today(db.session, now)
-    selected = _selected_booking(arrivals, in_house)
+
+    matches = _search_bookings(request.args.get("q"))
+    selected = _selected_booking(arrivals, in_house, matches)
+
+    start, days, room_type_id, room_query = _board_filters(now)
+    board = desk.room_board(db.session, start, days, room_type_id, room_query)
+    board_end = start + timedelta(days=days)
 
     blocks = db.session.scalars(
         select(RoomBlock)
         .where(RoomBlock.effective.is_(True),
-               RoomBlock.start_date < today + timedelta(days=BOARD_DAYS),
-               RoomBlock.end_date > today)
+               RoomBlock.start_date < board_end,
+               RoomBlock.end_date > start)
         .order_by(RoomBlock.start_date, RoomBlock.room_id)
     ).all()
 
@@ -150,12 +217,19 @@ def index():
         for booking in affected:
             conflicts.append({"block": block, "booking": booking})
 
+    walk_customer = None
+    if request.args.get("walk_customer", type=int):
+        walk_customer = db.session.get(Customer, request.args.get("walk_customer", type=int))
+    walk_matches = desk.find_customers(db.session, request.args.get("lookup")) if not walk_customer else []
+
     walk_form = WalkInForm(prefix="walk")
     walk_form.room_type_id.choices = _room_type_choices()
     if not walk_form.is_submitted():
         walk_form.check_in.data = today
         walk_form.check_out.data = today + timedelta(days=1)
         walk_form.guests.data = 1
+    if walk_customer is not None:
+        walk_form.customer_id.data = walk_customer.id
 
     block_form = BlockForm(prefix="block")
     block_form.room_id.choices = _room_choices()
@@ -166,15 +240,25 @@ def index():
     checks = desk.check_in_issues(db.session, selected, now) if selected else []
     paid = desk.paid_total(db.session, selected.id) if selected else Decimal("0.00")
 
+    contact_due = False
+    if selected is not None and selected.status == desk.CONFIRMED:
+        contact_due = now.replace(tzinfo=None) > desk.contact_deadline(selected)
+
     return render_template(
         "frontdesk/index.html",
         now=now,
         today=today,
-        days=[today + timedelta(days=offset) for offset in range(BOARD_DAYS)],
+        start=start,
+        board_days=days,
+        days=[start + timedelta(days=offset) for offset in range(days)],
+        room_type_id=room_type_id,
+        room_query=room_query,
+        query=(request.args.get("q") or "").strip(),
+        matches=matches,
         arrivals=arrivals,
         in_house=in_house,
         departures=departures,
-        board=desk.room_board(db.session, today, BOARD_DAYS),
+        board=board,
         blocks=blocks,
         conflicts=conflicts,
         pending=desk.pending_requests(db.session),
@@ -182,11 +266,16 @@ def index():
         checks=checks,
         paid=paid,
         due=(selected.total - paid) if selected else Decimal("0.00"),
+        contact_due=contact_due,
         payment_form=PaymentForm(prefix="pay"),
         reassign_form=ReassignForm(prefix="re"),
         walk_form=walk_form,
+        walk_customer=walk_customer,
+        walk_matches=walk_matches,
         block_form=block_form,
         decision_form=DecisionForm(prefix="req"),
+        contact_form=ContactForm(prefix="con"),
+        no_show_form=NoShowForm(prefix="ns"),
         room_types=db.session.scalars(select(RoomType).order_by(RoomType.name)).all(),
     )
 
@@ -223,11 +312,33 @@ def check_in(booking_id):
 def check_out(booking_id):
     booking = _booking_or_404(booking_id)
     now = hotel_now()
+    outcome = {}
 
     def action(session):
-        desk.check_out(session, booking_id, current_user.id, now)
+        outcome.update(desk.check_out(session, booking_id, current_user.id, now))
 
     _run(action, f"{booking.reference} checked out.")
+    if outcome.get("late"):
+        flash("Recorded after 12:00, so this is a late check-out.", "info")
+    if outcome.get("early"):
+        flash("Departed early: the unused nights were released.", "info")
+    return redirect(url_for("frontdesk.index", booking=booking_id))
+
+
+@frontdesk.post("/frontdesk/bookings/<int:booking_id>/contact")
+@desk_required
+def contact(booking_id):
+    booking = _booking_or_404(booking_id)
+    form = ContactForm(prefix="con")
+    if not form.validate_on_submit():
+        flash("Choose what happened when you contacted the guest.", "error")
+        return redirect(url_for("frontdesk.index", booking=booking_id))
+
+    def action(session):
+        desk.contact_customer(session, booking_id, current_user.id, form.result.data,
+                             form.note.data, form.new_expected.data)
+
+    _run(action, "Contact attempt recorded.")
     return redirect(url_for("frontdesk.index", booking=booking_id))
 
 
@@ -235,19 +346,16 @@ def check_out(booking_id):
 @desk_required
 def no_show(booking_id):
     booking = _booking_or_404(booking_id)
+    form = NoShowForm(prefix="ns")
     now = hotel_now()
+    if not form.validate_on_submit():
+        flash("Give a reason before marking a no-show.", "error")
+        return redirect(url_for("frontdesk.index", booking=booking_id))
 
     def action(session):
-        target = session.get(Booking, booking_id)
-        if target.status != desk.CONFIRMED:
-            raise desk.DeskError("Only a confirmed booking can be marked as a no-show.")
-        if target.check_in >= now.date():
-            raise desk.DeskError("A no-show can only be recorded after the arrival date.")
-        session.execute(db.delete(RoomNight).where(RoomNight.booking_id == target.id))
-        target.status = "no_show"
-        record_audit(session, current_user.id, "mark_no_show", "booking", target.id)
+        desk.mark_no_show(session, booking_id, current_user.id, form.reason.data, now)
 
-    _run(action, f"{booking.reference} marked as a no-show.")
+    _run(action, f"{booking.reference} marked as a no-show and the room released.")
     return redirect(url_for("frontdesk.index"))
 
 
@@ -257,7 +365,7 @@ def walk_in():
     form = WalkInForm(prefix="walk")
     form.room_type_id.choices = _room_type_choices()
     if not form.validate_on_submit():
-        flash("Check the walk-in: name, phone, room type and dates are required.", "error")
+        flash("Check the walk-in: guest, room type, dates and guests are required.", "error")
         return redirect(url_for("frontdesk.index"))
 
     now = hotel_now()
@@ -266,19 +374,18 @@ def walk_in():
         flash("A walk-in starts today.", "error")
         return redirect(url_for("frontdesk.index"))
 
-    booking_id = None
+    booking_id = {}
 
     def action(session):
-        nonlocal booking_id
         booking = desk.create_walkin(
-            session, current_user.id, form.name.data, form.phone.data,
-            form.room_type_id.data, stay, form.note.data,
+            session, current_user.id, form.room_type_id.data, stay,
+            customer_id=int(form.customer_id.data) if form.customer_id.data else None,
+            name=form.name.data, phone=form.phone.data, note=form.note.data,
         )
-        booking_id = booking.id
+        booking_id["id"] = booking.id
 
-    _run(action, "Walk-in opened.")
-    return redirect(url_for("frontdesk.index", booking=booking_id) if booking_id
-                    else url_for("frontdesk.index"))
+    _run(action, "Walk-in booked, paid and checked in.")
+    return redirect(url_for("frontdesk.index", booking=booking_id.get("id")))
 
 
 @frontdesk.post("/frontdesk/blocks")
@@ -317,6 +424,7 @@ def cancel_block(block_id):
 
     _run(action, f"Block on room {block.room.number} cancelled.")
     return redirect(url_for("frontdesk.index"))
+
 
 @frontdesk.post("/frontdesk/bookings/<int:booking_id>/reassign")
 @desk_required

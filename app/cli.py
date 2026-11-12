@@ -81,7 +81,7 @@ def seed_desk():
 
         room_types = [
             ("harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00", "king",
-             ["301", "302", "305"]),
+             ["301", "302", "305", "306"]),
             ("city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00", "twin",
              ["303", "304"]),
         ]
@@ -148,6 +148,11 @@ def seed_desk():
         a3 = stay(guest("Zhao Min", "13800000003"), rooms["302"], king, 2, "confirmed",
                   time(18, 0), paid=True)
 
+        # A late arrival: expected at 09:00 and still not here, so the desk can
+        # practise the contact log and the no-show rule.
+        late = stay(guest("Mark Lee", "13800000007"), rooms["306"], king, 1, "confirmed",
+                    time(9, 0), paid=False)
+
         # In house: arrived yesterday, leaving tomorrow.
         stay(guest("Sun Hao", "13800000004"), rooms["305"], king, 3, "checked_in",
              time(16, 0), paid=True, offset_in=-1)
@@ -158,7 +163,7 @@ def seed_desk():
 
         # A maintenance block that collides with a later booking (drives the banner).
         session.add(RoomBlock(room_id=rooms["303"].id, start_date=today + timedelta(days=2),
-                              end_date=today + timedelta(days=3),
+                              end_date=today + timedelta(days=3), created_by_id=staff.id,
                               reason="Bathroom leak under repair"))
         later = stay(guest("Zhang Lei", "13800000006"), rooms["303"], twin, 2, "confirmed",
                      time(14, 30), paid=False, offset_in=2)

@@ -15,22 +15,13 @@
       </span>
     </div>
     <nav>
-      <a class="desk-link is-active" href="#arrivals">
-        <span>Arrivals</span><b>{{ arrivals|length }}</b>
-      </a>
-      <a class="desk-link" href="#in-house">
-        <span>In house</span><b>{{ in_house|length }}</b>
-      </a>
-      <a class="desk-link" href="#departures">
-        <span>Departures</span><b>{{ departures|length }}</b>
-      </a>
+      <a class="desk-link is-active" href="#arrivals"><span>Arrivals</span><b>{{ arrivals|length }}</b></a>
+      <a class="desk-link" href="#in-house"><span>In house</span><b>{{ in_house|length }}</b></a>
+      <a class="desk-link" href="#departures"><span>Departures</span><b>{{ departures|length }}</b></a>
+      <a class="desk-link" href="#board"><span>Room board</span></a>
       <a class="desk-link" href="#walkin"><span>Walk-in</span></a>
-      <a class="desk-link" href="#blocks">
-        <span>Maintenance blocks</span><b>{{ blocks|length }}</b>
-      </a>
-      <a class="desk-link" href="#requests">
-        <span>Requests</span><b>{{ pending|length }}</b>
-      </a>
+      <a class="desk-link" href="#blocks"><span>Maintenance blocks</span><b>{{ blocks|length }}</b></a>
+      <a class="desk-link" href="#requests"><span>Requests</span><b>{{ pending|length }}</b></a>
     </nav>
     <div class="desk-identity">
       <b>{{ current_user.email }}</b>
@@ -70,7 +61,7 @@
     <section class="desk-card" id="arrivals">
       <div class="desk-card-head">
         <h2>Arrivals</h2>
-        <span class="muted small">Confirmed bookings arriving today</span>
+        <span class="muted small">Confirmed bookings arriving today · check-in opens at 14:00</span>
       </div>
       {% if arrivals %}
       <table class="desk-table">
@@ -143,11 +134,11 @@
     <section class="desk-card" id="departures">
       <div class="desk-card-head">
         <h2>Departures</h2>
-        <span class="muted small">Due out today</span>
+        <span class="muted small">Due out today · standard check-out before 12:00</span>
       </div>
       {% if departures %}
       <table class="desk-table">
-        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Balance</th><th></th></tr></thead>
+        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Total</th><th></th></tr></thead>
         <tbody>
         {% for booking in departures %}
           <tr>
@@ -172,8 +163,48 @@
     <section class="desk-card" id="board">
       <div class="desk-card-head">
         <h2>Room board</h2>
-        <span class="muted small">Room × date · maintenance blocks warn, they never overwrite a booking</span>
+        <span class="muted small">Room × date · blocks warn, they never overwrite a booking</span>
       </div>
+
+      <form class="board-filters" method="get" action="{{ url_for('frontdesk.index') }}">
+        {% if selected %}<input type="hidden" name="booking" value="{{ selected.id }}">{% endif %}
+        <label>From <input type="date" name="frm" value="{{ start.isoformat() }}"></label>
+        <label>Days
+          <select name="days">
+            {% for option in [1, 2, 3, 4, 7, 14] %}
+            <option value="{{ option }}" {{ 'selected' if board_days == option }}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Room type
+          <select name="type">
+            <option value="">All</option>
+            {% for room_type in room_types %}
+            <option value="{{ room_type.id }}" {{ 'selected' if room_type_id == room_type.id }}>{{ room_type.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Room <input type="search" name="room" value="{{ room_query or '' }}" placeholder="302"></label>
+        <label>Booking / guest <input type="search" name="q" value="{{ query }}" placeholder="BK-000123 or name"></label>
+        <button class="mini" type="submit">Apply</button>
+        <a class="mini" href="{{ url_for('frontdesk.index') }}">Reset</a>
+      </form>
+
+      {% if matches %}
+      <div class="match-list">
+        <p class="eyebrow">SEARCH RESULTS</p>
+        {% for match in matches %}
+        <a class="match" href="{{ url_for('frontdesk.index', booking=match.id) }}">
+          <b class="mono">{{ match.reference }}</b>
+          {{ match.customer.name }} · {{ match.room_type.name }} · Room {{ match.room.number }}
+          <span class="chip chip-{{ match.status }}">{{ match.status.replace('_', ' ') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% elif query %}
+      <p class="desk-empty">No booking matches “{{ query }}”.</p>
+      {% endif %}
+
       <div class="board-wrap">
         <table class="board">
           <thead>
@@ -207,12 +238,40 @@
     <section class="desk-card" id="walkin">
       <div class="desk-card-head">
         <h2>Walk-in</h2>
-        <span class="muted small">Uses the same allocation and price rules as the guest portal</span>
+        <span class="muted small">Same availability, capacity, price and blacklist rules as the guest portal · checked in immediately</span>
       </div>
+
+      <form class="lookup" method="get" action="{{ url_for('frontdesk.index') }}">
+        <input type="search" name="lookup" value="" placeholder="Find an existing guest by phone or name">
+        <button class="mini" type="submit">Find guest</button>
+      </form>
+      {% if walk_matches %}
+      <ul class="guest-matches">
+        {% for guest in walk_matches %}
+        <li>
+          <span>{{ guest.name }} · <span class="mono">{{ guest.phone or 'no phone' }}</span></span>
+          <a class="mini" href="{{ url_for('frontdesk.index', walk_customer=guest.id, booking=selected.id if selected else none) }}#walkin">Use this guest</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% elif walk_matches is not none and request.args.get('lookup') %}
+      <p class="desk-empty">No guest matches that search.</p>
+      {% endif %}
+
       <form method="post" action="{{ url_for('frontdesk.walk_in') }}" class="desk-form">
         {{ walk_form.hidden_tag() }}
+        {% if walk_customer %}
+        <input type="hidden" name="walk-customer_id" value="{{ walk_customer.id }}">
+        <div class="field field-wide">
+          <label>Guest</label>
+          <p class="chosen-guest">{{ walk_customer.name }} · <span class="mono">{{ walk_customer.phone }}</span>
+            <a class="small" href="{{ url_for('frontdesk.index') }}#walkin">change</a>
+          </p>
+        </div>
+        {% else %}
         <div class="field">{{ walk_form.name.label }}{{ walk_form.name(class_="input") }}</div>
         <div class="field">{{ walk_form.phone.label }}{{ walk_form.phone(class_="input") }}</div>
+        {% endif %}
         <div class="field">{{ walk_form.room_type_id.label }}{{ walk_form.room_type_id(class_="input") }}</div>
         <div class="field">{{ walk_form.check_in.label }}{{ walk_form.check_in(class_="input") }}</div>
         <div class="field">{{ walk_form.check_out.label }}{{ walk_form.check_out(class_="input") }}</div>
@@ -225,7 +284,7 @@
     <section class="desk-card" id="blocks">
       <div class="desk-card-head">
         <h2>Maintenance</h2>
-        <span class="muted small">Block a room and keep every existing booking visible</span>
+        <span class="muted small">A block stops new allocations; existing bookings stay and are flagged</span>
       </div>
       <form method="post" action="{{ url_for('frontdesk.create_block') }}" class="desk-form">
         {{ block_form.hidden_tag() }}
@@ -243,6 +302,7 @@
             <b>Room {{ block.room.number }}</b>
             {{ block.start_date.strftime('%d %b') }}–{{ block.end_date.strftime('%d %b') }}
             <span class="muted">· {{ block.reason }}</span>
+            <small class="muted">· by {{ block.creator.email if block.creator else 'unknown' }}</small>
           </span>
           <form method="post" action="{{ url_for('frontdesk.cancel_block', block_id=block.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -257,31 +317,43 @@
     <section class="desk-card" id="requests">
       <div class="desk-card-head">
         <h2>Requests</h2>
-        <span class="muted small">A request is applied only when approved; any failure leaves the booking untouched</span>
+        <span class="muted small">Applied only on approval; a failure leaves the booking untouched</span>
       </div>
       {% if pending %}
-      <table class="desk-table">
-        <thead><tr><th>Booking</th><th>Guest</th><th>Request</th><th>Detail</th><th>Decision</th></tr></thead>
+      <table class="desk-table requests">
+        <thead><tr><th>Booking</th><th>Guest / note</th><th>Request</th><th>Target</th><th>Decision</th></tr></thead>
         <tbody>
         {% for item in pending %}
           <tr>
-            <td class="mono">{{ item.booking.reference }}</td>
-            <td>{{ item.booking.customer.name }}</td>
-            <td><span class="chip chip-{{ item.kind }}">{{ item.kind.replace('_', ' ') }}</span></td>
+            <td class="mono">{{ item.booking.reference }}<br>
+              <span class="chip chip-{{ item.booking.status }}">{{ item.booking.status.replace('_', ' ') }}</span>
+            </td>
+            <td>{{ item.booking.customer.name }}
+              {% if item.booking.note %}<small class="muted">{{ item.booking.note }}</small>{% endif %}
+            </td>
+            <td><span class="chip chip-{{ item.kind }}">{{ item.kind.replace('_', ' ') }}</span>
+              {% if item.reason %}<small class="muted">{{ item.reason }}</small>{% endif %}
+            </td>
             <td class="small">
               {% if item.kind == 'dates' and item.target %}
                 {{ item.target.check_in }} → {{ item.target.check_out }}
+              {% elif item.kind == 'extend' and item.target %}
+                until {{ item.target.check_out }}
+              {% elif item.kind == 'room_type' and item.target %}
+                room type #{{ item.target.room_type_id }}
               {% elif item.target and item.target.reason %}
                 {{ item.target.reason }}
-              {% else %}{{ item.reason or '—' }}{% endif %}
+              {% else %}—{% endif %}
             </td>
-            <td class="row-actions">
+            <td class="decision">
               <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=item.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Decision note">
                 <button class="mini primary" type="submit">Approve</button>
               </form>
               <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=item.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Reason">
                 <button class="mini" type="submit">Reject</button>
               </form>
             </td>
@@ -307,6 +379,13 @@
         · {{ selected.nights }} night{{ '' if selected.nights == 1 else 's' }}
         · {{ selected.room_type.name }} · Room {{ selected.room.number }}
       </p>
+      <p class="muted small">
+        Expected arrival {{ selected.expected_arrival.strftime('%H:%M') if selected.expected_arrival else 'not set' }}
+        {% if selected.last_contact_at %}
+        · last contact {{ selected.last_contact_at|localtime('%d %b %H:%M') }} ({{ selected.last_contact_result }})
+        {% endif %}
+      </p>
+      {% if selected.note %}<p class="detail-note small">Guest note: {{ selected.note }}</p>{% endif %}
       <p class="detail-total">Total ¥{{ selected.total|money }}</p>
 
       {% if selected.status == 'confirmed' %}
@@ -361,20 +440,35 @@
       </form>
       {% endif %}
 
-      {% if selected.status == 'confirmed' and selected.check_in < today %}
-      <form method="post" action="{{ url_for('frontdesk.no_show', booking_id=selected.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="mini wide-mini" type="submit">Mark as no-show</button>
-      </form>
+      {% if selected.status == 'confirmed' and contact_due %}
+      <section class="contact">
+        <p class="checks-title">Late arrival · contact the guest</p>
+        <p class="small muted">Expected {{ selected.expected_arrival.strftime('%H:%M') if selected.expected_arrival else 'end of day' }} has passed. Record what happened before releasing the room.</p>
+        <form method="post" action="{{ url_for('frontdesk.contact', booking_id=selected.id) }}" class="contact-form">
+          {{ contact_form.hidden_tag() }}
+          {{ contact_form.result(class_="input") }}
+          {{ contact_form.new_expected(class_="input", title="New expected arrival") }}
+          {{ contact_form.note(class_="input", placeholder="What did the guest say?") }}
+          <button class="mini" type="submit">Save contact</button>
+        </form>
+        <form method="post" action="{{ url_for('frontdesk.no_show', booking_id=selected.id) }}" class="noshow-form">
+          {{ no_show_form.hidden_tag() }}
+          {{ no_show_form.reason(class_="input", placeholder="Reason: not coming / unreachable") }}
+          <button class="mini danger" type="submit">Mark no-show and release</button>
+        </form>
+      </section>
       {% endif %}
 
-      {% if selected.status in ('confirmed', 'checked_in') %}
+      {% if selected.status == 'confirmed' %}
       <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=selected.id) }}" class="reassign">
         <p class="checks-title">Reassign room</p>
+        <p class="small muted">Only before arrival. Same room type, whole stay free, price unchanged.</p>
         {{ reassign_form.hidden_tag() }}
         {{ reassign_form.reason(class_="input", placeholder="Reason, e.g. bathroom leak") }}
         <button class="mini" type="submit">Move to a free room</button>
       </form>
+      {% elif selected.status == 'checked_in' %}
+      <p class="detail-note small muted">In-house guests are not moved in the system; reassignment is only offered before arrival.</p>
       {% endif %}
 
       <p class="detail-note small muted">No price change and no account creation happen on this page.</p>
@@ -386,13 +480,13 @@
     <section class="desk-card rules">
       <h2>How this page works</h2>
       <ol>
-        <li><b>Four checks before check-in</b><span>Confirmed, arriving today, no block, payment recorded.</span></li>
+        <li><b>Four checks plus the time window</b><span>Confirmed, arriving today, 14:00 or later, no block, payment recorded.</span></li>
         <li><b>One transaction</b><span>Status, payment and timestamps are written together.</span></li>
-        <li><b>Walk-in, same rules</b><span>One allocation path and one price table.</span></li>
+        <li><b>Walk-in, same rules</b><span>One allocation path, one price table, blacklist enforced.</span></li>
         <li><b>Permission boundary</b><span>No price edits, no accounts, no late cancellation.</span></li>
       </ol>
       <p class="rules-title">Not done here</p>
-      <p class="muted small">Overwriting a block silently, skipping the payment record, or making a manager exception.</p>
+      <p class="muted small">Overwriting a block silently, skipping the payment record, releasing a room before the expected arrival passes, or making a manager exception.</p>
     </section>
   </aside>
 </div>

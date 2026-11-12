@@ -25,7 +25,7 @@
         <td>¥{{ payment.amount|money }}</td><td>{{ status(payment.result) }}</td></tr>{% endfor %}</tbody>
     </table></div>{% else %}<p class="manager-empty">No payment or refund records.</p>{% endif %}
   </section>
-  {% if booking.status == 'confirmed' and not booking.checked_in_at %}
+  {% if booking.status in ('confirmed', 'no_show') and not booking.checked_in_at %}
   <section class="manager-panel manager-danger-panel">
     <div class="manager-panel-title"><h2>Cancel booking</h2></div>
     <p>Normal cancellation deadline {{ deadline.strftime('%d %b %Y, %H:%M') }} Beijing time.</p>
