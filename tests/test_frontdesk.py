@@ -78,15 +78,18 @@ def make_room(app, label, *, price="200.00"):
 def reserve(guest, room_type_id, check_in, nights=1):
     query = {"check_in": str(check_in), "check_out": str(check_in + timedelta(days=nights)),
              "guests": 2}
-    page = guest.get("/guest/", query_string=query)
-    assert page.status_code == 200
-    for form in re.findall(r'<form method="post" action="/guest/book".*?</form>', page.text, re.S):
-        fields = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]+)"', form))
-        if fields["room_type_id"] == str(room_type_id):
-            response = guest.post("/guest/book", data={**query, **fields, "note": ""})
-            assert response.status_code == 302 and "/guest/bookings/" in response.location
-            return int(response.location.rsplit("/", 1)[-1])
-    pytest.fail(f"Room type {room_type_id} was not available")
+    page = guest.get(f"/guest/book/{room_type_id}", query_string=query)
+    assert page.status_code == 200, page.status_code
+    form = re.search(r'<form method="post" action="/guest/book".*?</form>', page.text, re.S)
+    if form is None:
+        pytest.fail(f"Room type {room_type_id} was not available")
+    fields = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', form.group(0)))
+    fields.pop("submit", None)
+    fields.setdefault("expected_arrival", "14:00")
+    response = guest.post("/guest/book", data={**query, **fields, "note": ""})
+    assert response.status_code == 302 and "/guest/bookings/" in response.location
+    return int(response.location.rsplit("/", 1)[-1])
+
 
 
 def booking_state(app, booking_id):

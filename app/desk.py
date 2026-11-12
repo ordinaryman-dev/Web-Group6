@@ -474,6 +474,7 @@ def create_walkin(session, actor_id, name, phone, room_type_id, stay, note=None)
         total=total_for_rates(rates),
         note=(note or "").strip() or None,
         status=CONFIRMED,
+        expected_arrival=hotel_now().time().replace(second=0, microsecond=0),
     )
     session.add(booking)
     session.flush()

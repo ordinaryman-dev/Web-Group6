@@ -65,14 +65,18 @@ def create_room(app, label, *, from_date=TODAY):
 
 
 def booking_fields(client, room_type_id, check_in, nights=2):
+    # The guest flow books from the confirmation page, which carries the locked quote.
     query = {"check_in": str(check_in), "check_out": str(check_in + timedelta(days=nights)), "guests": 2}
-    page = client.get("/guest/", query_string=query)
-    assert page.status_code == 200
-    for form in re.findall(r'<form method="post" action="/guest/book".*?</form>', page.text, re.S):
-        fields = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]+)"', form))
-        if fields["room_type_id"] == str(room_type_id):
-            return {**query, **fields, "note": "Please prepare extra towels"}
-    pytest.fail(f"Room type {room_type_id} was not available")
+    page = client.get(f"/guest/book/{room_type_id}", query_string=query)
+    assert page.status_code == 200, page.status_code
+    form = re.search(r'<form method="post" action="/guest/book".*?</form>', page.text, re.S)
+    if form is None:
+        pytest.fail(f"Room type {room_type_id} was not available")
+    fields = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', form.group(0)))
+    fields.pop("submit", None)
+    fields.setdefault("expected_arrival", "14:00")
+    return {**query, **fields, "note": "Please prepare extra towels"}
+
 
 
 def reserve(client, room_type_id, day, nights=2):
@@ -120,7 +124,7 @@ def test_catalogue_price_rule_precedence_and_reconfirmation(app):
     guest, _ = sign_in(app, guest_email)
     type_fields = {
         "code": "manager-suite", "name": "Manager test suite", "description": "A test room type",
-        "capacity": 8, "base_price": "200.00", "listed": "y",
+        "capacity": 8, "base_price": "200.00", "listed": "y", "bed_type": "suite",
     }
     assert post(manager, "/manage/room-types/new", type_fields).status_code == 302
     with app.app_context():
@@ -361,7 +365,7 @@ def test_last_room_contention_and_idempotency_after_quote_changes(app):
     manager, _ = sign_in(app, manager_email)
     changed = {
         "code": "contention-room", "name": "contention-room", "description": "Test room",
-        "capacity": 2, "base_price": "500.00", "listed": "y",
+        "capacity": 2, "base_price": "500.00", "listed": "y", "bed_type": "double",
     }
     assert post(manager, f"/manage/room-types/{room_type_id}", changed).status_code == 302
     assert winner_client.post("/guest/book", data=fields).location == detail
