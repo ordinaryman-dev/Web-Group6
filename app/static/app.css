@@ -645,7 +645,6 @@ img { max-width: 100%; }
 
 /* Backdrop: sharp photo at the edges, blurred and washed out towards the middle. */
 .auth-bg,
-.auth-bg-blur,
 .auth-veil {
   position: fixed;
   inset: 0;
@@ -654,13 +653,6 @@ img { max-width: 100%; }
   pointer-events: none;
 }
 .auth-bg { z-index: 0; }
-.auth-bg-blur {
-  z-index: 1;
-  filter: blur(16px) saturate(1.06) brightness(1.04);
-  transform: scale(1.045);
-  -webkit-mask-image: radial-gradient(ellipse 62% 58% at 50% 50%, #000 0%, #000 38%, transparent 76%);
-  mask-image: radial-gradient(ellipse 62% 58% at 50% 50%, #000 0%, #000 38%, transparent 76%);
-}
 .auth-veil {
   z-index: 2;
   background:
