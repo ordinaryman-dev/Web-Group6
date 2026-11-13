@@ -20,7 +20,7 @@ credit when reusing an image, and follow the licence shown for that image.
 | `room-family.jpg` | [Abraj Suites Hotel suite living room, Doha](https://commons.wikimedia.org/wiki/File:Abraj_Suites_Hotel_suite_living_room,_Doha.jpg) | Abraj Hotels & Real Estate | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | `hero-dining.jpg` | [Interior of a restaurant](https://www.pexels.com/photo/interior-of-a-restaurant-15297133/) | Tuğçe Açıkyürek (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 | `hero-bar.jpg` | [Cosy hotel lobby with warm lighting](https://www.pexels.com/de-de/foto/gemutliche-hotellobby-mit-warmer-beleuchtung-und-geschmackvoller-einrichtung-34937962/) | Eyüpcan Timur (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
-| `hero-suite.jpg` | [Luxury hotel suite with glass wardrobe](https://www.pexels.com/photo/5883728/) | thiha soe (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
+| `hero-daylight.jpg` | [Hotel room with wooden floors and a large bed](https://www.pexels.com/photo/a-hotel-room-with-wooden-floors-and-a-large-bed-28347470/) | SVH Manali (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 
 ## Filenames and use
 
@@ -36,7 +36,7 @@ credit when reusing an image, and follow the licence shown for that image.
 | `room-family.jpg` | `Family Suite` room type | 1280 × 720 |
 | `hero-dining.jpg` | Auth background strip — frame 1 (restaurant) | 1600 × 2400 |
 | `hero-bar.jpg` | Auth background strip — frame 2 (bar / reception) | 1600 × 2843 |
-| `hero-suite.jpg` | Auth background strip — frame 3 (suite) | 1600 × 1067 |
+| `hero-daylight.jpg` | Auth background strip — frame 3 (sunlit room) | 1600 × 1067 |
 
 The room images are centre-cropped to a 16:9 card ratio. They are served by Flask at
 `/static/images/<filename>`.
