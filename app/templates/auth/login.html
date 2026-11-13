@@ -1,55 +1,43 @@
 {% extends "auth_layout.html" %}
 {% block title %}Sign in · Hero Hotel{% endblock %}
-{% block content %}
-<main class="auth-shell">
-  <section class="auth-brand">
-    <div class="brand-lockup">
-      <span class="brand-mark light">HH</span>
-      <span><b>HERO HOTEL</b><small>Hangzhou · 305 rooms</small></span>
-    </div>
 
-    <div class="auth-hero">
-      <p class="eyebrow light">SHARED ENTRY</p>
-      <h1>One entrance,<br>three workspaces.</h1>
-      <p class="auth-lead">Sign in to search, book and keep your own bookings in one place.</p>
-    </div>
+{% block story %}
+<p class="eyebrow">SHARED ENTRY</p>
+<h1>One entrance,<br>three workspaces.</h1>
+<p class="auth-lead">Sign in to search, book and keep your own bookings in one place.</p>
 
-    <ul class="role-list" aria-label="Roles">
-      <li><span class="dot guest"></span><div><b>Guest</b><small>Search, quote, book and view your own bookings</small></div></li>
-      <li><span class="dot staff"></span><div><b>Receptionist</b><small>Front desk — arrivals, check-in/out, requests and maintenance</small></div></li>
-      <li><span class="dot admin"></span><div><b>Manager</b><small>Manager console — rooms, prices, accounts, reports and audit</small></div></li>
-    </ul>
+<ul class="role-list" aria-label="Roles">
+  <li><span class="dot guest"></span><div><b>Guest</b><small>Search, quote, book and view your own bookings</small></div></li>
+  <li><span class="dot staff"></span><div><b>Receptionist</b><small>Front desk — arrivals, check-in/out, requests and maintenance</small></div></li>
+  <li><span class="dot admin"></span><div><b>Manager</b><small>Manager console — rooms, prices, accounts, reports and audit</small></div></li>
+</ul>
 
-    <p class="auth-foot">Public registration creates guest accounts only. Staff accounts are created by a manager.</p>
-  </section>
+<p class="auth-foot">Public registration creates guest accounts only. Staff accounts are created by a manager.</p>
+{% endblock %}
 
-  <section class="auth-panel">
-    <div class="auth-card">
-      <p class="eyebrow">SIGN IN</p>
-      <h2>Welcome back</h2>
-      <p class="muted">Use your hotel account to continue.</p>
+{% block panel %}
+<p class="eyebrow">SIGN IN</p>
+<h2>Welcome back</h2>
+<p class="muted">Use your hotel account to continue.</p>
 
-      <form method="post" class="stack" novalidate>
-        {{ form.hidden_tag() }}
+<form method="post" class="stack" novalidate>
+  {{ form.hidden_tag() }}
 
-        <div class="field">
-          {{ form.email.label }}
-          {{ form.email(type="email", autocomplete="email", placeholder="you@example.com", autofocus=true) }}
-          {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
+  <div class="field">
+    {{ form.email.label }}
+    {{ form.email(type="email", autocomplete="email", placeholder="you@example.com", autofocus=true) }}
+    {% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+  </div>
 
-        <div class="field">
-          {{ form.password.label }}
-          {{ form.password(autocomplete="current-password", placeholder="Your password") }}
-          {% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
+  <div class="field">
+    {{ form.password.label }}
+    {{ form.password(autocomplete="current-password", placeholder="Your password") }}
+    {% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+  </div>
 
-        {{ form.submit(class="button full") }}
-      </form>
+  {{ form.submit(class="button full") }}
+</form>
 
-      <p class="auth-alt">New guest? <a href="{{ url_for('auth.register') }}">Create an account →</a></p>
-      <p class="auth-note">Receptionists and managers use the same entrance.</p>
-    </div>
-  </section>
-</main>
+<p class="auth-alt">New guest? <a href="{{ url_for('auth.register') }}">Create an account →</a></p>
+<p class="auth-note">Receptionists and managers use the same entrance.</p>
 {% endblock %}

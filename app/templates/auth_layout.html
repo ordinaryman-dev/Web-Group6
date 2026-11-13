@@ -1,15 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" content="notranslate">
   <title>{% block title %}Hero Hotel{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=3">
 </head>
 <body class="auth-body">
+  <div class="auth-bg" style="background-image:url('{{ url_for('static', filename='images/hotel-lobby.jpg') }}')"></div>
+  <div class="auth-bg-blur" style="background-image:url('{{ url_for('static', filename='images/hotel-lobby.jpg') }}')"></div>
+  <div class="auth-veil"></div>
+
+  <header class="auth-topbar">
+    <a class="brand-lockup" href="{{ url_for('auth.index') }}">
+      <span class="brand-mark">HH</span>
+      <span><b>HERO HOTEL</b><small>Hangzhou · 305 rooms</small></span>
+    </a>
+  </header>
+
   {% for category, message in get_flashed_messages(with_categories=true) %}
     <p class="flash auth-flash {{ category }}" role="status">{{ message }}</p>
   {% endfor %}
-  {% block content %}{% endblock %}
+
+  <main class="auth-stage">
+    <section class="auth-sheet">
+      <div class="auth-story">{% block story %}{% endblock %}</div>
+      <div class="auth-form-pane">
+        <div class="auth-card">{% block panel %}{% endblock %}</div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
