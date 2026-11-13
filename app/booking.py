@@ -103,11 +103,19 @@ def free_room_conditions(stay):
         RoomBlock.start_date < stay.check_out,
         RoomBlock.end_date > stay.check_in,
     )
+    # A guest who is still checked in after their departure date keeps the room
+    # physically occupied even though no RoomNight row covers the new stay.
+    overdue = exists().where(
+        Booking.room_id == Room.id,
+        Booking.status == "checked_in",
+        Booking.check_out < stay.check_in,
+    )
     return (
         Room.operational_from <= stay.check_in,
         or_(Room.operational_until.is_(None), Room.operational_until >= stay.check_out),
         ~booked,
         ~blocked,
+        ~overdue,
     )
 
 

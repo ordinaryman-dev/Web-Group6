@@ -8,7 +8,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session, lazyload
 
@@ -25,6 +25,7 @@ from .booking import (
 )
 from .extensions import db
 from .models import (
+    MANAGER,
     Booking,
     BookingPriceLine,
     BookingRequest,
@@ -57,6 +58,36 @@ def paid_total(session, booking_id):
     return refundable_amount(session, booking_id)
 
 
+def paid_totals(session, booking_ids):
+    """Net collected per booking, in one query, for the order list."""
+    booking_ids = list(booking_ids)
+    if not booking_ids:
+        return {}
+    rows = session.execute(
+        select(
+            PaymentRecord.booking_id,
+            func.sum(
+                case(
+                    (PaymentRecord.kind == "payment", PaymentRecord.amount),
+                    else_=-PaymentRecord.amount,
+                )
+            ),
+        )
+        .where(
+            PaymentRecord.booking_id.in_(booking_ids),
+            PaymentRecord.result == "success",
+        )
+        .group_by(PaymentRecord.booking_id)
+    ).all()
+    totals = {
+        booking_id: max(total or Decimal("0.00"), Decimal("0.00"))
+        for booking_id, total in rows
+    }
+    for booking_id in booking_ids:
+        totals.setdefault(booking_id, Decimal("0.00"))
+    return totals
+
+
 def record_payment(session, booking, actor_id, amount=None):
     if booking.status in (CANCELLED, CHECKED_OUT):
         raise DeskError("This booking can no longer take a payment.")
@@ -82,6 +113,35 @@ def record_payment(session, booking, actor_id, amount=None):
     return payment
 
 
+def record_refund(session, booking, actor_id, amount=None):
+    """Return simulated money to the guest, never more than was collected."""
+    if booking.status not in (CANCELLED, CHECKED_OUT):
+        raise DeskError("A refund is recorded after checkout or cancellation.")
+    available = paid_total(session, booking.id)
+    if available <= 0:
+        raise DeskError("Nothing has been collected on this booking, so there is nothing to refund.")
+    amount = available if amount is None else Decimal(amount)
+    if amount <= 0:
+        raise DeskError("Enter a refund greater than zero.")
+    if amount > available:
+        raise DeskError(
+            f"Refunds cannot exceed payments received: only ¥{available:,.2f} is refundable."
+        )
+    payment = PaymentRecord(
+        booking_id=booking.id,
+        kind="refund",
+        amount=amount,
+        actor_user_id=actor_id,
+        result="success",
+        reference=f"refund-{uuid4()}",
+    )
+    session.add(payment)
+    record_audit(session, actor_id, "record_refund", "booking", booking.id,
+                 details={"amount": format(amount, ".2f"),
+                          "net_collected_before": format(available, ".2f")})
+    return payment
+
+
 def check_in_issues(session, booking, now):
     """The checks the panel shows, as (label, ok, detail)."""
     paid = paid_total(session, booking.id)
@@ -104,6 +164,8 @@ def check_in_issues(session, booking, now):
          f"Now {now:%H:%M}, check-in opens at 14:00"),
         ("Room has no maintenance block for this stay", blocked is None,
          f"Room {booking.room.number}" if blocked is None else "A block covers this stay"),
+        ("Room is cleaned and ready", booking.room.housekeeping == "clean",
+         f"Room {booking.room.number} is marked {booking.room.housekeeping}"),
         ("Simulated payment recorded", paid >= booking.total,
          f"Paid ¥{paid:,.2f} of ¥{booking.total:,.2f}"),
     ]
@@ -142,9 +204,11 @@ def check_out(session, booking_id, actor_id, now):
     today = now.date()
     planned = booking.check_out
     late = today == planned and now.time() > CHECK_OUT_BY
+    overdue = today > planned
     early = today < planned
     booking.status = CHECKED_OUT
     booking.checked_out_at = utc_now()
+    booking.room.housekeeping = "dirty"
     if early:
         # The guest left before the booked departure: release the unused nights so the
         # room is sellable again. The agreed price stays exactly as booked.
@@ -157,9 +221,9 @@ def check_out(session, booking_id, actor_id, now):
                  details={"room": booking.room.number,
                           "planned_departure": planned.isoformat(),
                           "departure": today.isoformat(),
-                          "late": late, "early": early,
+                          "late": late, "early": early, "overdue": overdue,
                           "checked_out_at": booking.checked_out_at.isoformat()})
-    return {"late": late, "early": early}
+    return {"late": late, "early": early, "overdue": overdue}
 
 
 def desk_today(session, now):
@@ -175,8 +239,8 @@ def desk_today(session, now):
     ).all()
     departures = session.scalars(
         select(Booking)
-        .where(Booking.status == CHECKED_IN, Booking.check_out == today)
-        .order_by(Booking.id)
+        .where(Booking.status == CHECKED_IN, Booking.check_out <= today)
+        .order_by(Booking.check_out, Booking.id)
     ).all()
     return arrivals, in_house, departures
 
@@ -194,7 +258,6 @@ def room_board(session, start, days=4, room_type_id=None, room_query=None):
         else:
             room_stmt = room_stmt.where(Room.number.like(f"%{wanted}%"))
     rooms = session.scalars(room_stmt.order_by(Room.number)).all()
-    room_ids = [room.id for room in rooms]
     nights = session.execute(
         select(RoomNight.room_id, RoomNight.stay_date, Booking)
         .join(Booking, Booking.id == RoomNight.booking_id)
@@ -205,19 +268,27 @@ def room_board(session, start, days=4, room_type_id=None, room_query=None):
         select(RoomBlock).where(RoomBlock.effective.is_(True),
                                 RoomBlock.start_date < end, RoomBlock.end_date > start)
     ).all()
+    departing = session.scalars(
+        select(Booking).where(
+            Booking.status == CHECKED_IN,
+            Booking.check_in < end,
+        )
+    ).all()
     by_cell = {(room_id, stay): booking for room_id, stay, booking in nights}
-    leaving = departing_rooms(session, start)
+    staying = {booking.room_id: booking for booking in departing}
+    today = hotel_now().date()
     board = []
     for room in rooms:
         cells = []
         for offset in range(days):
             day = start + timedelta(days=offset)
             booking = by_cell.get((room.id, day))
-            blocked = any(
-                block.room_id == room.id and block.start_date <= day < block.end_date
-                for block in blocks
+            block = next(
+                (item for item in blocks
+                 if item.room_id == room.id and item.start_date <= day < item.end_date),
+                None,
             )
-            if blocked:
+            if block is not None:
                 state = "blocked"
             elif booking is not None:
                 # A night belongs to a checked-in guest once they have arrived, so the
@@ -229,11 +300,17 @@ def room_board(session, start, days=4, room_type_id=None, room_query=None):
                     state = "arriving"
                 else:
                     state = "reserved"
-            elif offset == 0 and room.id in leaving:
-                state = "departing"
+            elif (active := staying.get(room.id)) is not None and active.check_in <= day:
+                # The guest is still physically in the room after the last night. On
+                # the departure date this is "departing"; past it the stay is overdue
+                # and the room must not be sold again until checkout.
+                booking = active
+                state = "departing" if active.check_out == day else "in_house"
+            elif day == today and room.housekeeping == "dirty":
+                state = "dirty"
             else:
                 state = "free"
-            cells.append({"date": day, "state": state})
+            cells.append({"date": day, "state": state, "booking": booking, "block": block})
         board.append({"room": room, "cells": cells})
     return board
 
@@ -298,15 +375,31 @@ def cancel_block(session, block_id, actor_id, reason=None):
                           "to": block.end_date.isoformat()})
     return block
 
-def free_rooms(session, room_type_id, stay):
+def mark_room_clean(session, room_id, actor_id):
+    """Housekeeping has finished: the room may be sold or checked into again."""
+    room = session.get(Room, room_id, with_for_update=True)
+    if room is None:
+        raise DeskError("This room could not be found.")
+    if room.housekeeping == "clean":
+        raise DeskError("This room is already marked clean.")
+    room.housekeeping = "clean"
+    record_audit(session, actor_id, "mark_room_clean", "room", room.id,
+                 details={"room": room.number})
+    return room
+
+
+def free_rooms(session, room_type_id, stay, clean_only=False):
+    conditions = [Room.room_type_id == room_type_id, *free_room_conditions(stay)]
+    if clean_only:
+        # A room that has not been cleaned cannot be sold for tonight. Future stays are
+        # unaffected: housekeeping will have cleaned it long before arrival.
+        conditions.append(Room.housekeeping == "clean")
     return session.scalars(
-        select(Room.id)
-        .where(Room.room_type_id == room_type_id, *free_room_conditions(stay))
-        .order_by(Room.id)
+        select(Room.id).where(*conditions).order_by(Room.id)
     ).all()
 
 
-def reassign(session, booking_id, actor_id, reason, room_type_id=None):
+def reassign(session, booking_id, actor_id, reason, room_type_id=None, today=None):
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
     if booking is None:
         raise DeskError("This booking could not be found.")
@@ -325,7 +418,10 @@ def reassign(session, booking_id, actor_id, reason, room_type_id=None):
     # The released room is free again, so drop it from the candidates: a reassignment
     # has to move the guest somewhere else, not back into the same room.
     candidates = [
-        room_id for room_id in free_rooms(session, room_type_id or booking.room_type_id, stay)
+        room_id for room_id in free_rooms(
+            session, room_type_id or booking.room_type_id, stay,
+            clean_only=bool(today and booking.check_in <= today),
+        )
         if room_id != booking.room_id
     ]
     if not candidates:
@@ -356,10 +452,13 @@ def _reprice(session, booking, stay):
     booking.total = total_for_rates(rates)
 
 
-def _rehouse(session, booking, stay, room_type_id):
+def _rehouse(session, booking, stay, room_type_id, today=None):
     session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
     session.flush()
-    candidates = free_rooms(session, room_type_id, stay)
+    candidates = free_rooms(
+        session, room_type_id, stay,
+        clean_only=bool(today and stay.check_in <= today),
+    )
     if not candidates:
         raise DeskError("No room covers the requested stay. The booking is unchanged.")
     booking.room_id = candidates[0]
@@ -374,7 +473,7 @@ def _rehouse(session, booking, stay, room_type_id):
     _reprice(session, booking, stay)
 
 
-def approve_request(session, request_id, actor_id, comment=None):
+def approve_request(session, request_id, actor_id, comment=None, actor_role=None, today=None):
     row = session.get(BookingRequest, request_id, with_for_update=True)
     if row is None:
         raise DeskError("This request could not be found.")
@@ -395,7 +494,16 @@ def approve_request(session, request_id, actor_id, comment=None):
             if row.submitted_at else None
         )
         if submitted_local and submitted_local > cancellation_deadline(booking):
-            raise DeskError("This cancellation arrived after the deadline; only a manager can approve it.")
+            if actor_role != MANAGER:
+                raise DeskError(
+                    "This cancellation arrived after the deadline; only a manager can approve it."
+                )
+            # A manager exception is a deliberate override, so it is written to the audit
+            # trail with the same reason the guest gave.
+            record_audit(session, actor_id, "late_cancellation_exception", "booking",
+                         booking.id, reason=row.reason,
+                         details={"request_id": row.id,
+                                  "submitted_at": submitted_local.isoformat()})
         refund = refundable_amount(session, booking.id)
         if refund > 0:
             session.add(PaymentRecord(
@@ -416,7 +524,7 @@ def approve_request(session, request_id, actor_id, comment=None):
         stay = Stay(new_in, new_out, booking.guests)
         if stay.check_out <= stay.check_in:
             raise DeskError("The requested dates are invalid.")
-        _rehouse(session, booking, stay, booking.room_type_id)
+        _rehouse(session, booking, stay, booking.room_type_id, today=today)
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "dates",
                                                  "check_in": stay.check_in.isoformat(),
@@ -426,7 +534,7 @@ def approve_request(session, request_id, actor_id, comment=None):
         if not room_type_id or session.get(RoomType, room_type_id) is None:
             raise DeskError("The requested room type is unavailable.")
         stay = Stay(booking.check_in, booking.check_out, booking.guests)
-        _rehouse(session, booking, stay, room_type_id)
+        _rehouse(session, booking, stay, room_type_id, today=today)
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "room_type",
                                                  "room_type_id": room_type_id})
@@ -498,7 +606,7 @@ def find_customers(session, query, limit=8):
 
 
 def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
-                  name=None, phone=None, note=None, pay_now=True):
+                  name=None, phone=None, note=None, pay_now=True, room_id=None):
     """Open a room for a guest at the desk: occupy the nights, take payment, check in.
 
     Reuses the same availability, capacity and price rules as the guest portal and
@@ -530,12 +638,27 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
     if customer_is_blocked(session, customer.id, utc_now()):
         raise DeskError("This guest is blacklisted; the desk cannot book or check them in.")
 
-    candidates = free_rooms(session, room_type_id, stay)
-    if not candidates:
-        raise DeskError("No room covers the whole stay. Nothing was booked.")
+    now = hotel_now()
+    if room_id is not None:
+        room = session.get(Room, room_id)
+        if room is None or room.room_type_id != room_type_id:
+            raise DeskError("That room does not match the selected room type.")
+        if room.housekeeping != "clean" and stay.check_in <= now.date():
+            raise DeskError("That room is still marked dirty. Mark it cleaned first.")
+        available = session.scalar(
+            select(Room.id).where(Room.id == room.id, *free_room_conditions(stay))
+        )
+        if available is None:
+            raise DeskError("That room is not free for the whole stay. Nothing was booked.")
+        candidates = [room.id]
+    else:
+        candidates = free_rooms(
+            session, room_type_id, stay, clean_only=stay.check_in <= now.date(),
+        )
+        if not candidates:
+            raise DeskError("No room covers the whole stay. Nothing was booked.")
     rates = nightly_rates(session, room_type, stay)
     total = total_for_rates(rates)
-    now = hotel_now()
     booking = Booking(
         customer_id=customer.id,
         room_id=candidates[0],
@@ -596,6 +719,8 @@ def contact_customer(session, booking_id, actor_id, result, note=None, new_expec
     result = (result or "").strip()
     if not result:
         raise DeskError("Record what happened when you contacted the guest.")
+    if result == "reached_late" and new_expected is None:
+        raise DeskError("A late-arrival contact needs the new expected arrival time.")
     booking.last_contact_at = utc_now()
     booking.last_contact_result = result[:40]
     if new_expected:

@@ -1,397 +1,611 @@
 {% extends "base.html" %}
-{% block title %}Front desk · The Harbour Hotel{% endblock %}
+{% block title %}Front desk · Hero Hotel{% endblock %}
 {% block body_class %}desk-page{% endblock %}
+
+{% macro csrf_back() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="back" value="{{ request.full_path }}">
+{%- endmacro %}
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}">
-<div class="desk">
+<div class="desk{% if drawer_mode %} has-drawer{% endif %}">
 
-  <aside class="desk-nav" aria-label="Desk sections">
-    <div class="desk-brand">
-      <span class="desk-brand-mark">FD</span>
+  <aside class="desk-side" aria-label="Desk sections">
+    <div class="side-brand">
+      <span class="side-mark">HH</span>
       <span>
         <b>FRONT DESK</b>
-        <small>The Harbour Hotel</small>
+        <small>Hero Hotel</small>
       </span>
     </div>
-    <nav>
-      <a class="desk-link is-active" href="#arrivals"><span>Arrivals</span><b>{{ arrivals|length }}</b></a>
-      <a class="desk-link" href="#in-house"><span>In house</span><b>{{ in_house|length }}</b></a>
-      <a class="desk-link" href="#departures"><span>Departures</span><b>{{ departures|length }}</b></a>
-      <a class="desk-link" href="#board"><span>Room board</span></a>
-      <a class="desk-link" href="#walkin"><span>Walk-in</span></a>
-      <a class="desk-link" href="#blocks"><span>Maintenance blocks</span><b>{{ blocks|length }}</b></a>
-      <a class="desk-link" href="#requests"><span>Requests</span><b>{{ pending|length }}</b></a>
+
+    <nav class="side-nav" aria-label="Workbench">
+      <a class="side-link {{ 'is-active' if view == 'grid' }}"
+         href="{{ desk_url(view='grid', room=None, booking=None) }}">
+        <span class="side-icon" aria-hidden="true">▦</span>
+        <span class="side-text"><b>Room board</b><small>E01 · {{ total_rooms }} rooms</small></span>
+        <span class="side-count">{{ floor_numbers }}F</span>
+      </a>
+      <a class="side-link {{ 'is-active' if view == 'orders' }}"
+         href="{{ desk_url(view='orders', tab='arrivals', room=None, booking=None) }}">
+        <span class="side-icon" aria-hidden="true">☰</span>
+        <span class="side-text"><b>Orders</b><small>Arrivals, in house, history</small></span>
+      </a>
+      <a class="side-link {{ 'is-active' if view == 'tasks' }}"
+         href="{{ desk_url(view='tasks', room=None, booking=None) }}">
+        <span class="side-icon" aria-hidden="true">◉</span>
+        <span class="side-text"><b>Tasks</b><small>E05 · E06 · E08</small></span>
+        {% set task_badge = pending|length + late_arrivals|length %}
+        {% if task_badge %}<span class="side-badge">{{ task_badge }}</span>{% endif %}
+      </a>
     </nav>
-    <div class="desk-identity">
+
+    <div class="side-block">
+      <p class="side-title">SHIFT AT A GLANCE</p>
+      <dl class="side-stats">
+        <div><dt>Arrivals</dt><dd>{{ arrivals_today|length }}</dd></div>
+        <div><dt>In house</dt><dd>{{ in_house|length }}</dd></div>
+        <div><dt>Due out</dt><dd>{{ departures_today|length }}</dd></div>
+        <div><dt>Dirty</dt><dd class="{{ 'warn' if dirty_rooms }}">{{ dirty_rooms|length }}</dd></div>
+      </dl>
+      <p class="side-note">Check-in from {{ check_in_from }} · check-out by {{ check_out_by }} · Beijing time.</p>
+    </div>
+
+    <div class="side-identity">
       <b>{{ current_user.email }}</b>
-      <small>Front desk · shift open</small>
+      <small>{{ 'Manager' if is_manager else 'Front desk' }} · shift open</small>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="desk-signout" type="submit">Sign out</button>
+        <button class="side-signout" type="submit">Sign out</button>
       </form>
     </div>
   </aside>
 
-  <section class="desk-work">
-    <header class="desk-head">
-      <div>
-        <p class="eyebrow">TODAY</p>
-        <h1>Today's desk</h1>
-        <p class="muted desk-clock">{{ now.strftime('%a %d %b %Y') }} · {{ now.strftime('%H:%M') }} Beijing time</p>
+  <div class="desk-main">
+
+    <header class="topbar">
+      <form class="global-search" method="get" action="{{ url_for('frontdesk.index') }}" role="search">
+        <input type="hidden" name="view" value="{{ view }}">
+        <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+        <input type="hidden" name="floor" value="{{ active_floor }}">
+        <span class="search-glyph" aria-hidden="true">⌕</span>
+        <input type="search" name="q" value="{{ query }}"
+               placeholder="Name, phone, room or BK-…"
+               aria-label="Search guest, phone, room or booking">
+        <button type="submit">Find</button>
+      </form>
+
+      <nav class="timeline" aria-label="Timeline: today and the next 14 days">
+        {% for day in timeline %}
+        <a class="day {{ 'is-active' if day.date == selected_date }} {{ 'is-today' if day.date == today }}"
+           href="{{ desk_url(view='grid', date=day.date.isoformat(), room=None, booking=None) }}"
+           title="{{ day.date.strftime('%d %b %Y') }} · {{ day.free }} free · {{ day.arrivals }} arriving">
+          <span class="day-num">{{ day.date.strftime('%d') }}</span>
+          <span class="day-dow">{{ 'Today' if day.date == today else day.date.strftime('%a') }}</span>
+          <span class="day-free">{{ day.free }} free</span>
+        </a>
+        {% endfor %}
+      </nav>
+
+      <div class="topbar-meta">
+        <div class="clock">
+          <time id="desk-clock" data-epoch="{{ epoch_ms }}">{{ now.strftime('%H:%M:%S') }}</time>
+          <span>BEIJING</span>
+        </div>
+        <div class="operator">
+          <b>{{ current_user.email.split('@')[0] }}</b>
+          <span>{{ 'Manager' if is_manager else 'Front desk' }}</span>
+        </div>
+        <details class="bell">
+          <summary aria-label="System notifications">
+            <span aria-hidden="true">◔</span>
+            {% if notification_total %}<span class="bell-count">{{ notification_total }}</span>{% endif %}
+          </summary>
+          <div class="bell-panel">
+            <p class="eyebrow">SYSTEM NOTIFICATIONS</p>
+            {% for item in notifications %}
+            <a class="bell-row tone-{{ item.tone }}"
+               href="{{ desk_url(view=('grid' if item.kind == 'conflict' else 'tasks'), room=None, booking=None) }}">
+              <b>{{ item.title }}</b>
+              <small>{{ item.text }}</small>
+            </a>
+            {% else %}
+            <p class="bell-empty">All clear. Nothing needs attention.</p>
+            {% endfor %}
+          </div>
+        </details>
       </div>
-      <a class="desk-refresh" href="{{ url_for('frontdesk.index') }}">Refresh</a>
     </header>
 
-    <div class="desk-kpis">
-      <article class="kpi">
-        <p class="kpi-label">Arrivals today</p>
-        <p class="kpi-value">{{ arrivals|length }}<span>rooms</span></p>
-      </article>
-      <article class="kpi">
-        <p class="kpi-label">In house</p>
-        <p class="kpi-value">{{ in_house|length }}<span>rooms</span></p>
-      </article>
-      <article class="kpi">
-        <p class="kpi-label">Departures today</p>
-        <p class="kpi-value">{{ departures|length }}<span>rooms</span></p>
-      </article>
-    </div>
-
-    <section class="desk-card" id="arrivals">
-      <div class="desk-card-head">
-        <h2>Arrivals</h2>
-        <span class="muted small">Confirmed bookings arriving today · check-in opens at 14:00</span>
+    {% if query %}
+    <section class="search-panel" aria-label="Search results">
+      <div class="search-panel-head">
+        <p class="eyebrow">SEARCH RESULTS · “{{ query }}”</p>
+        <span class="muted small">{{ matches|length }} match{{ '' if matches|length == 1 else 'es' }}</span>
       </div>
-      {% if arrivals %}
-      <table class="desk-table">
-        <thead>
-          <tr><th>Booking</th><th>Guest</th><th>Room type · Room</th><th>Expected</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for booking in arrivals %}
-          <tr class="{{ 'is-selected' if selected and selected.id == booking.id }}">
-            <td class="mono">{{ booking.reference }}</td>
-            <td>{{ booking.customer.name }}</td>
-            <td>{{ booking.room_type.name }} · <b>{{ booking.room.number }}</b></td>
-            <td class="mono">{{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}</td>
-            <td><span class="chip chip-{{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span></td>
-            <td class="row-actions">
-              <a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a>
-              <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=booking.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="mini primary" type="submit">Check in</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      {% for match in matches %}
+      <a class="search-row" href="{{ desk_url(view=view, booking=match.id, room=None) }}">
+        <span class="mono">{{ match.reference }}</span>
+        <b>{{ match.customer.name }}</b>
+        <span class="muted">{{ match.customer.phone or 'no phone' }}</span>
+        <span class="muted">Room {{ match.room.number }} · {{ match.room_type.name }}</span>
+        <span class="chip chip-{{ match.status }}">{{ match.status.replace('_', ' ') }}</span>
+        <span class="search-open">Open →</span>
+      </a>
       {% else %}
-      <p class="desk-empty">No arrivals left today.</p>
-      {% endif %}
-    </section>
-
-    {% if conflicts %}
-    <section class="desk-alert" role="alert">
-      <p class="desk-alert-title">Maintenance conflicts {{ conflicts|length }}</p>
-      {% for item in conflicts %}
-      <p>
-        Room <b>{{ item.block.room.number }}</b> is blocked
-        {{ item.block.start_date.strftime('%d %b') }}–{{ item.block.end_date.strftime('%d %b') }},
-        affecting <b>{{ item.booking.reference }}</b> ({{ item.booking.customer.name }}).
-        <a href="{{ url_for('frontdesk.index', booking=item.booking.id) }}">Open and reassign</a>
-      </p>
+      <p class="empty">No booking matches that name, phone, room or reference.</p>
       {% endfor %}
-      <p class="muted small">The original booking is kept; nothing is overwritten silently.</p>
     </section>
     {% endif %}
 
-    <section class="desk-card" id="in-house">
-      <div class="desk-card-head">
-        <h2>In house</h2>
-        <span class="muted small">Checked in and not yet departed</span>
+    {% if view == 'grid' %}
+    <div class="view-head">
+      <div>
+        <p class="eyebrow">FRONT DESK · {{ now.strftime('%A %d %B %Y') }}</p>
+        <h1>Today's desk</h1>
+        <p class="muted view-sub">Room status for {{ selected_date.strftime('%A %d %B') }}. Check-in {{ check_in_from }} · check-out {{ check_out_by }}.</p>
       </div>
-      {% if in_house %}
-      <table class="desk-table">
-        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-        {% for booking in in_house %}
-          <tr class="{{ 'is-selected' if selected and selected.id == booking.id }}">
-            <td class="mono">{{ booking.reference }}</td>
-            <td>{{ booking.customer.name }}</td>
-            <td><b>{{ booking.room.number }}</b></td>
-            <td>{{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}</td>
-            <td><span class="chip chip-{{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span></td>
-            <td class="row-actions"><a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a></td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      {% else %}<p class="desk-empty">No guests are in house.</p>{% endif %}
+      <div class="kpi-strip">
+        <div class="kpi-pill"><b>{{ arrivals_today|length }}</b><span>Arrivals today</span></div>
+        <div class="kpi-pill"><b>{{ in_house|length }}</b><span>In house now</span></div>
+        <div class="kpi-pill"><b>{{ departures_today|length }}</b><span>Due out / overdue</span></div>
+        <div class="kpi-pill"><b>{{ occupied_today }}/{{ total_rooms }}</b><span>Occupancy now</span></div>
+      </div>
+    </div>
+
+    {% if conflicts %}
+    <section class="conflict-banner" role="alert">
+      <div class="conflict-head">
+        <div>
+          <p class="eyebrow">MAINTENANCE</p>
+          <h2>Maintenance conflicts</h2>
+        </div>
+        <span class="chip chip-cancel">{{ conflicts|length }} pair{{ '' if conflicts|length == 1 else 's' }}</span>
+      </div>
+      <p class="muted small">A block never overwrites a booking. Move the guest to another room of the same type; the price stays unchanged.</p>
+      {% for item in conflicts %}
+      <div class="conflict-row">
+        <span>
+          <b>Room {{ item.block.room.number }}</b> blocked
+          {{ item.block.start_date.strftime('%d %b') }}–{{ item.block.end_date.strftime('%d %b') }}
+          · affects <b class="mono">{{ item.booking.reference }}</b> ({{ item.booking.customer.name }})
+        </span>
+        <span class="conflict-actions">
+          <a class="mini" href="{{ desk_url(view='grid', room=item.block.room_id, booking=None) }}">Open room</a>
+          {% if item.booking.status == 'confirmed' and item.booking.check_in >= today %}
+          <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=item.booking.id) }}" data-guard>
+            {{ csrf_back() }}
+            <input type="hidden" name="re-reason" value="Displaced by maintenance block on room {{ item.block.room.number }}">
+            <button class="mini primary" type="submit">Move to a free room</button>
+          </form>
+          {% endif %}
+        </span>
+      </div>
+      {% endfor %}
     </section>
+    {% endif %}
 
-    <section class="desk-card" id="departures">
-      <div class="desk-card-head">
-        <h2>Departures</h2>
-        <span class="muted small">Due out today · standard check-out before 12:00</span>
+    <section class="panel board-panel" id="board">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">ROOM BOARD</p>
+          <h2>Room board</h2>
+        </div>
+        <div class="legend" aria-label="Room state colours">
+          <span><i class="dot dot-free"></i>Free</span>
+          <span><i class="dot dot-arriving"></i>Arriving / reserved</span>
+          <span><i class="dot dot-in_house"></i>In house / departing</span>
+          <span><i class="dot dot-dirty"></i>Dirty</span>
+          <span><i class="dot dot-blocked"></i>Out of service</span>
+        </div>
       </div>
-      {% if departures %}
-      <table class="desk-table">
-        <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Total</th><th></th></tr></thead>
-        <tbody>
-        {% for booking in departures %}
-          <tr>
-            <td class="mono">{{ booking.reference }}</td>
-            <td>{{ booking.customer.name }}</td>
-            <td><b>{{ booking.room.number }}</b></td>
-            <td class="mono">¥{{ booking.total|money }}</td>
-            <td class="row-actions">
-              <a class="mini" href="{{ url_for('frontdesk.index', booking=booking.id) }}">Open</a>
-              <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=booking.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="mini primary" type="submit">Check out</button>
-              </form>
-            </td>
-          </tr>
+
+      <nav class="floor-tabs" aria-label="Floors">
+        {% for floor in floor_tabs %}
+        <a class="{{ 'is-active' if floor.key == active_floor }}"
+           href="{{ desk_url(view='grid', floor=floor.key, room=None, booking=None) }}">
+          <b>{{ floor.label }}</b>
+          <span>{{ floor.free }} free</span>
+        </a>
         {% endfor %}
-        </tbody>
-      </table>
-      {% else %}<p class="desk-empty">No departures today.</p>{% endif %}
-    </section>
+      </nav>
 
-    <section class="desk-card" id="board">
-      <div class="desk-card-head">
-        <h2>Room board</h2>
-        <span class="muted small">Room × date · blocks warn, they never overwrite a booking</span>
+      <div class="state-chips" aria-label="State filter">
+        <a class="state-chip {{ 'is-active' if state_filter == 'all' }}"
+           href="{{ desk_url(state=None, room=None, booking=None) }}">
+          All <b>{{ floor_counts.get(active_floor, {}).get('total', 0) }}</b>
+        </a>
+        {% for key, label in state_labels.items() %}
+        <a class="state-chip {{ 'is-active' if state_filter == key }}"
+           href="{{ desk_url(state=key, room=None, booking=None) }}">
+          {{ label }} <b>{{ state_counts.get(key, 0) }}</b>
+        </a>
+        {% endfor %}
       </div>
 
-      <form class="board-filters" method="get" action="{{ url_for('frontdesk.index') }}">
-        {% if selected %}<input type="hidden" name="booking" value="{{ selected.id }}">{% endif %}
-        <label>From <input type="date" name="frm" value="{{ start.isoformat() }}"></label>
-        <label>Days
-          <select name="days">
-            {% for option in [1, 2, 3, 4, 7, 14] %}
-            <option value="{{ option }}" {{ 'selected' if board_days == option }}>{{ option }}</option>
+      <form class="filter-bar" method="get" action="{{ url_for('frontdesk.index') }}">
+        <input type="hidden" name="view" value="grid">
+        <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+        <input type="hidden" name="floor" value="{{ active_floor }}">
+        <input type="hidden" name="state" value="{{ state_filter }}">
+        <label>Bed
+          <select name="bed">
+            <option value="">All beds</option>
+            {% for key, label in bed_labels.items() %}
+            <option value="{{ key }}" {{ 'selected' if bed_filter == key }}>{{ label }}</option>
             {% endfor %}
+          </select>
+        </label>
+        <label>Window
+          <select name="window">
+            <option value="">Any window</option>
+            <option value="with" {{ 'selected' if window_filter == 'with' }}>With window</option>
+            <option value="without" {{ 'selected' if window_filter == 'without' }}>No window</option>
           </select>
         </label>
         <label>Room type
           <select name="type">
-            <option value="">All</option>
-            {% for room_type in room_types %}
-            <option value="{{ room_type.id }}" {{ 'selected' if room_type_id == room_type.id }}>{{ room_type.name }}</option>
+            <option value="">All types</option>
+            {% for room_type in room_types if room_type.listed %}
+            <option value="{{ room_type.id }}" {{ 'selected' if type_filter == room_type.id }}>{{ room_type.name }}</option>
             {% endfor %}
           </select>
         </label>
-        <label>Room <input type="search" name="room" value="{{ room_query or '' }}" placeholder="302"></label>
-        <label>Booking / guest <input type="search" name="q" value="{{ query }}" placeholder="BK-000123 or name"></label>
-        <button class="mini" type="submit">Apply</button>
-        <a class="mini" href="{{ url_for('frontdesk.index') }}">Reset</a>
+        <label class="check">
+          <input type="checkbox" name="stay" value="1" {{ 'checked' if stay_on }}>
+          Whole stay free
+        </label>
+        <label>Check-out
+          <input type="date" name="check_out" value="{{ stay_end.isoformat() }}"
+                 min="{{ stay_min.isoformat() }}" max="{{ stay_max.isoformat() }}">
+        </label>
+        <button class="mini primary" type="submit">Apply</button>
+        <a class="mini" href="{{ desk_url(view='grid', state=None, bed=None, window=None, type=None, stay=None, check_out=None, room=None, booking=None) }}">Reset</a>
       </form>
 
-      {% if matches %}
-      <div class="match-list">
-        <p class="eyebrow">SEARCH RESULTS</p>
-        {% for match in matches %}
-        <a class="match" href="{{ url_for('frontdesk.index', booking=match.id) }}">
-          <b class="mono">{{ match.reference }}</b>
-          {{ match.customer.name }} · {{ match.room_type.name }} · Room {{ match.room.number }}
-          <span class="chip chip-{{ match.status }}">{{ match.status.replace('_', ' ') }}</span>
-        </a>
-        {% endfor %}
-      </div>
-      {% elif query %}
-      <p class="desk-empty">No booking matches “{{ query }}”.</p>
+      {% if spotlight %}
+      <p class="spotlight-note">
+        Spotlight on. Matching rooms stay bright; the rest are dimmed but still openable.
+        {% if stay_on %}Only rooms free from {{ selected_date.strftime('%d %b') }} to {{ stay_end.strftime('%d %b') }} stay bright.{% endif %}
+      </p>
       {% endif %}
 
-      <div class="board-wrap">
-        <table class="board">
+      <div class="room-grid">
+        {% for info in cards %}
+        {% set cell = info.cell %}
+        {% set booking = cell.booking %}
+        <a class="room-card state-{{ cell.state }} {{ 'is-dim' if info.dim }} {{ 'is-spotlight' if spotlight and not info.dim }}"
+           href="{{ desk_url(view='grid', date=selected_date.isoformat(), floor=active_floor, room=info.room.id, booking=None) }}"
+           title="Room {{ info.room.number }} · {{ state_labels[cell.state] }}"
+           aria-label="Room {{ info.room.number }}, {{ state_labels[cell.state] }}">
+          <span class="room-number">{{ info.room.number }}</span>
+          <span class="room-state">{{ state_labels[cell.state] }}</span>
+          <span class="room-meta">{{ bed_labels.get(info.room_type.bed_type, info.room_type.bed_type) }} · sleeps {{ info.room_type.capacity }}</span>
+          {% if not info.room.has_window %}<span class="room-window">No window</span>{% endif %}
+          {% if booking %}
+            {% if cell.state in ('in_house', 'departing', 'arriving', 'reserved') %}
+            <span class="room-guest">{{ info.headline }}</span>
+            {% endif %}
+            {% if cell.state in ('in_house', 'departing') %}
+              {% if booking.check_out < today %}
+              <span class="room-note overdue">Past check-out</span>
+              {% elif cell.state == 'departing' %}
+              <span class="room-note">Out today</span>
+              {% else %}
+              <span class="room-note">Out {{ booking.check_out.strftime('%d %b') }}</span>
+              {% endif %}
+            {% elif booking.check_in < today and booking.status == 'confirmed' %}
+            <span class="room-note overdue">Arrival date passed</span>
+            {% elif cell.state in ('arriving', 'reserved') %}
+            <span class="room-note">ETA {{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}</span>
+            {% endif %}
+          {% elif cell.block %}
+          <span class="room-note">{{ cell.block.reason|truncate(24) }}</span>
+          {% elif cell.state == 'dirty' %}
+          <span class="room-note">Needs housekeeping</span>
+          {% elif stay_on and info.stay_free %}
+          <span class="room-note">Free for the stay</span>
+          {% else %}
+          <span class="room-note">Tap to open</span>
+          {% endif %}
+          {% if stay_on and not info.stay_free %}
+          <span class="stay-flag">Not free</span>
+          {% endif %}
+          <span class="card-tip" role="tooltip">
+            <b>Room {{ info.room.number }}</b> · {{ info.room_type.name }}<br>
+            {{ bed_labels.get(info.room_type.bed_type, info.room_type.bed_type) }} bed · sleeps {{ info.room_type.capacity }}<br>
+            {{ state_labels[cell.state] }}{% if info.room.housekeeping == 'dirty' %} · housekeeping: dirty{% endif %}<br>
+            {{ 'No window' if not info.room.has_window else 'Window' }}<br>
+            {% if booking %}
+            {{ booking.reference }} · {{ booking.customer.name }}<br>
+            {{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}
+            {% if cell.state in ('arriving', 'reserved') %} · ETA {{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}{% endif %}
+            {% if cell.state in ('in_house', 'departing') %} · out {{ booking.check_out.strftime('%d %b') }}{% endif %}
+            {% elif cell.block %}
+            Blocked {{ cell.block.start_date.strftime('%d %b') }} → {{ cell.block.end_date.strftime('%d %b') }}<br>
+            {{ cell.block.reason }}
+            {% elif cell.state == 'dirty' %}
+            Waiting for housekeeping. Mark it clean before selling it tonight.
+            {% else %}
+            Free for {{ selected_date.strftime('%d %b') }}. Click to open the room.
+            {% endif %}
+          </span>
+        </a>
+        {% else %}
+        <p class="empty">No rooms on this floor with the current filters.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% elif view == 'orders' %}
+    <div class="view-head">
+      <div>
+        <p class="eyebrow">ORDER MANAGEMENT</p>
+        <h1>Orders</h1>
+        <p class="muted view-sub">Every booking, its money and its arrival state. Click a row to open the action drawer.</p>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi-pill"><b>{{ arrivals_today|length }}</b><span>Arriving</span></div>
+        <div class="kpi-pill"><b>{{ pending|length }}</b><span>Requests</span></div>
+        <div class="kpi-pill"><b>{{ conflicts|length }}</b><span>Conflicts</span></div>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">BOOKINGS</p>
+          <h2>Order list</h2>
+        </div>
+        <span class="muted small">{{ order_rows|length }} shown · newest first</span>
+      </div>
+
+      <nav class="segmented" aria-label="Order tabs">
+        {% for key, label in order_tabs.items() %}
+        <a class="{{ 'is-active' if order_tab == key }}"
+           href="{{ desk_url(view='orders', tab=key, status=None, room=None, booking=None) }}">{{ label }}</a>
+        {% endfor %}
+      </nav>
+
+      {% if order_tab == 'all' %}
+      <form class="order-filter" method="get" action="{{ url_for('frontdesk.index') }}">
+        <input type="hidden" name="view" value="orders">
+        <input type="hidden" name="tab" value="all">
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        <label>Status
+          <select name="status">
+            <option value="">All</option>
+            {% for key, label in [('confirmed','Confirmed'), ('checked_in','Checked in'), ('checked_out','Checked out'), ('cancelled','Cancelled'), ('no_show','No-show')] %}
+            <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="mini" type="submit">Filter</button>
+      </form>
+      {% endif %}
+
+      {% if order_rows %}
+      <div class="table-wrap">
+        <table class="order-table">
           <thead>
             <tr>
-              <th class="board-room-head">Room</th>
-              {% for day in days %}<th>{{ day.strftime('%d/%m') }}</th>{% endfor %}
+              <th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th>Status</th>
+              <th>Paid</th><th>Due</th><th>ETA</th><th></th>
             </tr>
           </thead>
           <tbody>
-          {% for row in board %}
-            <tr>
-              <th class="board-room">{{ row.room.number }}</th>
-              {% for cell in row.cells %}
-              <td class="cell cell-{{ cell.state }}">{{ cell.state.replace('_', ' ') }}</td>
-              {% endfor %}
+            {% for row in order_rows %}
+            {% set b = row.booking %}
+            <tr class="row-link {{ 'is-late' if row.late }}"
+                data-href="{{ desk_url(view='orders', booking=b.id, room=None) }}">
+              <td class="mono">{{ b.reference }}</td>
+              <td>
+                <b>{{ b.customer.name }}</b>
+                <small>{{ b.customer.phone or 'no phone' }}</small>
+              </td>
+              <td>
+                <b>{{ b.room.number }}</b>
+                <small>{{ b.room_type.name }}</small>
+              </td>
+              <td>
+                {{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }}
+                <small>{{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</small>
+              </td>
+              <td><span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span></td>
+              <td class="mono">¥{{ row.paid|money }}</td>
+              <td class="mono {{ 'due' if row.due > 0 }}">¥{{ row.due|money }}</td>
+              <td class="mono">{{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else '—' }}</td>
+              <td class="order-actions">
+                <a class="mini" href="{{ desk_url(view='orders', booking=b.id, room=None) }}">Open</a>
+                {% if row.overdue %}<span class="chip chip-late">Overdue</span>{% endif %}
+                {% if row.late %}<a class="mini danger" href="{{ desk_url(view='orders', booking=b.id, room=None) }}">Late arrival</a>{% endif %}
+              </td>
             </tr>
-          {% endfor %}
+            {% endfor %}
           </tbody>
         </table>
       </div>
-      <p class="board-legend">
-        <span class="dot dot-in_house"></span> In house
-        <span class="dot dot-arriving"></span> Arriving
-        <span class="dot dot-reserved"></span> Reserved
-        <span class="dot dot-departing"></span> Departing
-        <span class="dot dot-blocked"></span> Blocked
-        <span class="dot dot-free"></span> Free
-      </p>
+      {% else %}
+      <p class="empty">No orders in this tab.</p>
+      {% endif %}
     </section>
 
-    <section class="desk-card" id="walkin">
-      <div class="desk-card-head">
-        <h2>Walk-in</h2>
-        <span class="muted small">Same availability, capacity, price and blacklist rules as the guest portal · checked in immediately</span>
+    {% elif view == 'tasks' %}
+    <div class="view-head">
+      <div>
+        <p class="eyebrow">TASKS &amp; APPROVALS</p>
+        <h1>Tasks</h1>
+        <p class="muted view-sub">Guest changes, late arrivals and housekeeping. Approvals apply to the booking only after they succeed.</p>
       </div>
+      <div class="kpi-strip">
+        <div class="kpi-pill"><b>{{ pending|length }}</b><span>Requests</span></div>
+        <div class="kpi-pill"><b>{{ late_arrivals|length }}</b><span>Late</span></div>
+        <div class="kpi-pill"><b>{{ dirty_rooms|length }}</b><span>Dirty</span></div>
+      </div>
+    </div>
 
-      <form class="lookup" method="get" action="{{ url_for('frontdesk.index') }}">
-        <input type="search" name="lookup" value="" placeholder="Find an existing guest by phone or name">
-        <button class="mini" type="submit">Find guest</button>
-      </form>
-      {% if walk_matches %}
-      <ul class="guest-matches">
-        {% for guest in walk_matches %}
-        <li>
-          <span>{{ guest.name }} · <span class="mono">{{ guest.phone or 'no phone' }}</span></span>
-          <a class="mini" href="{{ url_for('frontdesk.index', walk_customer=guest.id, booking=selected.id if selected else none) }}#walkin">Use this guest</a>
-        </li>
-        {% endfor %}
-      </ul>
-      {% elif walk_matches is not none and request.args.get('lookup') %}
-      <p class="desk-empty">No guest matches that search.</p>
-      {% endif %}
-
-      <form method="post" action="{{ url_for('frontdesk.walk_in') }}" class="desk-form">
-        {{ walk_form.hidden_tag() }}
-        {% if walk_customer %}
-        <input type="hidden" name="walk-customer_id" value="{{ walk_customer.id }}">
-        <div class="field field-wide">
-          <label>Guest</label>
-          <p class="chosen-guest">{{ walk_customer.name }} · <span class="mono">{{ walk_customer.phone }}</span>
-            <a class="small" href="{{ url_for('frontdesk.index') }}#walkin">change</a>
-          </p>
+    <div class="task-layout">
+      <section class="panel task-column">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">E05 · E06</p>
+            <h2>Guest requests</h2>
+          </div>
+          <span class="muted small">{{ task_rows|length }} pending</span>
         </div>
+
+        {% for task in task_rows %}
+        {% set b = task.booking %}
+        <article class="task-card">
+          <header class="task-head">
+            <span class="chip chip-{{ task.request.kind }}">{{ task.request.kind.replace('_', ' ') }}</span>
+            <b class="mono">{{ b.reference }}</b>
+            {% if task.late_cancel %}<span class="chip chip-cancel">Manager required</span>{% endif %}
+          </header>
+
+          <div class="task-compare">
+            <div class="task-side">
+              <p class="eyebrow">CURRENT ORDER</p>
+              <p><b>{{ b.customer.name }}</b></p>
+              <p class="small muted">{{ b.room_type.name }} · Room {{ b.room.number }}</p>
+              <p class="small">{{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }} · {{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</p>
+              <p class="small">Total ¥{{ b.total|money }} · <span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span></p>
+            </div>
+            <div class="task-arrow" aria-hidden="true">→</div>
+            <div class="task-side requested">
+              <p class="eyebrow">REQUESTED</p>
+              <p><b>{{ task.target }}</b></p>
+              {% if task.request.reason %}<p class="small muted">“{{ task.request.reason }}”</p>{% endif %}
+              <p class="small muted">Submitted {{ task.submitted.strftime('%d %b %H:%M') if task.submitted else '—' }}</p>
+            </div>
+          </div>
+
+          <div class="task-actions">
+            <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=task.request.id) }}" data-guard>
+              {{ csrf_back() }}
+              <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Decision note (optional)">
+              <button class="mini primary" type="submit" {{ 'disabled' if not task.can_approve }}>Approve</button>
+            </form>
+            <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=task.request.id) }}" data-guard>
+              {{ csrf_back() }}
+              <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Reason for rejection (required)" required>
+              <button class="mini" type="submit">Reject</button>
+            </form>
+          </div>
+
+          {% if task.manager_required and not is_manager %}
+          <p class="hint bad">This cancellation arrived after the 18:00 deadline. Only a manager can approve it.</p>
+          {% elif task.manager_required %}
+          <p class="hint">Manager authority: approving records the exception, refunds the net paid amount and releases the nights.</p>
+          {% endif %}
+        </article>
         {% else %}
-        <div class="field">{{ walk_form.name.label }}{{ walk_form.name(class_="input") }}</div>
-        <div class="field">{{ walk_form.phone.label }}{{ walk_form.phone(class_="input") }}</div>
-        {% endif %}
-        <div class="field">{{ walk_form.room_type_id.label }}{{ walk_form.room_type_id(class_="input") }}</div>
-        <div class="field">{{ walk_form.check_in.label }}{{ walk_form.check_in(class_="input") }}</div>
-        <div class="field">{{ walk_form.check_out.label }}{{ walk_form.check_out(class_="input") }}</div>
-        <div class="field">{{ walk_form.guests.label }}{{ walk_form.guests(class_="input") }}</div>
-        <div class="field field-wide">{{ walk_form.note.label }}{{ walk_form.note(class_="input") }}</div>
-        <div class="field field-submit">{{ walk_form.submit(class_="btn") }}</div>
-      </form>
-    </section>
-
-    <section class="desk-card" id="blocks">
-      <div class="desk-card-head">
-        <h2>Maintenance</h2>
-        <span class="muted small">A block stops new allocations; existing bookings stay and are flagged</span>
-      </div>
-      <form method="post" action="{{ url_for('frontdesk.create_block') }}" class="desk-form">
-        {{ block_form.hidden_tag() }}
-        <div class="field">{{ block_form.room_id.label }}{{ block_form.room_id(class_="input") }}</div>
-        <div class="field">{{ block_form.start_date.label }}{{ block_form.start_date(class_="input") }}</div>
-        <div class="field">{{ block_form.end_date.label }}{{ block_form.end_date(class_="input") }}</div>
-        <div class="field field-wide">{{ block_form.reason.label }}{{ block_form.reason(class_="input") }}</div>
-        <div class="field field-submit">{{ block_form.submit(class_="btn") }}</div>
-      </form>
-      {% if blocks %}
-      <ul class="block-list">
-        {% for block in blocks %}
-        <li>
-          <span>
-            <b>Room {{ block.room.number }}</b>
-            {{ block.start_date.strftime('%d %b') }}–{{ block.end_date.strftime('%d %b') }}
-            <span class="muted">· {{ block.reason }}</span>
-            <small class="muted">· by {{ block.creator.email if block.creator else 'unknown' }}</small>
-          </span>
-          <form method="post" action="{{ url_for('frontdesk.cancel_block', block_id=block.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="mini" type="submit">Cancel block</button>
-          </form>
-        </li>
+        <p class="empty">No pending requests. The queue is clear.</p>
         {% endfor %}
-      </ul>
-      {% endif %}
-    </section>
+      </section>
 
-    <section class="desk-card" id="requests">
-      <div class="desk-card-head">
-        <h2>Requests</h2>
-        <span class="muted small">Applied only on approval; a failure leaves the booking untouched</span>
-      </div>
-      {% if pending %}
-      <table class="desk-table requests">
-        <thead><tr><th>Booking</th><th>Guest / note</th><th>Request</th><th>Target</th><th>Decision</th></tr></thead>
-        <tbody>
-        {% for item in pending %}
-          <tr>
-            <td class="mono">{{ item.booking.reference }}<br>
-              <span class="chip chip-{{ item.booking.status }}">{{ item.booking.status.replace('_', ' ') }}</span>
-            </td>
-            <td>{{ item.booking.customer.name }}
-              {% if item.booking.note %}<small class="muted">{{ item.booking.note }}</small>{% endif %}
-            </td>
-            <td><span class="chip chip-{{ item.kind }}">{{ item.kind.replace('_', ' ') }}</span>
-              {% if item.reason %}<small class="muted">{{ item.reason }}</small>{% endif %}
-            </td>
-            <td class="small">
-              {% if item.kind == 'dates' and item.target %}
-                {{ item.target.check_in }} → {{ item.target.check_out }}
-              {% elif item.kind == 'extend' and item.target %}
-                until {{ item.target.check_out }}
-              {% elif item.kind == 'room_type' and item.target %}
-                room type #{{ item.target.room_type_id }}
-              {% elif item.target and item.target.reason %}
-                {{ item.target.reason }}
-              {% else %}—{% endif %}
-            </td>
-            <td class="decision">
-              <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=item.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Decision note">
-                <button class="mini primary" type="submit">Approve</button>
-              </form>
-              <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=item.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Reason">
-                <button class="mini" type="submit">Reject</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      {% else %}<p class="desk-empty">No pending requests.</p>{% endif %}
-    </section>
-  </section>
+      <div class="task-side-column">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">E08</p>
+              <h2>Late arrivals</h2>
+            </div>
+            <span class="chip {{ 'chip-late' if late_arrivals else 'chip-checked_out' }}">{{ late_arrivals|length }}</span>
+          </div>
+          {% for item in late_arrivals %}
+          <article class="task-card compact">
+            <header class="task-head">
+              <b class="mono">{{ item.booking.reference }}</b>
+              <span class="chip chip-late">Past ETA</span>
+            </header>
+            <p><b>{{ item.booking.customer.name }}</b> · Room {{ item.booking.room.number }}</p>
+            <p class="small muted">{{ item.booking.check_in.strftime('%d %b') }} · expected {{ item.deadline.strftime('%H:%M') }} · {{ item.booking.customer.phone or 'no phone' }}</p>
+            <p class="small muted">Last contact:
+              {% if item.booking.last_contact_at %}
+                {{ item.booking.last_contact_at|localtime('%d %b %H:%M') }} · {{ item.booking.last_contact_result }}
+              {% else %}not recorded{% endif %}
+            </p>
+            <a class="mini primary" href="{{ desk_url(view='tasks', booking=item.booking.id, room=None) }}">Open contact log</a>
+          </article>
+          {% else %}
+          <p class="empty">No late arrivals right now.</p>
+          {% endfor %}
+        </section>
 
-  <aside class="desk-rail" aria-label="Booking detail">
-    {% if selected %}
-    <section class="desk-card detail">
-      <div class="desk-card-head">
-        <h2>Booking detail</h2>
-        <span class="chip chip-{{ selected.status }}">{{ selected.status.replace('_', ' ') }}</span>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">HOUSEKEEPING</p>
+              <h2>Dirty rooms</h2>
+            </div>
+            <span class="chip {{ 'chip-late' if dirty_rooms else 'chip-checked_out' }}">{{ dirty_rooms|length }}</span>
+          </div>
+          {% for room in dirty_rooms %}
+          <article class="task-card compact room-task">
+            <div>
+              <b>Room {{ room.number }}</b>
+              <p class="small muted">Marked dirty at check-out. It cannot be sold or checked into until cleaned.</p>
+            </div>
+            <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+              {{ csrf_back() }}
+              <button class="mini primary" type="submit">Mark cleaned</button>
+            </form>
+          </article>
+          {% else %}
+          <p class="empty">No rooms waiting for housekeeping.</p>
+          {% endfor %}
+        </section>
       </div>
-      <p class="detail-ref mono">{{ selected.reference }}</p>
-      <p class="detail-guest">{{ selected.customer.name }} · {{ selected.guests }} guest{{ '' if selected.guests == 1 else 's' }}</p>
-      <p class="muted small">
-        {{ selected.check_in.strftime('%d %b') }} → {{ selected.check_out.strftime('%d %b') }}
-        · {{ selected.nights }} night{{ '' if selected.nights == 1 else 's' }}
-        · {{ selected.room_type.name }} · Room {{ selected.room.number }}
-      </p>
-      <p class="muted small">
-        Expected arrival {{ selected.expected_arrival.strftime('%H:%M') if selected.expected_arrival else 'not set' }}
-        {% if selected.last_contact_at %}
-        · last contact {{ selected.last_contact_at|localtime('%d %b %H:%M') }} ({{ selected.last_contact_result }})
+    </div>
+    {% endif %}
+
+  </div>
+
+  {% if drawer_mode %}
+  <aside class="drawer" data-close-url="{{ close_url }}" aria-label="{{ 'Booking actions' if drawer_mode == 'booking' else 'Room actions' }}">
+    {% if drawer_mode == 'booking' %}
+    {% set b = selected %}
+    <header class="drawer-head">
+      <div>
+        <p class="eyebrow">{{ 'CHECK-IN' if b.status == 'confirmed' and b.check_in == today else ('IN HOUSE' if b.status == 'checked_in' else 'BOOKING') }}</p>
+        <h2>Room {{ b.room.number }}</h2>
+        <p class="muted small">{{ b.room_type.name }} · {{ b.guests }} guest{{ '' if b.guests == 1 else 's' }} · {{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</p>
+        <span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span>
+      </div>
+      <a class="drawer-close" href="{{ close_url }}" aria-label="Close drawer">×</a>
+    </header>
+
+    <div class="drawer-body">
+      <section class="drawer-section stay-summary">
+        <div class="detail-grid">
+          <div><span>Guest</span><b>{{ b.customer.name }}</b></div>
+          <div><span>Phone</span><b>{% if b.customer.phone %}<a href="tel:{{ b.customer.phone }}">{{ b.customer.phone }}</a>{% else %}—{% endif %}</b></div>
+          <div><span>Booking</span><b class="mono">{{ b.reference }}</b></div>
+          <div><span>Stay</span><b>{{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }}</b></div>
+          <div><span>Expected</span><b>{{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else 'not set' }}</b></div>
+          <div><span>Total</span><b>¥{{ b.total|money }}</b></div>
+        </div>
+        {% if b.note %}<p class="note-box"><b>Guest note</b>{{ b.note }}</p>{% endif %}
+        {% if b.last_contact_at %}
+        <p class="small muted">Last contact {{ b.last_contact_at|localtime('%d %b %H:%M') }} · {{ b.last_contact_result }}</p>
         {% endif %}
-      </p>
-      {% if selected.note %}<p class="detail-note small">Guest note: {{ selected.note }}</p>{% endif %}
-      <p class="detail-total">Total ¥{{ selected.total|money }}</p>
+        {% if selected_cell is not none and selected_cell.state not in ('arriving', 'in_house') %}
+        <p class="small muted">Room state on {{ selected_date.strftime('%d %b') }}: {{ state_labels[selected_cell.state] }}.</p>
+        {% endif %}
+        {% if current_block %}
+        <div class="state-banner state-blocked">
+          <b>Out of service: {{ current_block.reason }}</b>
+          <span>{{ current_block.start_date.strftime('%d %b') }}–{{ current_block.end_date.strftime('%d %b') }}. Cancel the block or move the guest to another room.</span>
+        </div>
+        {% endif %}
+      </section>
 
-      {% if selected.status == 'confirmed' %}
-      <div class="checks">
-        <p class="checks-title">Check-in checks</p>
-        <ul>
+      {% if b.status == 'confirmed' %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Check-in checks</h3><span class="muted small">server-enforced</span></div>
+        <ul class="checks-list">
           {% for label, ok, detail in checks %}
           <li class="{{ 'ok' if ok else 'bad' }}">
             <span class="mark">{{ '✓' if ok else '!' }}</span>
@@ -399,95 +613,367 @@
           </li>
           {% endfor %}
         </ul>
-      </div>
-      {% elif selected.status == 'checked_in' %}
-      <div class="checks">
-        <p class="checks-title">In house</p>
-        <ul>
-          <li class="ok"><span class="mark">✓</span><span>Checked in<small>{{ selected.checked_in_at|localtime('%d %b %Y, %H:%M') }} · room {{ selected.room.number }}</small></span></li>
-          <li class="ok"><span class="mark">✓</span><span>Payment recorded<small>Paid ¥{{ paid|money }}</small></span></li>
-        </ul>
-      </div>
-      {% else %}
-      <div class="checks">
-        <p class="checks-title">Stay closed</p>
-        <ul>
-          <li class="ok"><span class="mark">✓</span><span>{{ selected.status.replace('_', ' ')|capitalize }}<small>{{ selected.checked_out_at|localtime('%d %b %Y, %H:%M') if selected.checked_out_at else '' }}</small></span></li>
-        </ul>
-      </div>
+      </section>
       {% endif %}
 
-      <div class="pay">
-        <p class="small muted">Paid ¥{{ paid|money }} · outstanding ¥{{ due|money }}</p>
-        {% if due > 0 and selected.status in ('confirmed', 'checked_in') %}
-        <form method="post" action="{{ url_for('frontdesk.pay', booking_id=selected.id) }}" class="pay-form">
+      <section class="drawer-section money-section">
+        <div class="section-head">
+          <h3>Money</h3>
+          <span class="sim-badge">SIMULATED</span>
+        </div>
+        <div class="money-grid">
+          <div><span>Total</span><b>¥{{ b.total|money }}</b></div>
+          <div><span>Paid</span><b>¥{{ paid|money }}</b></div>
+          <div><span>Due</span><b class="{{ 'due' if due > 0 }}">¥{{ due|money }}</b></div>
+        </div>
+        {% if can_pay %}
+        <form class="inline-form" method="post" action="{{ url_for('frontdesk.pay', booking_id=b.id) }}" data-guard>
           {{ payment_form.hidden_tag() }}
-          {{ payment_form.amount(class_="input", placeholder=due|money) }}
-          <button class="btn small-btn" type="submit">Record payment</button>
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ payment_form.amount(class_="input", inputmode="decimal", placeholder="Amount · ¥" ~ due|money) }}
+          <button class="btn small" type="submit">Take payment</button>
         </form>
+        <p class="hint">No real money moves. Leave the amount empty to take the full outstanding balance.</p>
         {% endif %}
-      </div>
+        {% if can_refund %}
+        <form class="inline-form" method="post" action="{{ url_for('frontdesk.refund', booking_id=b.id) }}" data-guard>
+          {{ refund_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ refund_form.amount(class_="input", inputmode="decimal", max=paid, placeholder="Refund up to ¥" ~ paid|money) }}
+          <button class="btn ghost small" type="submit">Record refund</button>
+        </form>
+        <p class="hint">Refunds cannot exceed net payments received (¥{{ paid|money }}).</p>
+        {% endif %}
+        {% if b.status in ('cancelled', 'checked_out') and not can_refund %}
+        <p class="hint">No refundable balance remains: refunds cannot exceed payments received.</p>
+        {% endif %}
+        {% if payments %}
+        <table class="ledger">
+          <thead><tr><th>Type</th><th>Amount</th><th>By</th><th>When</th></tr></thead>
+          <tbody>
+            {% for record, email in payments %}
+            <tr>
+              <td><span class="chip {{ 'chip-refund' if record.kind == 'refund' else 'chip-confirmed' }}">{{ record.kind }}</span></td>
+              <td class="mono">¥{{ record.amount|money }}</td>
+              <td class="small">{{ email.split('@')[0] }}</td>
+              <td class="small muted">{{ record.occurred_at|localtime('%d %b %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </section>
 
-      {% if selected.status == 'confirmed' %}
-      <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=selected.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn wide" type="submit">Check in</button>
-      </form>
-      {% elif selected.status == 'checked_in' %}
-      <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=selected.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn wide" type="submit">Check out</button>
-      </form>
+      {% if b.status == 'confirmed' %}
+      <section class="drawer-section">
+        {% if b.check_in < today %}
+        <p class="hint bad">The arrival date has passed and this booking is still confirmed. Contact the guest or mark a no-show.</p>
+        {% elif b.check_in != today %}
+        <p class="hint">Check-in opens on {{ b.check_in.strftime('%d %b') }}. This drawer is read-only for arrival until that day.</p>
+        {% elif check_in_allowed %}
+        <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=b.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit"
+                  data-confirm="Record the actual check-in time now and move {{ b.reference }} to in house?">Check in · record actual time</button>
+        </form>
+        <p class="hint">Now {{ now.strftime('%H:%M:%S') }} · check-in opens at {{ check_in_from }}.</p>
+        {% else %}
+        <div class="disabled-wrap">
+          <button class="btn wide" type="button" disabled>Check in</button>
+          <p class="hint bad">{{ check_in_reason or 'A required check is not satisfied.' }}</p>
+        </div>
+        <p class="hint">All checks above must pass. The same list is enforced on the server.</p>
+        {% endif %}
+      </section>
+      {% elif b.status == 'checked_in' %}
+      <section class="drawer-section">
+        <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=b.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit"
+                  data-confirm="Record the actual check-out time now? The room will be marked dirty.">Check out · record actual time</button>
+        </form>
+        {% if overdue_checkout %}
+        <p class="hint bad">This stay is past its departure date ({{ b.check_out.strftime('%d %b') }}). Check out now; the room is not sellable until the guest leaves.</p>
+        {% elif checkout_late %}
+        <p class="hint bad">Now {{ now.strftime('%H:%M') }} is after {{ check_out_by }}; this will be recorded as a late check-out.</p>
+        {% elif early_checkout %}
+        <p class="hint">This is an early departure. Unused nights will be released; the booked price stays on the record.</p>
+        {% else %}
+        <p class="hint">Standard check-out is before {{ check_out_by }}.</p>
+        {% endif %}
+      </section>
+      {% else %}
+      <section class="drawer-section">
+        <p class="closed-note">
+          This stay is closed as <b>{{ b.status.replace('_', ' ') }}</b>.
+          {% if b.checked_out_at %}Checked out {{ b.checked_out_at|localtime('%d %b %Y, %H:%M') }}.{% endif %}
+          {% if b.no_show_at %}Marked no-show {{ b.no_show_at|localtime('%d %b %Y, %H:%M') }}.{% endif %}
+        </p>
+      </section>
       {% endif %}
 
-      {% if selected.status == 'confirmed' and contact_due %}
-      <section class="contact">
-        <p class="checks-title">Late arrival · contact the guest</p>
-        <p class="small muted">Expected {{ selected.expected_arrival.strftime('%H:%M') if selected.expected_arrival else 'end of day' }} has passed. Record what happened before releasing the room.</p>
-        <form method="post" action="{{ url_for('frontdesk.contact', booking_id=selected.id) }}" class="contact-form">
+      {% if b.status == 'confirmed' and contact_due %}
+      <section class="drawer-section contact-section">
+        <div class="section-head"><h3>Late arrival · contact log</h3><span class="chip chip-late">E08</span></div>
+        <p class="hint">Expected {{ b.check_in.strftime('%d %b') }} {{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else 'end of day' }} has passed. Record the time and result before releasing the room.</p>
+        <form method="post" action="{{ url_for('frontdesk.contact', booking_id=b.id) }}" data-guard>
           {{ contact_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
           {{ contact_form.result(class_="input") }}
-          {{ contact_form.new_expected(class_="input", title="New expected arrival") }}
-          {{ contact_form.note(class_="input", placeholder="What did the guest say?") }}
-          <button class="mini" type="submit">Save contact</button>
+          <div class="form-grid">
+            <div class="field"><label>New ETA if late</label>{{ contact_form.new_expected(class_="input") }}</div>
+            <div class="field"><label>Note</label>{{ contact_form.note(class_="input", placeholder="What did the guest say?") }}</div>
+          </div>
+          <button class="btn ghost wide" type="submit">Save contact attempt</button>
         </form>
-        <form method="post" action="{{ url_for('frontdesk.no_show', booking_id=selected.id) }}" class="noshow-form">
+        <form class="no-show-form" method="post" action="{{ url_for('frontdesk.no_show', booking_id=b.id) }}" data-guard>
           {{ no_show_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
           {{ no_show_form.reason(class_="input", placeholder="Reason: not coming / unreachable") }}
-          <button class="mini danger" type="submit">Mark no-show and release</button>
+          <button class="btn danger wide" type="submit" {{ 'disabled' if not no_show_allowed }}
+                  data-confirm="Mark {{ b.reference }} as a no-show, release the room and keep the payment record?">Mark no-show and release</button>
+        </form>
+        {% if no_show_hint %}<p class="hint bad">{{ no_show_hint }}</p>{% endif %}
+      </section>
+      {% endif %}
+
+      {% if b.status == 'checked_out' and selected_room is not none and selected_room.housekeeping == 'dirty' %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Housekeeping</h3><span class="chip chip-late">Dirty</span></div>
+        <p class="hint">The room is marked dirty after checkout. It cannot be sold again until housekeeping finishes.</p>
+        <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=selected_room.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit">Mark room {{ selected_room.number }} cleaned</button>
         </form>
       </section>
       {% endif %}
 
-      {% if selected.status == 'confirmed' %}
-      <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=selected.id) }}" class="reassign">
-        <p class="checks-title">Reassign room</p>
-        <p class="small muted">Only before arrival. Same room type, whole stay free, price unchanged.</p>
-        {{ reassign_form.hidden_tag() }}
-        {{ reassign_form.reason(class_="input", placeholder="Reason, e.g. bathroom leak") }}
-        <button class="mini" type="submit">Move to a free room</button>
-      </form>
-      {% elif selected.status == 'checked_in' %}
-      <p class="detail-note small muted">In-house guests are not moved in the system; reassignment is only offered before arrival.</p>
+      {% if reassign_allowed %}
+      <details class="drawer-section">
+        <summary>Move to another room</summary>
+        <p class="hint">Same room type, whole stay free, price unchanged. Only before arrival.</p>
+        <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=b.id) }}" data-guard>
+          {{ reassign_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ reassign_form.reason(class_="input", placeholder="Reason, e.g. bathroom leak") }}
+          <button class="btn ghost wide" type="submit">Move to a free room</button>
+        </form>
+      </details>
       {% endif %}
 
-      <p class="detail-note small muted">No price change and no account creation happen on this page.</p>
-    </section>
-    {% else %}
-    <section class="desk-card"><p class="desk-empty">Select a booking to open its detail.</p></section>
-    {% endif %}
+      {% if can_cancel_directly and b.status == 'confirmed' %}
+      <details class="drawer-section danger-zone">
+        <summary>Manager cancellation</summary>
+        <p class="hint">Refunds the net collected amount and writes an audit record. {% if late_cancel %}The 18:00 deadline has passed, so this is a recorded exception.{% endif %}</p>
+        <form method="post" action="{{ url_for('frontdesk.cancel_booking', booking_id=b.id) }}" data-guard>
+          {{ cancel_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ cancel_form.reason(class_="input", placeholder="Reason for the manager override") }}
+          <button class="btn danger wide" type="submit"
+                  data-confirm="Cancel {{ b.reference }} with manager authority and refund the net paid amount?">Cancel with manager authority</button>
+        </form>
+      </details>
+      {% endif %}
 
-    <section class="desk-card rules">
-      <h2>How this page works</h2>
-      <ol>
-        <li><b>Four checks plus the time window</b><span>Confirmed, arriving today, 14:00 or later, no block, payment recorded.</span></li>
-        <li><b>One transaction</b><span>Status, payment and timestamps are written together.</span></li>
-        <li><b>Walk-in, same rules</b><span>One allocation path, one price table, blacklist enforced.</span></li>
-        <li><b>Permission boundary</b><span>No price edits, no accounts, no late cancellation.</span></li>
-      </ol>
-      <p class="rules-title">Not done here</p>
-      <p class="muted small">Overwriting a block silently, skipping the payment record, releasing a room before the expected arrival passes, or making a manager exception.</p>
-    </section>
+      {% if booking_requests %}
+      <details class="drawer-section">
+        <summary>Request history ({{ booking_requests|length }})</summary>
+        <ul class="history-list">
+          {% for row in booking_requests %}
+          <li>
+            <span class="chip chip-{{ row.kind }}">{{ row.kind.replace('_', ' ') }}</span>
+            <span class="chip chip-{{ row.status }}">{{ row.status }}</span>
+            <span>{{ row.reason or '—' }}</span>
+            <small>{{ row.submitted_at|localtime('%d %b %H:%M') }}</small>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+
+      <p class="drawer-foot">No price edits, no account creation and no real payment provider on this page.</p>
+    </div>
+
+    {% else %}
+    {% set room = selected_room %}
+    {% set cell = selected_cell %}
+    <header class="drawer-head">
+      <div>
+        <p class="eyebrow">ROOM</p>
+        <h2>Room {{ room.number }}</h2>
+        <p class="muted small">{{ selected_room_type.name }} · {{ bed_labels.get(selected_room_type.bed_type, selected_room_type.bed_type) }} bed · sleeps {{ selected_room_type.capacity }}</p>
+        <span class="chip {{ 'chip-late' if room.housekeeping == 'dirty' else 'chip-checked_in' }}">Housekeeping: {{ room.housekeeping }}</span>
+      </div>
+      <a class="drawer-close" href="{{ close_url }}" aria-label="Close drawer">×</a>
+    </header>
+
+    <div class="drawer-body">
+      <section class="drawer-section">
+        <div class="state-banner state-{{ cell.state }}">
+          <b>{{ state_labels[cell.state] }}</b>
+          <span>
+            {% if cell.state == 'dirty' %}Waiting for housekeeping after check-out.
+            {% elif cell.state == 'blocked' %}Out of service. Bookings are never overwritten.
+            {% elif cell.state == 'departing' %}Guest due out today; the room is free tonight after check-out.
+            {% else %}Free for {{ selected_date.strftime('%d %b') }}.{% endif %}
+          </span>
+        </div>
+        <div class="detail-grid compact-grid">
+          <div><span>Date</span><b>{{ selected_date.strftime('%d %b %Y') }}</b></div>
+          <div><span>Room type</span><b>{{ selected_room_type.name }}</b></div>
+          <div><span>Base rate</span><b>¥{{ selected_room_type.base_price|money }}</b></div>
+          <div><span>Capacity</span><b>{{ selected_room_type.capacity }} guest{{ '' if selected_room_type.capacity == 1 else 's' }}</b></div>
+          <div><span>Window</span><b>{{ 'Yes' if selected_room.has_window else 'No · interior room' }}</b></div>
+          <div><span>Floor</span><b>{{ active_floor }}{{ 'F' if active_floor.isdigit() else '' }}</b></div>
+        </div>
+        {% if selected_room.operational_until %}
+        <p class="small muted">Operational until {{ selected_room.operational_until.strftime('%d %b %Y') }}.</p>
+        {% endif %}
+      </section>
+
+      {% if current_block %}
+      <section class="drawer-section block-section">
+        <div class="section-head"><h3>Out of service</h3><span class="chip chip-cancel">{{ current_block.start_date.strftime('%d %b') }}–{{ current_block.end_date.strftime('%d %b') }}</span></div>
+        <p><b>{{ current_block.reason }}</b></p>
+        <p class="small muted">Created by {{ current_block.creator.email if current_block.creator else 'unknown' }}.</p>
+        <form method="post" action="{{ url_for('frontdesk.cancel_block', block_id=current_block.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn ghost wide" type="submit" data-confirm="Release this block and make the room sellable again?">Cancel this block</button>
+        </form>
+
+        {% if block_conflicts %}
+        <p class="eyebrow conflict-label">BOOKINGS THAT NOW CONFLICT</p>
+        {% for booking in block_conflicts %}
+        <div class="conflict-mini">
+          <span><b class="mono">{{ booking.reference }}</b> · {{ booking.customer.name }}<br>
+            <small class="muted">{{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}</small>
+          </span>
+          {% if booking.check_in >= today %}
+          <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=booking.id) }}" data-guard>
+            {{ csrf_back() }}
+            <input type="hidden" name="re-reason" value="Displaced by maintenance block on room {{ room.number }}">
+            <button class="mini primary" type="submit">Move to same-type room</button>
+          </form>
+          {% else %}
+          <span class="small muted">In house: handle manually.</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="hint">No booking overlaps this block.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if room.housekeeping == 'dirty' and not current_block %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Housekeeping</h3><span class="chip chip-late">Dirty</span></div>
+        <p class="hint">A dirty room cannot be sold or checked into until housekeeping finishes.</p>
+        <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit">Mark cleaned</button>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if not current_block %}
+      <section class="drawer-section">
+        <div class="section-head">
+          <h3>Walk-in · offline check-in</h3>
+          <span class="chip chip-confirmed">E03</span>
+        </div>
+        {% if selected_date != today %}
+        <p class="hint">Walk-ins start today. You are viewing {{ selected_date.strftime('%d %b') }}.</p>
+        <a class="btn ghost wide" href="{{ desk_url(date=today.isoformat(), room=room.id) }}">Go to today</a>
+        {% elif walk_allowed %}
+        <p class="hint">Same availability, capacity, price and blacklist rules as the guest portal. The full quote is taken as a simulated payment and the room is checked in immediately.</p>
+
+        <form class="lookup" method="get" action="{{ url_for('frontdesk.index') }}">
+          <input type="hidden" name="view" value="grid">
+          <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+          <input type="hidden" name="floor" value="{{ active_floor }}">
+          <input type="hidden" name="room" value="{{ room.id }}">
+          <input type="search" name="lookup" value="" placeholder="Find an existing guest by phone or name">
+          <button class="mini" type="submit">Find</button>
+        </form>
+        {% if walk_matches %}
+        <ul class="guest-matches">
+          {% for guest in walk_matches %}
+          <li>
+            <span>{{ guest.name }} · <span class="mono">{{ guest.phone or 'no phone' }}</span></span>
+            <a class="mini" href="{{ desk_url(walk_customer=guest.id, lookup=None, room=room.id) }}">Use this guest</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% elif request.args.get('lookup') %}
+        <p class="empty">No guest matches that search.</p>
+        {% endif %}
+
+        <form class="walk-form" method="post" action="{{ url_for('frontdesk.walk_in') }}" data-guard>
+          {{ walk_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {% if walk_customer %}
+          <div class="chosen-guest">
+            <span>{{ walk_customer.name }} · <span class="mono">{{ walk_customer.phone }}</span></span>
+            <a class="small" href="{{ desk_url(walk_customer=None, room=room.id) }}">change</a>
+          </div>
+          {% else %}
+          <div class="form-grid">
+            <div class="field"><label>Guest name</label>{{ walk_form.name(class_="input") }}</div>
+            <div class="field"><label>Phone</label>{{ walk_form.phone(class_="input") }}</div>
+          </div>
+          {% endif %}
+          <div class="form-grid">
+            <div class="field">
+              <label>Room type · ¥{{ selected_room_type.base_price|money }} base</label>
+              {{ walk_form.room_type_id(class_="input") }}
+            </div>
+            <div class="field"><label>Guests</label>{{ walk_form.guests(class_="input", min=1, max=selected_room_type.capacity) }}</div>
+            <div class="field"><label>Check-in</label>{{ walk_form.check_in(class_="input") }}</div>
+            <div class="field"><label>Check-out</label>{{ walk_form.check_out(class_="input") }}</div>
+          </div>
+          <div class="field"><label>Note (optional)</label>{{ walk_form.note(class_="input", maxlength=100) }}</div>
+          <p class="hint">The final quote is recalculated on submit. No account is created and no real money moves.</p>
+          <button class="btn wide" type="submit">Create order · take payment · check in</button>
+        </form>
+        {% else %}
+        <div class="locked-panel">
+          <b>Walk-in not available</b>
+          <p>{{ walk_reason }}</p>
+          {% if room.housekeeping == 'dirty' %}
+          <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+            {{ csrf_back() }}
+            <button class="mini primary" type="submit">Mark cleaned</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </section>
+
+      {% if cell.state in ('free', 'dirty') %}
+      <details class="drawer-section">
+        <summary>Set out of service</summary>
+        <p class="hint">Existing bookings in this period stay and are flagged, never overwritten. You will be offered a same-type move for each one.</p>
+        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard>
+          {{ block_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          <div class="form-grid">
+            <div class="field"><label>From</label>{{ block_form.start_date(class_="input") }}</div>
+            <div class="field"><label>To</label>{{ block_form.end_date(class_="input") }}</div>
+          </div>
+          <div class="field"><label>Reason</label>{{ block_form.reason(class_="input", placeholder="Bathroom leak, repainting…") }}</div>
+          <button class="btn danger wide" type="submit">Set out of service</button>
+        </form>
+      </details>
+      {% endif %}
+      {% endif %}
+
+      <p class="drawer-foot">Room {{ room.number }} · {{ selected_room_type.name }}. Availability is checked again on every write.</p>
+    </div>
+    {% endif %}
   </aside>
+  {% endif %}
+
 </div>
+<script defer src="{{ url_for('static', filename='frontdesk.js') }}"></script>
 {% endblock %}

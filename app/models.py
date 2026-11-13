@@ -70,6 +70,7 @@ class Room(db.Model):
             "operational_until IS NULL OR operational_until > operational_from",
             name="ck_rooms_operational_range",
         ),
+        db.CheckConstraint("housekeeping IN ('clean', 'dirty')", name="ck_rooms_housekeeping"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -77,6 +78,12 @@ class Room(db.Model):
     room_type_id = db.Column(db.ForeignKey("room_types.id"), index=True, nullable=False)
     operational_from = db.Column(db.Date, nullable=False)
     operational_until = db.Column(db.Date)
+    housekeeping = db.Column(
+        db.String(16), nullable=False, default="clean", server_default="clean"
+    )
+    has_window = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
 
 
 class PriceRule(db.Model):

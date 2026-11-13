@@ -184,6 +184,94 @@ def seed_desk():
         click.echo(f"Front desk demo ready: {DEMO_STAFF_EMAIL} / {DEMO_STAFF_PASSWORD}")
 
 
+FLOOR_ROOM_COUNT = 25
+FLOOR_BED_PLAN = (
+    (range(1, 7), "single"),
+    (range(7, 15), "double"),
+    (range(15, 20), "twin"),
+    (range(20, 24), "king"),
+    (range(24, 26), "suite"),
+)
+
+
+def floor_room_number(floor, suffix):
+    """301-325 and 1201-1225: the last two digits are the position on the floor."""
+    return f"{floor}{suffix:02d}"
+
+
+@click.command("seed-rooms")
+@with_appcontext
+def seed_rooms():
+    """Create an idempotent 300-room inventory: 12 floors x 25 rooms."""
+    with Session(db.engine) as session, session.begin():
+        bed_types = {}
+        for _, bed_type in FLOOR_BED_PLAN:
+            if bed_type in bed_types:
+                continue
+            room_type = session.scalar(
+                db.select(RoomType)
+                .where(RoomType.bed_type == bed_type, RoomType.listed.is_(True))
+                .order_by(RoomType.id)
+            )
+            if room_type is None:
+                code, name, capacity, price = {
+                    "single": ("std-single", "Classic Single", 1, "280.00"),
+                    "double": ("std-double", "Comfort Double", 2, "420.00"),
+                    "twin": ("std-twin", "City Twin", 2, "520.00"),
+                    "king": ("std-king", "Harbour King", 2, "680.00"),
+                    "suite": ("std-suite", "Family Suite", 4, "980.00"),
+                }[bed_type]
+                room_type = RoomType(
+                    code=code,
+                    name=name,
+                    description=f"Standard inventory room · {bed_type} bed.",
+                    capacity=capacity,
+                    base_price=Decimal(price),
+                    bed_type=bed_type,
+                    listed=True,
+                )
+                session.add(room_type)
+                session.flush()
+            bed_types[bed_type] = room_type
+
+        existing = set(session.scalars(db.select(Room.number)).all())
+        created = 0
+        for floor in range(1, 13):
+            for suffix in range(1, FLOOR_ROOM_COUNT + 1):
+                number = floor_room_number(floor, suffix)
+                if number in existing:
+                    continue
+                bed_type = next(
+                    bed for positions, bed in FLOOR_BED_PLAN if suffix in positions
+                )
+                session.add(Room(
+                    number=number,
+                    room_type_id=bed_types[bed_type].id,
+                    operational_from=date(2020, 1, 1),
+                    has_window=bed_type != "single",
+                ))
+                created += 1
+        session.flush()
+        # Keep the demo inventory deterministic when the command is re-run: the
+        # Classic Single rooms are the interior rooms without a window; every other
+        # room type has one. This also covers the existing wing rooms.
+        type_bed = {
+            room_type.id: room_type.bed_type
+            for room_type in session.scalars(db.select(RoomType)).all()
+        }
+        for room in session.scalars(db.select(Room)).all():
+            room.has_window = type_bed.get(room.room_type_id) != "single"
+        session.flush()
+        numbered = sum(
+            1 for number in session.scalars(db.select(Room.number)).all()
+            if re.fullmatch(r"\d{3,4}", number)
+        )
+        click.echo(
+            f"{created} room(s) created. Floors 1-12 now hold {numbered} numbered rooms; "
+            "the existing wing rooms were kept and window flags were refreshed."
+        )
+
+
 @click.command("seed-demo")
 @with_appcontext
 def seed_demo():

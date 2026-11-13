@@ -1,4 +1,4 @@
-# The Harbour Hotel
+# Hero Hotel
 
 COMP3019J Group 6. The Flask application shares one MySQL 8 / InnoDB database across
 the guest portal and manager console. Pages use server-rendered Jinja, HTML and CSS.
@@ -15,6 +15,8 @@ $env:SECRET_KEY = '<your randomly generated development secret>'
 $env:DATABASE_URL = 'mysql+pymysql://<user>:<password>@127.0.0.1:3306/<database>?charset=utf8mb4'
 python -m flask --app app db upgrade
 python -m flask --app app seed-demo
+python -m flask --app app seed-rooms
+python -m flask --app app seed-desk
 python -m flask --app app create-manager manager@example.test
 python -m flask --app app run --host 127.0.0.1 --port 5000
 ```
@@ -26,10 +28,11 @@ Managers can create front-desk accounts from Staff accounts.
 ## Schema
 
 Migrations are applied with `python -m flask --app app db upgrade`. The current head is
-`20261112_04`. Besides the original catalogue and booking tables, the migrations add
+`20261113_07`. Besides the original catalogue and booking tables, the migrations add
 booking notes/timestamps, manager request/payment records and actual-stay fields, the
-front-desk expected-arrival field, and `room_types.bed_type` (`single`, `double`, `twin`,
-`king`, `suite`) used by the guest filter.
+front-desk expected-arrival field, `room_types.bed_type` (`single`, `double`, `twin`,
+`king`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
+`rooms.has_window` used by the front-desk ventilation filter.
 
 ## Workspaces
 
@@ -42,9 +45,15 @@ front-desk expected-arrival field, and `room_types.bed_type` (`single`, `double`
   date-specific prices, staff accounts, customer blacklist, bookings, exception
   cancellation, audit, occupancy reports and CSV export. Manager writes are transactional.
   Staff accounts are disabled without removing their historical references.
-- /frontdesk — front-desk workbench with arrivals, in-house and departures lists, a room
-  board, check-in/check-out, walk-ins, simulated payments, maintenance blocks, reassignment
-  and request approval. Check-in and check-out record actual times; no online payment exists.
+- /frontdesk — front-desk workbench. A narrow section menu opens three views: the room
+  board (12 floors of 25 rooms plus the demo wing), the order list and the task queue. The
+  top bar keeps global search (name, phone, room or `BK-` reference), a 15-day timeline and
+  a live Beijing clock. Clicking a room or order opens a 400px action drawer for check-in,
+  checkout, walk-in, simulated payment/refund, maintenance blocks and request decisions.
+  Housekeeping marks a room dirty at checkout and blocks selling it until it is marked
+  clean. The grid filters by state, bed type, room type, window and whole-stay availability.
+  Check-in still requires a confirmed same-day booking, 14:00 or later, no maintenance
+  block, a clean room and full simulated payment. No real payment provider is used.
 
 The occupancy report uses completed Beijing-time nights from each room's operating
 period and actual stay records, with effective maintenance deducted once per room

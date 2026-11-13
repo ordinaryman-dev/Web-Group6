@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Account · The Harbour Hotel{% endblock %}
+{% block title %}Account · Hero Hotel{% endblock %}
 {% block content %}
 <section class="profile-banner">
   <div class="profile-avatar">{{ (customer.name[:1] if customer and customer.name else current_user.email[:1])|upper }}</div>

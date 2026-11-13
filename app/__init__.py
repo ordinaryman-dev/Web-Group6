@@ -41,7 +41,7 @@ def create_app(config=None):
     csrf.init_app(app)
 
     from .auth import auth
-    from .cli import create_manager, seed_demo, seed_desk
+    from .cli import create_manager, seed_demo, seed_desk, seed_rooms
     from .frontdesk import frontdesk
     from .guest import guest
     from .manager import manager
@@ -55,6 +55,7 @@ def create_app(config=None):
     app.cli.add_command(create_manager)
     app.cli.add_command(seed_demo)
     app.cli.add_command(seed_desk)
+    app.cli.add_command(seed_rooms)
 
     @app.template_filter("room_image")
     def room_image(bed_type):
