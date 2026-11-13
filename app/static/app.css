@@ -643,27 +643,35 @@ img { max-width: 100%; }
   overflow-x: hidden;
 }
 
-/* Backdrop: sharp photo at the edges, blurred and washed out towards the middle. */
-.auth-bg,
-.auth-veil {
+/* Backdrop: three sharp interior photos panning behind the card. */
+.auth-bg {
   position: fixed;
   inset: 0;
-  background-size: cover;
-  background-position: center 55%;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
 }
-.auth-bg { z-index: 0; }
-.auth-veil {
-  z-index: 2;
-  background:
-    radial-gradient(ellipse 58% 56% at 50% 48%,
-      rgba(255, 255, 255, .58) 0%,
-      rgba(255, 255, 255, .52) 32%,
-      rgba(255, 255, 255, .46) 56%,
-      rgba(255, 255, 255, .2) 78%,
-      rgba(255, 255, 255, 0) 92%);
+/* Three interior photos panning sideways, one after another, in a seamless loop. */
+.auth-strip {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: auth-pan 78s linear infinite;
+  will-change: transform;
 }
-
+.auth-frame {
+  flex: 0 0 100vw;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+@keyframes auth-pan {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-strip { animation: none; }
+}
 .auth-topbar {
   position: fixed;
   top: 26px;
@@ -723,7 +731,7 @@ img { max-width: 100%; }
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 26px;
-  background: rgba(255, 255, 255, .74);
+  background: rgba(255, 255, 255, .8);
   box-shadow: 0 44px 96px rgba(23, 32, 28, .24), 0 1px 0 rgba(255, 255, 255, .8) inset;
   backdrop-filter: saturate(1.04);
 }
@@ -736,7 +744,7 @@ img { max-width: 100%; }
   padding: 46px 44px 38px;
   background:
     radial-gradient(ellipse 80% 60% at 0% 0%, rgba(255, 255, 255, .9) 0%, transparent 60%),
-    linear-gradient(158deg, rgba(248, 251, 249, .88) 0%, rgba(237, 244, 239, .78) 100%);
+    linear-gradient(158deg, rgba(248, 251, 249, .93) 0%, rgba(237, 244, 239, .86) 100%);
   color: var(--body);
 }
 .auth-story .eyebrow { color: var(--pine); }
@@ -790,7 +798,7 @@ img { max-width: 100%; }
   align-items: center;
   justify-content: center;
   padding: 46px 46px 40px;
-  background: rgba(255, 255, 255, .78);
+  background: rgba(255, 255, 255, .86);
 }
 .auth-card { width: 100%; max-width: 396px; }
 .auth-card h2 { margin: 7px 0 5px; font-size: 30px; letter-spacing: -.5px; }
