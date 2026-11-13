@@ -5,23 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="google" content="notranslate">
   <title>{% block title %}Hero Hotel{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=5">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=11">
 </head>
 <body class="auth-body">
   <div class="auth-bg" aria-hidden="true">
-    <div class="auth-strip">
-      {% for _ in range(2) %}
-      <div class="auth-frame" style="background-image:url('{{ url_for('static', filename='images/hero-dining.jpg') }}')"></div>
-      <div class="auth-frame" style="background-image:url('{{ url_for('static', filename='images/hero-bar.jpg') }}')"></div>
-      <div class="auth-frame" style="background-image:url('{{ url_for('static', filename='images/hero-daylight.jpg') }}')"></div>
-      {% endfor %}
-    </div>
+    <div class="auth-slide is-active" style="background-image:url('{{ url_for('static', filename='images/auth-pool.jpg') }}')"></div>
+    <div class="auth-slide" style="background-image:url('{{ url_for('static', filename='images/auth-lobby.jpg') }}')"></div>
+    <div class="auth-slide" style="background-image:url('{{ url_for('static', filename='images/auth-room.jpg') }}')"></div>
+  </div>
+
+  <div class="auth-nav" role="group" aria-label="Hotel photo gallery">
+    <button class="auth-arrow auth-prev" type="button" aria-label="Previous photo">‹</button>
+    <button class="auth-arrow auth-next" type="button" aria-label="Next photo">›</button>
   </div>
 
   <header class="auth-topbar">
     <a class="brand-lockup" href="{{ url_for('auth.index') }}">
       <span class="brand-mark">HH</span>
-      <span><b>HERO HOTEL</b><small>Hangzhou 路 305 rooms</small></span>
+      <span><b>HERO HOTEL</b><small>Hangzhou · 305 rooms</small></span>
     </a>
   </header>
 
@@ -37,5 +38,6 @@
       </div>
     </section>
   </main>
+  <script defer src="{{ url_for('static', filename='auth.js') }}"></script>
 </body>
 </html>

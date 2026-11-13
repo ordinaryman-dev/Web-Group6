@@ -4,7 +4,8 @@ The photographs in this folder are placeholders for the course demo. They are **
 the fictional hotel in this project, and they are not attached to any room type in the database.
 
 The room and hotel photographs come from [Wikimedia Commons](https://commons.wikimedia.org); the
-`hero-*` strip images come from [Pexels](https://www.pexels.com) under the Pexels licence. The files in
+`hero-*` strip images come from [Pexels](https://www.pexels.com) under the Pexels licence. The new
+`auth-*` gallery images come from Pexels and Unsplash under their free licences. The files in
 this folder are cropped/resized derivatives; the credit below refers to the original work. Keep the
 credit when reusing an image, and follow the licence shown for that image.
 
@@ -21,6 +22,9 @@ credit when reusing an image, and follow the licence shown for that image.
 | `hero-dining.jpg` | [Interior of a restaurant](https://www.pexels.com/photo/interior-of-a-restaurant-15297133/) | Tuğçe Açıkyürek (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 | `hero-bar.jpg` | [Cosy hotel lobby with warm lighting](https://www.pexels.com/de-de/foto/gemutliche-hotellobby-mit-warmer-beleuchtung-und-geschmackvoller-einrichtung-34937962/) | Eyüpcan Timur (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 | `hero-daylight.jpg` | [Hotel room with wooden floors and a large bed](https://www.pexels.com/photo/a-hotel-room-with-wooden-floors-and-a-large-bed-28347470/) | SVH Manali (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
+| `auth-pool.jpg` | [Swimming pool surrounded by coconut trees](https://www.pexels.com/photo/swimming-pool-surrounded-by-coconut-trees-14024966/) | Quang Nguyen Vinh (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
+| `auth-lobby.jpg` | [A large room with large windows and a rug](https://www.pexels.com/photo/a-large-room-with-large-windows-and-a-rug-14750441/) | Kadir Avşar (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
+| `auth-room.jpg` | Sunlit hotel room with white bedding ([Unsplash CDN photo](https://images.unsplash.com/photo-1582719478250-c89cae4dc85b)) | Unsplash contributor | [Unsplash licence](https://unsplash.com/license) |
 
 ## Filenames and use
 
@@ -34,9 +38,12 @@ credit when reusing an image, and follow the licence shown for that image.
 | `room-twin.jpg` | `City Twin` room type | 1280 × 720 |
 | `room-king.jpg` | `Harbour King` room type | 1280 × 720 |
 | `room-family.jpg` | `Family Suite` room type | 1280 × 720 |
-| `hero-dining.jpg` | Auth background strip — frame 1 (restaurant) | 1600 × 2400 |
-| `hero-bar.jpg` | Auth background strip — frame 2 (bar / reception) | 1600 × 2843 |
-| `hero-daylight.jpg` | Auth background strip — frame 3 (sunlit room) | 1600 × 1067 |
+| `hero-dining.jpg` | Previous auth strip — unused | 1600 × 2400 |
+| `hero-bar.jpg` | Previous auth strip — unused | 1600 × 2843 |
+| `hero-daylight.jpg` | Previous auth strip — unused | 1600 × 1067 |
+| `auth-pool.jpg` | Auth gallery — slide 1 (sunlit pool) | 1600 × 1200 |
+| `auth-lobby.jpg` | Auth gallery — slide 2 (bright lobby) | 1600 × 1067 |
+| `auth-room.jpg` | Auth gallery — slide 3 (sunlit room) | 1400 × 933 |
 
 The room images are centre-cropped to a 16:9 card ratio. They are served by Flask at
 `/static/images/<filename>`.
