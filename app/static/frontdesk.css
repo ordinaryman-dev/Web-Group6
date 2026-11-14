@@ -42,16 +42,11 @@
   border-bottom: 1px solid rgba(255, 255, 255, .14);
 }
 .side-mark {
-  display: grid;
-  place-items: center;
-  width: 33px;
-  height: 33px;
-  border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, .22);
-  background: rgba(255, 255, 255, .12);
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 800;
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
   letter-spacing: .05em;
 }
 .side-brand b { display: block; color: #fff; font-size: 10.5px; letter-spacing: .14em; }

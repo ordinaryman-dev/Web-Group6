@@ -33,7 +33,16 @@
 .manager-brand strong, .manager-user strong { display: block; font-size: 13px; }
 .manager-brand small, .manager-user small { display: block; color: var(--manager-text); }
 
-.manager-mark, .manager-avatar {
+.manager-mark {
+  display: block;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.manager-avatar {
   display: grid;
   place-items: center;
   flex: 0 0 auto;

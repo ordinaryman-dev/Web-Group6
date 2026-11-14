@@ -8,12 +8,12 @@
 {%- endmacro %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=2">
 <div class="desk{% if drawer_mode %} has-drawer{% endif %}">
 
   <aside class="desk-side" aria-label="Desk sections">
     <div class="side-brand">
-      <span class="side-mark">HH</span>
+      <img class="side-mark" src="{{ url_for('static', filename='images/logo-badge.png') }}" alt="Hero Hotel">
       <span>
         <b>FRONT DESK</b>
         <small>Hero Hotel</small>

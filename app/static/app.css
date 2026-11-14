@@ -88,19 +88,15 @@ img { max-width: 100%; }
 }
 .brand:hover { text-decoration: none; }
 .brand-mark {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  border-radius: 10px;
-  background: var(--pine);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 700;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
   letter-spacing: .4px;
 }
-.brand-mark.light { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .18); }
+.brand-mark.light { border: 1px solid rgba(255, 255, 255, .35); }
 .brand b {
   display: block;
   color: var(--ink);
@@ -726,8 +722,8 @@ img { max-width: 100%; }
   -webkit-backdrop-filter: blur(12px) saturate(1.1);
 }
 .auth-topbar .brand-mark {
-  background: var(--pine);
-  color: #fff;
+  width: 56px;
+  height: 56px;
 }
 .auth-topbar .brand-lockup > span:last-child { display: flex; flex-direction: column; }
 .auth-topbar b { color: var(--ink); line-height: 1.2; }
@@ -1523,7 +1519,7 @@ section.account-panel { padding: 20px; }
   .auth-note { display: none; }
   .auth-topbar { top: 12px; left: 12px; }
   .auth-topbar .brand-lockup { padding: 6px 14px 6px 6px; }
-  .auth-topbar .brand-mark { width: 32px; height: 32px; }
+  .auth-topbar .brand-mark { width: 44px; height: 44px; }
   .auth-topbar b { font-size: 11px; }
   .auth-topbar small { font-size: 10px; }
   .auth-flash { top: 64px; }

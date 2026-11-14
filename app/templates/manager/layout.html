@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} · Hero Hotel{% endblock %}
-{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}">{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}?v=2">{% endblock %}
 {% block shell %}
 <div class="manager-shell">
   <aside class="manager-sidebar">
     <a class="manager-brand" href="{{ url_for('manager.overview') }}">
-      <span class="manager-mark" aria-hidden="true">HH</span>
+      <img class="manager-mark" src="{{ url_for('static', filename='images/logo-badge.png') }}" alt="Hero Hotel">
       <span><strong>Manager console</strong><small>Hero Hotel</small></span>
     </a>
     <nav class="manager-nav" aria-label="Manager navigation">
