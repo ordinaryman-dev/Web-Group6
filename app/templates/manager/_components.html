@@ -52,12 +52,33 @@
   {% else %}<p class="manager-empty">No matching audit entries.</p>{% endif %}
 {% endmacro %}
 
-{% macro pagination(page, endpoint, filters={}) %}
+{% macro list_controls(options) %}
+  <label>Sort by
+    <select name="{{ options.prefix }}sort">
+      {% for key, label in options.sorts %}<option value="{{ key }}"{% if options.sort == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Per page
+    <select name="{{ options.prefix }}per_page">
+      {% for size in (25,50,100) %}<option value="{{ size }}"{% if options.per_page == size %} selected{% endif %}>{{ size }}</option>{% endfor %}
+    </select>
+  </label>
+{% endmacro %}
+
+{% macro list_count(page) %}
+  {% if page.total %}{{ page.first }}–{{ page.last }} of {{ page.total }}{% else %}0 results{% endif %}
+{% endmacro %}
+
+{% macro pagination(page, endpoint, query, prefix='', label='Pagination') %}
   {% if page.pages > 1 %}
-    <nav class="manager-pagination" aria-label="Pagination">
-      {% if page.has_prev %}<a href="{{ url_for(endpoint, page=page.prev_num, **filters) }}">Previous</a>{% endif %}
-      <span>Page {{ page.page }} of {{ page.pages }}</span>
-      {% if page.has_next %}<a href="{{ url_for(endpoint, page=page.next_num, **filters) }}">Next</a>{% endif %}
-    </nav>
+  <nav class="manager-pagination" aria-label="{{ label }}">
+    {% if page.has_prev %}<a href="{{ url_for(endpoint, **dict(query, **{(prefix ~ 'page'):page.prev_num})) }}">Previous</a>{% endif %}
+    {% for number in page.iter_pages() %}
+      {% if number is none %}<span aria-hidden="true">…</span>
+      {% elif number == page.page %}<span aria-current="page">{{ number }}</span>
+      {% else %}<a aria-label="Page {{ number }}" href="{{ url_for(endpoint, **dict(query, **{(prefix ~ 'page'):number})) }}">{{ number }}</a>{% endif %}
+    {% endfor %}
+    {% if page.has_next %}<a href="{{ url_for(endpoint, **dict(query, **{(prefix ~ 'page'):page.next_num})) }}">Next</a>{% endif %}
+  </nav>
   {% endif %}
 {% endmacro %}

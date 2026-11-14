@@ -1,0 +1,65 @@
+{% extends "manager/layout.html" %}
+{% from "manager/_components.html" import status, list_controls, list_count, pagination %}
+{% set title = "Rooms" %}
+{% block content %}
+<header class="manager-heading">
+  <div><h1>{{ title }}</h1><p>Room inventory and availability for {{ filters.day.strftime('%d %b %Y') }}.</p></div>
+  <a class="manager-button" href="{{ list_url('manager.room_form') }}">Add room</a>
+</header>
+<section class="manager-panel">
+  <details class="manager-facet" open>
+    <summary>Search and filters</summary>
+    <form method="get" class="manager-filters manager-list-filters">
+      <label>Room number, type or code <input type="search" name="q" value="{{ filters.q }}" maxlength="254" placeholder="e.g. 1201 or King"></label>
+      <label>Night of <input type="date" name="day" value="{{ filters.day }}" required></label>
+      <label>Floor
+        <select name="floor"><option value="">All floors</option>
+          {% for key, label, count in floors %}<option value="{{ key }}"{% if filters.floor == key %} selected{% endif %}>{{ label }} · {{ count }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Room type
+        <select name="type"><option value="">All types</option>
+          {% for type_id, room_type in types_by_id.items() %}<option value="{{ type_id }}"{% if filters.type == type_id %} selected{% endif %}>{{ room_type.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Bed type
+        <select name="bed"><option value="">All beds</option>
+          {% for bed in ('single','double','twin','king','suite') %}<option value="{{ bed }}"{% if filters.bed == bed %} selected{% endif %}>{{ bed|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Window
+        <select name="window"><option value="">Any window</option>
+          {% for key, label in [('with','With window'),('without','Without window')] %}<option value="{{ key }}"{% if filters.window == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Night status
+        <select name="status"><option value="">All statuses</option>
+          {% for key in statuses %}<option value="{{ key }}"{% if filters.status == key %} selected{% endif %}>{{ key|replace('_',' ')|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      {{ list_controls(options) }}
+      <button class="manager-button secondary" type="submit">Apply</button>
+      <a href="{{ url_for('manager.rooms') }}">Reset</a>
+    </form>
+  </details>
+  <p class="manager-result-count">{{ list_count(page) }}{% if page.total %} rooms{% endif %}</p>
+  {% if page.items %}
+    {% for label, rooms in groups %}
+      <details class="manager-result-group"{% if loop.first or filters.q %} open{% endif %}>
+        <summary><span>{{ label }}</span><span>{{ rooms|length }} on this page</span></summary>
+        <div class="manager-table-wrap"><table class="manager-table">
+          <thead><tr><th>Room number</th><th>Room type</th><th>Bed</th><th>Window</th><th>First operating date</th><th>First unavailable date</th><th>Night status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+          <tbody>{% for room in rooms %}{% set room_type = types_by_id[room.room_type_id] %}<tr data-room-number="{{ room.number }}">
+            <td><strong>{{ room.number }}</strong></td><td>{{ room_type.name }}</td><td>{{ room_type.bed_type|capitalize }}</td>
+            <td>{{ 'Yes' if room.has_window else 'No' }}</td>
+            <td>{{ room.operational_from }}</td><td>{{ room.operational_until or '—' }}</td>
+            <td>{{ status(states[room.id]) }}</td>
+            <td><a href="{{ list_url('manager.room_form', record_id=room.id) }}">Edit</a></td>
+          </tr>{% endfor %}</tbody>
+        </table></div>
+      </details>
+    {% endfor %}
+  {% else %}<p class="manager-empty">No rooms match the selected filters.</p>{% endif %}
+  {{ pagination(page, 'manager.rooms', list_query) }}
+</section>
+{% endblock %}

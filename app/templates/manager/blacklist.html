@@ -1,20 +1,28 @@
 {% extends "manager/layout.html" %}
-{% from "manager/_components.html" import fields, pagination, status %}
+{% from "manager/_components.html" import fields, list_controls, list_count, pagination, status %}
 {% set title = "Customer blacklist" %}
 {% block content %}
 <header class="manager-heading"><div><h1>{{ title }}</h1><p>Restrictions apply to new bookings, walk-ins and extensions. Existing confirmed bookings remain active.</p></div></header>
 <div class="manager-grid">
   <section class="manager-panel">
-    <div class="manager-panel-title"><h2>Find a customer</h2></div>
-    <form method="get" class="manager-filters">
-      <label for="customer-query">Name, phone or email <input type="search" name="q" id="customer-query" value="{{ search }}"></label>
-      <button class="manager-button secondary" type="submit">Search</button>
+    <details class="manager-facet" open>
+    <summary>Find a customer</summary>
+    <form method="get" class="manager-filters manager-list-filters">
+      {% for name, value in list_query.items() if name.startswith('history_') %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <label for="customer-query">Name, phone or email <input type="search" name="q" id="customer-query" value="{{ search }}" maxlength="254"></label>
+      {{ list_controls(customer_options) }}
+      <button class="manager-button secondary" type="submit">Apply</button>
     </form>
-    {% if customers %}<div class="manager-table-wrap"><table class="manager-table">
+    </details>
+    <details class="manager-result-group" open>
+    <summary><span>Customers</span><span>{{ list_count(customers) }}</span></summary>
+    {% if customers.items %}<div class="manager-table-wrap"><table class="manager-table">
       <thead><tr><th>Customer</th><th>Phone</th><th>ID</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
-      <tbody>{% for customer in customers %}<tr><td>{{ customer.name }}</td><td>{{ customer.phone or '—' }}</td><td>{{ customer.id }}</td>
-        <td><a href="{{ url_for('manager.blacklist', customer=customer.id, q=search) }}#add-blacklist">Select</a></td></tr>{% endfor %}</tbody>
+      <tbody>{% for customer in customers.items %}<tr><td>{{ customer.name }}</td><td>{{ customer.phone or '—' }}</td><td>{{ customer.id }}</td>
+        <td><a href="{{ list_url('manager.blacklist', customer=customer.id) }}#add-blacklist">Select</a></td></tr>{% endfor %}</tbody>
     </table></div>{% else %}<p class="manager-empty">No matching customers.</p>{% endif %}
+    </details>
+    {{ pagination(customers, 'manager.blacklist', list_query, 'customer_', 'Customers pagination') }}
   </section>
   <section class="manager-panel" id="add-blacklist">
     <div class="manager-panel-title"><h2>Add restriction</h2></div>
@@ -22,16 +30,30 @@
   </section>
 </div>
 <section class="manager-panel manager-lower">
-  <div class="manager-panel-title"><h2>Restriction history</h2></div>
+  <details class="manager-facet" open>
+    <summary>Search restriction history</summary>
+    <form method="get" class="manager-filters manager-list-filters">
+      {% for name, value in list_query.items() if name in ('q','customer','customer_page','customer_sort','customer_per_page') %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <label>Customer or reason <input type="search" name="history_q" value="{{ history_filters.history_q }}" maxlength="254"></label>
+      <label>Status <select name="history_status"><option value="">All statuses</option>
+        {% for value in ('active','removed') %}<option value="{{ value }}"{% if history_filters.history_status == value %} selected{% endif %}>{{ value|capitalize }}</option>{% endfor %}
+      </select></label>
+      {{ list_controls(history_options) }}
+      <button class="manager-button secondary" type="submit">Apply</button>
+    </form>
+  </details>
+  <details class="manager-result-group" open>
+  <summary><span>Restriction history</span><span>{{ list_count(entries) }}</span></summary>
   {% if entries.items %}<div class="manager-table-wrap"><table class="manager-table">
     <thead><tr><th>Customer</th><th>Reason</th><th>Effective</th><th>Removed</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
     <tbody>{% for entry in entries.items %}<tr>
       <td>{{ entry.customer.name }} · #{{ entry.customer_id }}</td><td>{{ entry.reason }}</td>
       <td>{{ entry.effective_at|localtime }}</td><td>{{ (entry.removed_at|localtime) if entry.removed_at else '—' }}</td>
       <td>{{ status('removed' if entry.removed_at else 'active') }}</td>
-      <td>{% if not entry.removed_at %}<a href="{{ url_for('manager.remove_blacklist', customer_id=entry.customer_id) }}">Remove</a>{% endif %}</td>
+      <td>{% if not entry.removed_at %}<a href="{{ list_url('manager.remove_blacklist', customer_id=entry.customer_id) }}">Remove</a>{% endif %}</td>
     </tr>{% endfor %}</tbody>
   </table></div>{% else %}<p class="manager-empty">No restrictions have been recorded.</p>{% endif %}
-  {{ pagination(entries, 'manager.blacklist', {'q':search}) }}
+  </details>
+  {{ pagination(entries, 'manager.blacklist', list_query, 'history_', 'Restriction history pagination') }}
 </section>
 {% endblock %}

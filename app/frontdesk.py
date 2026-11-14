@@ -39,6 +39,7 @@ from .booking import (
     hotel_now,
 )
 from .extensions import db
+from .room_numbers import floor_key as _floor_key, floor_label as _floor_label, floor_sort as _floor_sort
 from .models import (
     MANAGER,
     Booking,
@@ -234,22 +235,6 @@ def _search_bookings(query):
         return []
     statement = _booking_filter(query, select(Booking)).order_by(Booking.id.desc()).limit(10)
     return db.session.scalars(statement).all()
-
-
-def _floor_key(number):
-    match = re.fullmatch(r"(\d+)(\d{2})", number or "")
-    if match:
-        return match.group(1)
-    match = re.match(r"([A-Za-z]+)", number or "")
-    return match.group(1).upper() if match else "OTHER"
-
-
-def _floor_label(key):
-    return f"{int(key)}F" if key.isdigit() else key
-
-
-def _floor_sort(key):
-    return (0, int(key), "") if key.isdigit() else (1, 0, key)
 
 
 def _mask_name(name):

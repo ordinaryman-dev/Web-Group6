@@ -1,12 +1,13 @@
 import csv
 from datetime import date, datetime, time, timedelta, timezone
 from io import StringIO
+from itertools import groupby
 
 from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
-from sqlalchemy import func, or_, select
+from sqlalchemy import Numeric, case, cast, func, or_, select
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, lazyload
 from wtforms import SelectChoice
 
 from . import manager_services as services
@@ -19,10 +20,72 @@ from .models import (
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,
 )
 from .reports import DAY, occupancy_report, report_range
+from .room_numbers import floor_key, floor_label, floor_sort
 
 
 manager = Blueprint("manager", __name__, url_prefix="/manage")
 BOOKING_STATUSES = ("confirmed", "checked_in", "checked_out", "cancelled", "no_show")
+ROOM_STATUSES = (
+    "available", "reserved", "occupied", "departing", "dirty",
+    "maintenance", "maintenance_conflict", "out_of_service",
+)
+PAGE_SIZES = (25, 50, 100)
+
+
+def list_options(sorts, default, *, prefix=""):
+    sort = request.args.get(prefix + "sort", default)
+    orders = {key: columns for key, _, *columns in sorts}
+    if sort not in orders:
+        sort = default
+    size = request.args.get(prefix + "per_page", type=int)
+    return {
+        "sort": sort,
+        "per_page": size if size in PAGE_SIZES else PAGE_SIZES[0],
+        "sorts": [(key, label) for key, label, *_ in sorts],
+        "order": orders[sort],
+        "prefix": prefix,
+    }
+
+
+def list_page(statement, options):
+    page_number = request.args.get(options["prefix"] + "page", 1, type=int)
+    page = db.paginate(
+        statement.order_by(*options["order"]), page=max(1, min(page_number, 1_000_000)),
+        per_page=options["per_page"], error_out=False,
+    )
+    if page.page > max(1, page.pages):
+        page = db.paginate(
+            statement.order_by(*options["order"]), page=max(1, page.pages),
+            per_page=options["per_page"], error_out=False,
+        )
+    return page
+
+
+@manager.context_processor
+def list_helpers():
+    return {"list_url": list_url, "list_query": list_query()}
+
+
+def search_query(name="q"):
+    return request.args.get(name, "").strip()[:254]
+
+
+def contains_any(query, *columns):
+    return or_(*(column.icontains(query, autoescape=True) for column in columns))
+
+
+def list_query():
+    names = (
+        "q", "day", "floor", "type", "bed", "window", "status", "sort", "per_page", "page",
+        "customer", "customer_page", "customer_sort", "customer_per_page", "history_page",
+        "history_sort", "history_per_page", "history_q", "history_status",
+        "actor", "action", "object_type", "object_id", "start", "end",
+    )
+    return {name: request.args[name] for name in names if name in request.args}
+
+
+def list_url(endpoint, **values):
+    return url_for(endpoint, **(list_query() | values))
 
 
 @manager.before_request
@@ -66,10 +129,10 @@ def edit_form(form, title, endpoint, message, operation, *args, change_own_passw
             status = error.status
         else:
             flash(message, "success")
-            return redirect(url_for(endpoint))
+            return redirect(list_url(endpoint))
     elif form.is_submitted():
         status = 400
-    return render_template("manager/form.html", form=form, title=title, back=url_for(endpoint)), status
+    return render_template("manager/form.html", form=form, title=title, back=list_url(endpoint)), status
 
 
 def row_action(operation, message, endpoint, *args):
@@ -79,7 +142,7 @@ def row_action(operation, message, endpoint, *args):
         show_error(error)
     else:
         flash(message, "success")
-    return redirect(url_for(endpoint))
+    return redirect(list_url(endpoint))
 
 
 def count_rows(model, *conditions):
@@ -111,8 +174,24 @@ def overview():
 
 @manager.get("/room-types")
 def room_types():
-    items = db.session.scalars(select(RoomType).order_by(RoomType.name, RoomType.id)).all()
-    return render_template("manager/catalogue.html", section="types", items=items)
+    query = search_query()
+    status = request.args.get("status", "")
+    options = list_options((
+        ("name", "Name A–Z", RoomType.name, RoomType.id),
+        ("name_desc", "Name Z–A", RoomType.name.desc(), RoomType.id),
+        ("capacity", "Capacity: highest first", RoomType.capacity.desc(), RoomType.name, RoomType.id),
+        ("price", "Price: lowest first", RoomType.base_price, RoomType.name, RoomType.id),
+        ("price_desc", "Price: highest first", RoomType.base_price.desc(), RoomType.name, RoomType.id),
+    ), "name")
+    statement = select(RoomType)
+    if query:
+        statement = statement.where(contains_any(query, RoomType.name, RoomType.code, RoomType.bed_type))
+    if status in ("listed", "delisted"):
+        statement = statement.where(RoomType.listed.is_(status == "listed"))
+    return render_template(
+        "manager/catalogue.html", section="types", page=list_page(statement, options), options=options,
+        filters={"q": query, "status": status},
+    )
 
 
 @manager.route("/room-types/new", defaults={"record_id": None}, methods=["GET", "POST"])
@@ -140,16 +219,86 @@ def rooms():
         day = date.fromisoformat(raw_day) if raw_day else today
     except ValueError:
         abort(400, description="Enter a valid room-status date.")
-    items = db.session.execute(select(Room, RoomType.name).join(RoomType).order_by(Room.number)).all()
-    blocked = set(db.session.scalars(select(RoomBlock.room_id).where(
+    query = search_query()
+    floor = request.args.get("floor", "")
+    type_id = request.args.get("type", type=int)
+    bed = request.args.get("bed", "")
+    window = request.args.get("window", "")
+    status = request.args.get("status", "")
+
+    floor_rooms = {}
+    for room_id, number in db.session.execute(select(Room.id, Room.number)):
+        floor_rooms.setdefault(floor_key(number), []).append(room_id)
+    if floor not in floor_rooms:
+        floor = ""
+    floors = [(key, floor_label(key), len(floor_rooms[key])) for key in sorted(floor_rooms, key=floor_sort)]
+    room_types = db.session.scalars(select(RoomType).order_by(RoomType.name, RoomType.id)).all()
+    types_by_id = {room_type.id: room_type for room_type in room_types}
+
+    blocked = select(RoomBlock.id).where(
+        RoomBlock.room_id == Room.id, RoomBlock.effective.is_(True),
         RoomBlock.start_date <= day, RoomBlock.end_date > day,
-    )))
-    bookings_by_room = dict(db.session.execute(
-        select(RoomNight.room_id, Booking.status).join(Booking).where(RoomNight.stay_date == day)
-    ).all())
+    ).exists()
+    night = select(Booking.status).select_from(RoomNight).join(Booking).where(
+        RoomNight.room_id == Room.id, RoomNight.stay_date == day,
+        Booking.status.in_(("confirmed", "checked_in", "checked_out")),
+    ).scalar_subquery()
+    active_stay = select(Booking.id).where(
+        Booking.room_id == Room.id, Booking.status == "checked_in", Booking.check_in <= day,
+    )
+    operational = (Room.operational_from <= day) & or_(Room.operational_until.is_(None), Room.operational_until > day)
+    in_house = active_stay.exists() if day >= today else False
+    departing = active_stay.where(Booking.check_out == day).exists() if day >= today else False
+    room_status = case(
+        (~operational, "out_of_service"),
+        (blocked & or_(night.is_not(None), in_house), "maintenance_conflict"),
+        (blocked, "maintenance"),
+        (night.in_(("checked_in", "checked_out")) if day <= today else False, "occupied"),
+        (departing, "departing"),
+        (in_house, "occupied"),
+        (night.is_not(None), "reserved"),
+        (Room.housekeeping == "dirty" if day == today else False, "dirty"),
+        else_="available",
+    )
+    numeric = Room.number.regexp_match("^[0-9]+$")
+    number_value = case((numeric, cast(Room.number, Numeric(20, 0))))
+    starts_with_letters = Room.number.regexp_match("^[A-Za-z]")
+    number_format = case((Room.number.regexp_match("^[0-9]{3,}$"), 0), (starts_with_letters, 1), else_=2)
+    # Keep numeric floors, named room prefixes, and miscellaneous numbers adjacent.
+    number_order = (number_format, number_value, Room.number, Room.id)
+    options = list_options((
+        ("number", "Room number: ascending", *number_order),
+        ("number_desc", "Room number: descending", number_format, number_value.desc(), Room.number.desc(), Room.id),
+        ("type", "Room type A–Z", RoomType.name, *number_order),
+        ("status", "Night status A–Z", room_status, *number_order),
+        ("opening", "Operating date: newest first", Room.operational_from.desc(), *number_order),
+    ), "number")
+    statement = select(Room).join(RoomType)
+    if floor:
+        statement = statement.where(Room.id.in_(floor_rooms[floor]))
+    if query:
+        statement = statement.where(contains_any(query, Room.number, RoomType.name, RoomType.code))
+    if type_id in types_by_id:
+        statement = statement.where(Room.room_type_id == type_id)
+    if bed in ("single", "double", "twin", "king", "suite"):
+        statement = statement.where(RoomType.bed_type == bed)
+    if window in ("with", "without"):
+        statement = statement.where(Room.has_window.is_(window == "with"))
+    if status in ROOM_STATUSES:
+        statement = statement.where(room_status == status)
+    page = list_page(statement, options)
+    states = dict(db.session.execute(select(Room.id, room_status).where(
+        Room.id.in_([room.id for room in page.items]),
+    )).all()) if page.items else {}
+    by_floor = options["sort"] in ("number", "number_desc") or bool(floor)
+    groups = [
+        (floor_label(key), list(items))
+        for key, items in groupby(page.items, key=lambda room: floor_key(room.number))
+    ] if by_floor else [("Room results", page.items)]
     return render_template(
-        "manager/catalogue.html", section="rooms", items=items, day=day, today=today,
-        blocked=blocked, bookings_by_room=bookings_by_room,
+        "manager/rooms.html", page=page, groups=groups, options=options, statuses=ROOM_STATUSES,
+        states=states, floors=floors, types_by_id=types_by_id,
+        filters={"q": query, "day": day, "floor": floor, "type": type_id, "status": status, "bed": bed, "window": window},
     )
 
 
@@ -170,11 +319,29 @@ def room_form(record_id):
 
 @manager.get("/prices")
 def prices():
-    items = db.session.execute(
-        select(PriceRule, RoomType.name).join(RoomType)
-        .order_by(PriceRule.active.desc(), RoomType.name, PriceRule.start_date.desc(), PriceRule.id.desc())
-    ).all()
-    return render_template("manager/catalogue.html", section="prices", items=items)
+    query = search_query()
+    status = request.args.get("status", "")
+    options = list_options((
+        ("active", "Active rules first", PriceRule.active.desc(), RoomType.name, PriceRule.start_date.desc(), PriceRule.id.desc()),
+        ("date", "Start date: latest first", PriceRule.start_date.desc(), PriceRule.id.desc()),
+        ("date_asc", "Start date: earliest first", PriceRule.start_date, PriceRule.id),
+        ("amount", "Price: lowest first", PriceRule.amount, PriceRule.id),
+        ("amount_desc", "Price: highest first", PriceRule.amount.desc(), PriceRule.id),
+        ("type", "Room type A–Z", RoomType.name, PriceRule.id),
+    ), "active")
+    statement = select(PriceRule).join(RoomType)
+    if query:
+        statement = statement.where(contains_any(query, RoomType.name, RoomType.code, PriceRule.kind))
+    if status in ("active", "retired"):
+        statement = statement.where(PriceRule.active.is_(status == "active"))
+    page = list_page(statement, options)
+    types_by_id = dict(db.session.execute(select(RoomType.id, RoomType.name).where(
+        RoomType.id.in_({rule.room_type_id for rule in page.items}),
+    )).all()) if page.items else {}
+    return render_template(
+        "manager/catalogue.html", section="prices", page=page, options=options,
+        types_by_id=types_by_id, filters={"q": query, "status": status},
+    )
 
 
 @manager.route("/prices/new", defaults={"rule_id": None}, methods=["GET", "POST"])
@@ -199,8 +366,23 @@ def retire_price(rule_id):
 
 @manager.get("/accounts")
 def accounts():
-    staff = db.session.scalars(select(User).where(User.role == STAFF).order_by(User.email)).all()
-    return render_template("manager/accounts.html", staff=staff)
+    query = search_query()
+    status = request.args.get("status", "")
+    options = list_options((
+        ("email", "Email A–Z", User.email, User.id),
+        ("email_desc", "Email Z–A", User.email.desc(), User.id),
+        ("active", "Active first", User.active.desc(), User.email, User.id),
+        ("inactive", "Inactive first", User.active, User.email, User.id),
+    ), "email")
+    statement = select(User).where(User.role == STAFF)
+    if query:
+        statement = statement.where(contains_any(query, User.email))
+    if status in ("active", "inactive"):
+        statement = statement.where(User.active.is_(status == "active"))
+    return render_template(
+        "manager/accounts.html", page=list_page(statement, options), options=options,
+        filters={"q": query, "status": status},
+    )
 
 
 @manager.route("/accounts/new", methods=["GET", "POST"])
@@ -238,25 +420,41 @@ def blacklist():
             status = error.status
         else:
             flash("Customer added to the blacklist.", "success")
-            return redirect(url_for("manager.blacklist"))
+            return redirect(list_url("manager.blacklist"))
     elif form.is_submitted():
         status = 400
     else:
         form.customer_id.data = request.args.get("customer", type=int)
-    search = request.args.get("q", "").strip()
-    customers = select(Customer).order_by(Customer.name, Customer.id).limit(30)
+    search = search_query()
+    customer_options = list_options((
+        ("name", "Name A–Z", Customer.name, Customer.id),
+        ("name_desc", "Name Z–A", Customer.name.desc(), Customer.id),
+        ("new", "Customer ID: newest first", Customer.id.desc()),
+    ), "name", prefix="customer_")
+    history_query = search_query("history_q")
+    history_status = request.args.get("history_status", "")
+    history_options = list_options((
+        ("recent", "Most recent first", BlacklistEntry.id.desc()),
+        ("old", "Oldest first", BlacklistEntry.id),
+        ("name", "Customer A–Z", Customer.name, BlacklistEntry.id.desc()),
+    ), "recent", prefix="history_")
+    customer_statement = select(Customer).outerjoin(User)
     if search:
-        customers = customers.outerjoin(User).where(or_(
-            Customer.name.contains(search, autoescape=True), Customer.phone.contains(search, autoescape=True),
-            User.email.contains(search, autoescape=True),
-        ))
-    entries = db.paginate(
-        select(BlacklistEntry).options(joinedload(BlacklistEntry.customer)).order_by(BlacklistEntry.id.desc()),
-        max_per_page=25, per_page=25, error_out=False,
-    )
+        customer_statement = customer_statement.where(contains_any(search, Customer.name, Customer.phone, User.email))
+    history_statement = select(BlacklistEntry).join(Customer).options(joinedload(BlacklistEntry.customer))
+    if history_query:
+        history_statement = history_statement.where(contains_any(history_query, Customer.name, BlacklistEntry.reason))
+    if history_status in ("active", "removed"):
+        history_statement = history_statement.where(
+            BlacklistEntry.removed_at.is_(None) if history_status == "active" else BlacklistEntry.removed_at.is_not(None)
+        )
+    customers = list_page(customer_statement, customer_options)
+    entries = list_page(history_statement, history_options)
+    history_filters = {"history_q": history_query, "history_status": history_status}
     return render_template(
-        "manager/blacklist.html", form=form, search=search, entries=entries,
-        customers=db.session.scalars(customers).all(),
+        "manager/blacklist.html", form=form, customers=customers, entries=entries,
+        customer_options=customer_options, history_options=history_options,
+        search=search, history_filters=history_filters,
     ), status
 
 
@@ -273,18 +471,29 @@ def remove_blacklist(customer_id):
 @manager.get("/bookings")
 def bookings():
     status = request.args.get("status", "")
-    query = request.args.get("q", "").strip()
-    statement = select(Booking).join(Customer).order_by(Booking.id.desc())
+    query = search_query()
+    options = list_options((
+        ("recent", "Newest booking first", Booking.id.desc()),
+        ("arrival", "Check-in: earliest first", Booking.check_in, Booking.id),
+        ("arrival_desc", "Check-in: latest first", Booking.check_in.desc(), Booking.id.desc()),
+        ("customer", "Customer A–Z", Customer.name, Booking.id.desc()),
+        ("room", "Room number A–Z", Room.number, Booking.id.desc()),
+        ("total", "Total: highest first", Booking.total.desc(), Booking.id.desc()),
+    ), "recent")
+    statement = select(Booking).join(Customer).join(Room).options(lazyload(Booking.price_lines))
     if status in BOOKING_STATUSES:
         statement = statement.where(Booking.status == status)
     if query:
-        matching = Customer.name.contains(query, autoescape=True)
+        matching = contains_any(query, Customer.name, Customer.phone, Room.number)
         number = query.upper().removeprefix("BK-")
         if number.isascii() and number.isdigit() and len(number) <= 10 and int(number) <= 2147483647:
-            matching = or_(matching, Booking.id == int(number))
+            by_reference = Booking.id == int(number)
+            matching = by_reference if query.upper().startswith("BK-") else or_(matching, by_reference)
         statement = statement.where(matching)
-    page = db.paginate(statement, max_per_page=25, per_page=25, error_out=False)
-    return render_template("manager/bookings.html", page=page, query=query, status=status, statuses=BOOKING_STATUSES)
+    return render_template(
+        "manager/bookings.html", page=list_page(statement, options), options=options,
+        filters={"q": query, "status": status}, statuses=BOOKING_STATUSES,
+    )
 
 
 def render_booking(booking, form, status=200):
@@ -323,7 +532,7 @@ def cancel_booking(booking_id):
         db.session.rollback()
         return render_booking(db.get_or_404(Booking, booking_id), form, error.status)
     flash(f"Booking cancelled. Simulated refund: ¥{amount:,.2f}.", "success")
-    return redirect(url_for("manager.booking_detail", booking_id=booking_id))
+    return redirect(list_url("manager.booking_detail", booking_id=booking_id))
 
 
 def current_report():
@@ -369,9 +578,13 @@ def export_report():
 @manager.get("/audit")
 def audit():
     filters = {name: request.args.get(name, "").strip() for name in ("actor", "action", "object_type", "object_id", "start", "end")}
-    statement = select(AuditLog).join(User).options(joinedload(AuditLog.actor)).order_by(
-        AuditLog.occurred_at.desc(), AuditLog.id.desc(),
-    )
+    options = list_options((
+        ("recent", "Most recent first", AuditLog.occurred_at.desc(), AuditLog.id.desc()),
+        ("old", "Oldest first", AuditLog.occurred_at, AuditLog.id),
+        ("actor", "Actor A–Z", User.email, AuditLog.id.desc()),
+        ("action", "Action A–Z", AuditLog.action, AuditLog.id.desc()),
+    ), "recent")
+    statement = select(AuditLog).join(User).options(joinedload(AuditLog.actor))
     if filters["actor"]:
         statement = statement.where(User.email.contains(filters["actor"], autoescape=True))
     for field in ("action", "object_type"):
@@ -393,7 +606,9 @@ def audit():
                 statement = statement.where(AuditLog.occurred_at >= utc if field == "start" else AuditLog.occurred_at < utc)
     except (ValueError, OverflowError):
         abort(400, description="Enter valid audit dates.")
-    page = db.paginate(statement, max_per_page=25, per_page=25, error_out=False)
+    page = list_page(statement, options)
     actions = db.session.scalars(select(AuditLog.action).distinct().order_by(AuditLog.action)).all()
     objects = db.session.scalars(select(AuditLog.object_type).distinct().order_by(AuditLog.object_type)).all()
-    return render_template("manager/audit.html", page=page, filters=filters, actions=actions, objects=objects)
+    return render_template(
+        "manager/audit.html", page=page, options=options, filters=filters, actions=actions, objects=objects,
+    )

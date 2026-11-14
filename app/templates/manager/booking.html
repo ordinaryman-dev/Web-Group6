@@ -3,7 +3,7 @@
 {% set title = booking.reference %}
 {% block content %}
 <header class="manager-heading"><div><h1>{{ title }}</h1><p>{{ booking.customer.name }} · {{ booking.room_type.name }} · Room {{ booking.room.number }}</p></div>
-  <a class="manager-button secondary" href="{{ url_for('manager.bookings') }}">All bookings</a></header>
+  <a class="manager-button secondary" href="{{ list_url('manager.bookings') }}">Back to bookings</a></header>
 <div class="manager-grid">
   <section class="manager-panel">
     <div class="manager-panel-title"><h2>Reservation</h2>{{ status(booking.status) }}</div>
@@ -31,7 +31,7 @@
     <p>Normal cancellation deadline {{ deadline.strftime('%d %b %Y, %H:%M') }} Beijing time.</p>
     {% if not exception_available %}<p class="muted">The late exception becomes available after this deadline. Hotel-initiated cancellation is available for a hotel reason.</p>{% endif %}
     <p>Estimated simulated refund <strong>¥{{ refundable|money }}</strong></p>
-    <form method="post" class="manager-form manager-lower" action="{{ url_for('manager.cancel_booking', booking_id=booking.id) }}">
+    <form method="post" class="manager-form manager-lower" action="{{ list_url('manager.cancel_booking', booking_id=booking.id) }}">
       {{ fields(form) }}
       <button class="manager-button danger" type="submit">Cancel and refund</button>
     </form>

@@ -1,20 +1,36 @@
 {% extends "manager/layout.html" %}
-{% from "manager/_components.html" import status %}
+{% from "manager/_components.html" import status, list_controls, list_count, pagination %}
 {% set title = "Staff accounts" %}
 {% block content %}
 <header class="manager-heading">
   <div><h1>{{ title }}</h1><p>Inactive accounts retain their booking and audit history.</p></div>
-  <a class="manager-button" href="{{ url_for('manager.staff_form') }}">Create account</a>
+  <a class="manager-button" href="{{ list_url('manager.staff_form') }}">Create account</a>
 </header>
 <section class="manager-panel">
-  {% if staff %}<div class="manager-table-wrap"><table class="manager-table">
-    <thead><tr><th>Email</th><th>Role</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
-    <tbody>{% for user in staff %}<tr>
-      <td><strong>{{ user.email }}</strong></td><td>Front desk</td><td>{{ status('active' if user.active else 'inactive') }}</td>
-      <td>{% if user.active %}<form method="post" action="{{ url_for('manager.disable_staff', staff_id=user.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="link-button">Disable</button>
-      </form>{% endif %}</td>
-    </tr>{% endfor %}</tbody>
-  </table></div>{% else %}<p class="manager-empty">No front-desk accounts.</p>{% endif %}
+  <details class="manager-facet" open>
+    <summary>Search and filters</summary>
+    <form method="get" class="manager-filters manager-list-filters">
+      <label>Staff email <input type="search" name="q" value="{{ filters.q }}" maxlength="254"></label>
+      <label>Status <select name="status"><option value="">All statuses</option>
+        {% for value in ('active','inactive') %}<option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ value|capitalize }}</option>{% endfor %}
+      </select></label>
+      {{ list_controls(options) }}
+      <button class="manager-button secondary" type="submit">Apply</button>
+      <a href="{{ url_for('manager.accounts') }}">Reset</a>
+    </form>
+  </details>
+  <details class="manager-result-group" open>
+    <summary><span>{{ title }}</span><span>{{ list_count(page) }}</span></summary>
+    {% if page.items %}<div class="manager-table-wrap"><table class="manager-table">
+      <thead><tr><th>Email</th><th>Role</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>{% for user in page.items %}<tr>
+        <td><strong>{{ user.email }}</strong></td><td>Front desk</td><td>{{ status('active' if user.active else 'inactive') }}</td>
+        <td>{% if user.active %}<form method="post" action="{{ list_url('manager.disable_staff', staff_id=user.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="link-button">Disable</button>
+        </form>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="manager-empty">No staff accounts match the selected filters.</p>{% endif %}
+  </details>
+  {{ pagination(page, 'manager.accounts', list_query) }}
 </section>
 {% endblock %}

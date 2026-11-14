@@ -1,10 +1,12 @@
 {% extends "manager/layout.html" %}
-{% from "manager/_components.html" import audit_table, pagination %}
+{% from "manager/_components.html" import audit_table, list_controls, list_count, pagination %}
 {% set title = "Audit log" %}
 {% block content %}
 <header class="manager-heading"><div><h1>{{ title }}</h1><p>Read-only history of recorded actions.</p></div></header>
 <section class="manager-panel">
-  <form method="get" class="manager-filters">
+  <details class="manager-facet" open>
+  <summary>Search and filters</summary>
+  <form method="get" class="manager-filters manager-list-filters">
     <label for="actor">Actor email <input type="search" id="actor" name="actor" value="{{ filters.actor }}"></label>
     <label for="action">Action <select id="action" name="action"><option value="">All actions</option>
       {% for action in actions %}<option value="{{ action }}"{% if filters.action == action %} selected{% endif %}>{{ action|replace('_',' ')|capitalize }}</option>{% endfor %}
@@ -15,9 +17,15 @@
     <label for="object-id">Object ID <input type="number" id="object-id" name="object_id" min="1" value="{{ filters.object_id }}"></label>
     <label for="start">From (Beijing) <input type="date" id="start" name="start" value="{{ filters.start }}"></label>
     <label for="end">Through (Beijing) <input type="date" id="end" name="end" value="{{ filters.end }}"></label>
-    <button class="manager-button secondary" type="submit">Filter</button>
+    {{ list_controls(options) }}
+    <button class="manager-button secondary" type="submit">Apply</button>
+    <a href="{{ url_for('manager.audit') }}">Reset</a>
   </form>
-  {{ audit_table(page.items, true) }}
-  {{ pagination(page, 'manager.audit', filters) }}
+  </details>
+  <details class="manager-result-group" open>
+    <summary><span>Audit entries</span><span>{{ list_count(page) }}</span></summary>
+    {{ audit_table(page.items, true) }}
+  </details>
+  {{ pagination(page, 'manager.audit', list_query) }}
 </section>
 {% endblock %}
