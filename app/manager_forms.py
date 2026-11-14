@@ -30,6 +30,7 @@ class RoomTypeForm(FlaskForm):
             SelectChoice("double", "Double"),
             SelectChoice("twin", "Twin"),
             SelectChoice("king", "King"),
+            SelectChoice("studio", "Studio"),
             SelectChoice("suite", "Suite"),
         ],
         default="double",

@@ -50,6 +50,7 @@ BED_TYPES = [
     ("double", "Double"),
     ("twin", "Twin"),
     ("king", "King"),
+    ("studio", "Studio"),
     ("suite", "Suite"),
 ]
 
@@ -57,7 +58,6 @@ BED_TYPES = [
 class SearchForm(FlaskForm):
     check_in = DateField("Check-in", validators=[InputRequired()])
     check_out = DateField("Check-out", validators=[InputRequired()])
-    guests = IntegerField("Guests", validators=[InputRequired(), NumberRange(min=1, max=2147483647)])
     submit = SubmitField("Search rooms")
 
 
@@ -65,9 +65,7 @@ class BookForm(FlaskForm):
     room_type_id = IntegerField(widget=HiddenInput(), validators=[InputRequired()])
     check_in = DateField(widget=HiddenInput(), validators=[InputRequired()])
     check_out = DateField(widget=HiddenInput(), validators=[InputRequired()])
-    guests = IntegerField(
-        widget=HiddenInput(), validators=[InputRequired(), NumberRange(min=1, max=2147483647)]
-    )
+    guests = IntegerField("Guests", validators=[InputRequired(), NumberRange(min=1, max=2147483647)])
     expected_arrival = TimeField("Expected arrival", format="%H:%M", validators=[InputRequired()])
     note = TextAreaField("Note (optional)", validators=[Optional()])
     idempotency_key = StringField(widget=HiddenInput(), validators=[InputRequired(), Length(max=64)])
@@ -125,9 +123,14 @@ def guest_required(view):
 
 def parse_search(form, now):
     if not form.validate():
-        return None, "Enter valid check-in and check-out dates and the number of guests."
-    stay = Stay(form.check_in.data, form.check_out.data, form.guests.data)
+        return None, "Enter valid check-in and check-out dates."
+    stay = Stay(form.check_in.data, form.check_out.data, 1)
     return stay, stay_error(stay, now)
+
+
+def requested_guests(default=1):
+    """Guest count is chosen on the confirmation page, not in the home search."""
+    return max(1, request.args.get("guests", type=int) or default)
 
 
 def search_redirect(stay):
@@ -136,7 +139,6 @@ def search_redirect(stay):
             "guest.index",
             check_in=stay.check_in.isoformat(),
             check_out=stay.check_out.isoformat(),
-            guests=stay.guests,
         )
     )
 
@@ -169,12 +171,11 @@ def index():
     selected_bed_type = request.args.get("bed_type", "all")
     if selected_bed_type not in {value for value, _ in BED_TYPES}:
         selected_bed_type = "all"
-    searched = any(key in request.args for key in ("check_in", "check_out", "guests"))
+    searched = any(key in request.args for key in ("check_in", "check_out"))
     form = SearchForm(request.args if searched else None, meta={"csrf": False})
     if not searched:
         form.check_in.data = now.date() + timedelta(days=2)
         form.check_out.data = now.date() + timedelta(days=4)
-        form.guests.data = 1
 
     error = None
     stay = None
@@ -217,18 +218,25 @@ def confirm(room_type_id):
     now = hotel_now()
     form = SearchForm(request.args, meta={"csrf": False})
     if not form.validate():
-        flash("Enter valid dates and the number of guests.", "error")
+        flash("Enter valid check-in and check-out dates.", "error")
         return redirect(url_for("guest.index"))
 
-    stay = Stay(form.check_in.data, form.check_out.data, form.guests.data)
+    stay = Stay(form.check_in.data, form.check_out.data, requested_guests())
     error = stay_error(stay, now)
     if error:
         flash(error, "error")
         return search_redirect(stay)
 
     room_type = db.session.get(RoomType, room_type_id)
-    if room_type is None or not room_type.listed or room_type.capacity < stay.guests:
+    if room_type is None or not room_type.listed:
         flash("That room type is no longer available for these dates.", "error")
+        return search_redirect(stay)
+    if room_type.capacity < stay.guests:
+        flash(
+            f"That room type sleeps up to {room_type.capacity} guest"
+            f"{'' if room_type.capacity == 1 else 's'}. Lower the guest count or pick another room.",
+            "error",
+        )
         return search_redirect(stay)
 
     quote = next(
@@ -261,7 +269,6 @@ def confirm(room_type_id):
         deadline_passed=now.replace(tzinfo=None) > datetime.combine(
             stay.check_in - timedelta(days=1), time(18)
         ),
-        now=now,
     )
 
 
@@ -274,6 +281,25 @@ def book():
         return redirect(url_for("guest.index"))
 
     stay = Stay(form.check_in.data, form.check_out.data, form.guests.data)
+    room_type = db.session.get(RoomType, form.room_type_id.data)
+    if room_type is None or not room_type.listed:
+        flash("That room type is no longer available for these dates.", "error")
+        return search_redirect(stay)
+    if room_type.capacity < stay.guests:
+        flash(
+            f"That room type sleeps up to {room_type.capacity} guest"
+            f"{'' if room_type.capacity == 1 else 's'}. Lower the guest count or pick another room.",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "guest.confirm",
+                room_type_id=room_type.id,
+                check_in=stay.check_in.isoformat(),
+                check_out=stay.check_out.isoformat(),
+                guests=room_type.capacity,
+            )
+        )
     try:
         result = create_booking(
             current_user.id,

@@ -86,6 +86,44 @@ def reserve(client, room_type_id, day, nights=2):
     return int(response.location.rsplit("/", 1)[-1]), form
 
 
+def test_guest_count_is_chosen_on_the_confirmation_page(app):
+    _, guest_email = new_user(app, GUEST)
+    guest, _ = sign_in(app, guest_email)
+    room_type_id, _ = create_room(app, "guest-count-room")
+
+    assert 'name="guests"' not in guest.get("/guest/").text
+
+    query = {"check_in": str(TODAY), "check_out": str(TODAY + timedelta(days=2))}
+    page = guest.get(f"/guest/book/{room_type_id}", query_string=query)
+    assert page.status_code == 200
+    assert 'type="date"' not in page.text
+    form = re.search(r'<form method="post" action="/guest/book".*?</form>', page.text, re.S)
+    if form is None:
+        pytest.fail("Room type was not available")
+    fields = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', form.group(0)))
+    fields.pop("submit", None)
+    fields.setdefault("expected_arrival", "14:00")
+    assert fields["guests"] == "1"
+
+    # Capacity is enforced: this room type sleeps two, so three is refused
+    # before any booking row is written.
+    too_many = guest.get(f"/guest/book/{room_type_id}", query_string={**query, "guests": 3})
+    assert too_many.status_code == 302
+    assert "sleeps up to 2 guests" in guest.get(too_many.location).text
+    fields["guests"] = "3"
+    rejected = guest.post("/guest/book", data={**query, **fields, "note": ""}, follow_redirects=True)
+    assert "sleeps up to 2 guests" in rejected.text
+
+    # The quote was issued with the default guest count; changing it on the
+    # confirmation page must not be treated as a price change.
+    fields["guests"] = "2"
+    response = guest.post("/guest/book", data={**query, **fields, "note": ""})
+    assert response.status_code == 302 and "/guest/bookings/" in response.location
+    booking_id = int(response.location.rsplit("/", 1)[-1])
+    with app.app_context():
+        assert db.session.get(Booking, booking_id).guests == 2
+
+
 def test_existing_rate_survives_manager_migration(app):
     with app.app_context():
         rule = db.session.scalar(select(PriceRule).join(RoomType).where(RoomType.code == "legacy-type"))

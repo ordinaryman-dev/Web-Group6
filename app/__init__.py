@@ -13,6 +13,7 @@ ROOM_IMAGE_FILES = {
     "double": "room-double.jpg",
     "twin": "room-twin.jpg",
     "king": "room-king.jpg",
+    "studio": "room-studio.jpg",
     "suite": "room-family.jpg",
 }
 

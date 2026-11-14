@@ -48,7 +48,7 @@ class RoomType(db.Model):
         db.CheckConstraint("capacity > 0", name="ck_room_types_capacity"),
         db.CheckConstraint("base_price >= 0", name="ck_room_types_price"),
         db.CheckConstraint(
-            "bed_type IN ('single', 'double', 'twin', 'king', 'suite')",
+            "bed_type IN ('single', 'double', 'twin', 'king', 'studio', 'suite')",
             name="ck_room_types_bed_type",
         ),
     )

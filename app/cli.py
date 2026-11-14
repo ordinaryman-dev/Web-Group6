@@ -187,7 +187,8 @@ def seed_desk():
 FLOOR_ROOM_COUNT = 25
 FLOOR_BED_PLAN = (
     (range(1, 7), "single"),
-    (range(7, 15), "double"),
+    (range(7, 9), "studio"),
+    (range(9, 15), "double"),
     (range(15, 20), "twin"),
     (range(20, 24), "king"),
     (range(24, 26), "suite"),
@@ -219,6 +220,7 @@ def seed_rooms():
                     "double": ("std-double", "Comfort Double", 2, "420.00"),
                     "twin": ("std-twin", "City Twin", 2, "520.00"),
                     "king": ("std-king", "Harbour King", 2, "680.00"),
+                    "studio": ("std-studio", "Harbour Studio", 2, "780.00"),
                     "suite": ("std-suite", "Family Suite", 4, "980.00"),
                 }[bed_type]
                 room_type = RoomType(
@@ -252,6 +254,24 @@ def seed_rooms():
                 ))
                 created += 1
         session.flush()
+        # Warehouses built before the studio existed still hold doubles on the
+        # two studio positions of each floor. Move unbooked rooms over so a
+        # re-run converges on the same inventory without changing the total.
+        studio = bed_types["studio"]
+        double_ids = {
+            room_type.id
+            for room_type in session.scalars(db.select(RoomType)).all()
+            if room_type.bed_type == "double" and room_type.code in ("demo-double", "std-double")
+        }
+        booked_room_ids = set(session.scalars(db.select(Booking.room_id)).all())
+        for room in session.scalars(db.select(Room)).all():
+            if not re.fullmatch(r"\d{3,4}", room.number):
+                continue
+            if int(room.number[-2:]) not in (7, 8):
+                continue
+            if room.room_type_id in double_ids and room.id not in booked_room_ids:
+                room.room_type_id = studio.id
+        session.flush()
         # Keep the demo inventory deterministic when the command is re-run: the
         # Classic Single rooms are the interior rooms without a window; every other
         # room type has one. This also covers the existing wing rooms.
@@ -281,6 +301,7 @@ def seed_demo():
         ("demo-single", "Classic Single", "A quiet room for a short stay.", 1, "280.00", "single", ["D101", "D102"]),
         ("demo-double", "Comfort Double", "A double room for two guests.", 2, "420.00", "double", ["D201", "D202"]),
         ("demo-family", "Family Suite", "A suite with space for a small family.", 4, "680.00", "suite", ["D301"]),
+        ("demo-studio", "Harbour Studio", "An open-plan studio with a king bed, a lounge corner and harbour-facing windows.", 2, "780.00", "studio", []),
     ]
     with Session(db.engine) as session, session.begin():
         for code, name, description, capacity, price, bed_type, numbers in demo_types:

@@ -142,7 +142,9 @@ def quote_signature(room_type_id, stay, rates):
             segments[-1][1] = rate.end.isoformat()
         else:
             segments.append([rate.start.isoformat(), rate.end.isoformat(), amount])
-    return [room_type_id, stay.check_in.isoformat(), stay.check_out.isoformat(), stay.guests, segments]
+    # Guest count is chosen on the confirmation page and does not affect the price,
+    # so the quote is pinned to the room type, the dates and the nightly rates.
+    return [room_type_id, stay.check_in.isoformat(), stay.check_out.isoformat(), segments]
 
 
 def quote_token(room_type_id, stay, rates):

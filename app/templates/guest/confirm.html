@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Confirm your stay · Hero Hotel{% endblock %}
 {% block content %}
-<p class="back-link"><a href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests) }}">← Back to results</a></p>
+<p class="back-link"><a href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat()) }}">← Back to results</a></p>
 
 <div class="confirm-layout">
   <section class="confirm-main">
@@ -10,11 +10,21 @@
     <h1>{{ room_type.name }}</h1>
     <p class="muted">{{ room_type.description }}</p>
 
-    <div class="stay-facts">
-      <div><span>Check in</span><b>{{ stay.check_in.strftime('%a, %d %b') }} · from 14:00</b></div>
-      <div><span>Check out</span><b>{{ stay.check_out.strftime('%a, %d %b') }} · before 12:00</b></div>
-      <div><span>Nights</span><b>{{ (stay.check_out - stay.check_in).days }}</b></div>
-      <div><span>Guests</span><b>{{ stay.guests }}</b></div>
+    <div class="confirm-stay">
+      <div class="confirm-stay-head">
+        <p class="eyebrow">YOUR STAY</p>
+        <span class="muted small">{{ (stay.check_out - stay.check_in).days }} night(s) · dates from your search</span>
+      </div>
+      <div class="confirm-stay-facts">
+        <div class="kv"><span>Check in</span><b>{{ stay.check_in.strftime('%a, %d %b') }}</b></div>
+        <div class="kv"><span>Check out</span><b>{{ stay.check_out.strftime('%a, %d %b') }}</b></div>
+        <div class="kv"><span>Nights</span><b>{{ (stay.check_out - stay.check_in).days }}</b></div>
+      </div>
+      <p class="hint">
+        Dates are locked to your search.
+        <a href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat()) }}#search">Search different dates</a>
+        if your plans change.
+      </p>
     </div>
 
     <form method="post" action="{{ url_for('guest.book') }}" class="stack confirm-form" novalidate>
@@ -22,9 +32,15 @@
       {{ form.room_type_id() }}
       {{ form.check_in() }}
       {{ form.check_out() }}
-      {{ form.guests() }}
       {{ form.idempotency_key() }}
       {{ form.quote() }}
+
+      <div class="field">
+        {{ form.guests.label }}
+        {{ form.guests(min=1, max=room_type.capacity, inputmode="numeric") }}
+        <small>This room type sleeps up to {{ room_type.capacity }} guest{{ '' if room_type.capacity == 1 else 's' }}.</small>
+        {% for error in form.guests.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
 
       <div class="field">
         {{ form.expected_arrival.label }}

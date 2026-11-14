@@ -280,7 +280,7 @@ def rooms():
         statement = statement.where(contains_any(query, Room.number, RoomType.name, RoomType.code))
     if type_id in types_by_id:
         statement = statement.where(Room.room_type_id == type_id)
-    if bed in ("single", "double", "twin", "king", "suite"):
+    if bed in ("single", "double", "twin", "king", "studio", "suite"):
         statement = statement.where(RoomType.bed_type == bed)
     if window in ("with", "without"):
         statement = statement.where(Room.has_window.is_(window == "with"))

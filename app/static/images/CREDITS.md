@@ -19,6 +19,7 @@ credit when reusing an image, and follow the licence shown for that image.
 | `room-twin.jpg` | [Deluxe Room - Twin beds](https://commons.wikimedia.org/wiki/File:Deluxe_Room_-_Twin_beds.jpg) | Holidayinnklg | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) |
 | `room-king.jpg` | [Hotel Umani Double Room Sea view (14)](https://commons.wikimedia.org/wiki/File:Hotel_Umani_Double_Room_Sea_view_%2814%29.jpg) | Umani.Hotel | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | `room-family.jpg` | [Abraj Suites Hotel suite living room, Doha](https://commons.wikimedia.org/wiki/File:Abraj_Suites_Hotel_suite_living_room,_Doha.jpg) | Abraj Hotels & Real Estate | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| `room-studio.jpg` | Hotel room with a sofa and bed ([Unsplash CDN photo](https://images.unsplash.com/photo-1590490360182-c33d57733427)) | Unsplash contributor | [Unsplash licence](https://unsplash.com/license) |
 | `hero-dining.jpg` | [Interior of a restaurant](https://www.pexels.com/photo/interior-of-a-restaurant-15297133/) | Tuğçe Açıkyürek (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 | `hero-bar.jpg` | [Cosy hotel lobby with warm lighting](https://www.pexels.com/de-de/foto/gemutliche-hotellobby-mit-warmer-beleuchtung-und-geschmackvoller-einrichtung-34937962/) | Eyüpcan Timur (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
 | `hero-daylight.jpg` | [Hotel room with wooden floors and a large bed](https://www.pexels.com/photo/a-hotel-room-with-wooden-floors-and-a-large-bed-28347470/) | SVH Manali (Pexels) | [Pexels licence](https://www.pexels.com/license/) |
@@ -37,6 +38,7 @@ credit when reusing an image, and follow the licence shown for that image.
 | `room-double.jpg` | `Comfort Double` room type | 1280 × 720 |
 | `room-twin.jpg` | `City Twin` room type | 1280 × 720 |
 | `room-king.jpg` | `Harbour King` room type | 1280 × 720 |
+| `room-studio.jpg` | `Harbour Studio` room type | 1200 × 675 |
 | `room-family.jpg` | `Family Suite` room type | 1280 × 720 |
 | `hero-dining.jpg` | Previous auth strip — unused | 1600 × 2400 |
 | `hero-bar.jpg` | Previous auth strip — unused | 1600 × 2843 |

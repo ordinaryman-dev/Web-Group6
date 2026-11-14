@@ -7,7 +7,7 @@
   <div class="home-hero-inner">
     <p class="eyebrow light">HERO HOTEL · HANGZHOU</p>
     <h1>Stay by the harbour.</h1>
-    <p>Sixty-eight rooms, one calm base for the city.</p>
+    <p>305 rooms, one calm base for the city.</p>
   </div>
 </section>
 
@@ -26,10 +26,6 @@
       <label for="check_out">Check out</label>
       {{ form.check_out(id="check_out") }}
     </div>
-    <div class="field">
-      <label for="guests">Guests</label>
-      {{ form.guests(id="guests", min=1) }}
-    </div>
     <button class="button search-button" type="submit">Search rooms →</button>
   </form>
 </section>
@@ -41,7 +37,7 @@
   {% for value, label in bed_types %}
     {% if searched and stay %}
       <a class="filter-chip {% if selected_bed_type == value %}active{% endif %}" data-bed-filter="{{ value }}"
-         href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests, bed_type=value) }}#search">{{ label }}</a>
+         href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), bed_type=value) }}#search">{{ label }}</a>
     {% else %}
       <a class="filter-chip {% if selected_bed_type == value %}active{% endif %}" data-bed-filter="{{ value }}"
          href="{{ url_for('guest.index', bed_type=value) }}#search">{{ label }}</a>
@@ -56,7 +52,7 @@
       <span>
         {% if searched and stay %}
           {{ stay.check_in.strftime('%d %b') }} – {{ stay.check_out.strftime('%d %b') }} ·
-          {{ (stay.check_out - stay.check_in).days }} night(s) · {{ stay.guests }} guest(s)
+          {{ (stay.check_out - stay.check_in).days }} night(s)
         {% else %}
           Base nightly rates
         {% endif %}
@@ -66,9 +62,9 @@
     <div class="room-grid">
       {% for offer in offers %}
       {% if searched %}
-        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat(), guests=stay.guests) %}
+        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat()) %}
       {% else %}
-        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=form.check_in.data.isoformat(), check_out=form.check_out.data.isoformat(), guests=form.guests.data) %}
+        {% set card_url = url_for('guest.confirm', room_type_id=offer.room_type.id, check_in=form.check_in.data.isoformat(), check_out=form.check_out.data.isoformat()) %}
       {% endif %}
       <a class="room-card" data-bed-type="{{ offer.room_type.bed_type }}" href="{{ card_url }}">
         <div class="room-visual tone-{{ loop.index0 % 3 }}">
@@ -114,7 +110,7 @@
           <h3>{% if searched %}No room covers this stay{% else %}No rooms in this filter{% endif %}</h3>
           <p class="muted">
             {% if searched %}
-              Try different dates, more flexible bed types or fewer guests.
+              Try different dates or a more flexible room type.
             {% else %}
               Choose another room type filter.
             {% endif %}
@@ -135,8 +131,7 @@
         <div class="kv"><span>Check in</span><b>{{ stay.check_in.strftime('%a, %d %b') }}</b></div>
         <div class="kv"><span>Check out</span><b>{{ stay.check_out.strftime('%a, %d %b') }}</b></div>
         <div class="kv"><span>Nights</span><b>{{ (stay.check_out - stay.check_in).days }}</b></div>
-        <div class="kv"><span>Guests</span><b>{{ stay.guests }}</b></div>
-        <p class="side-note">Searching does not hold a room. Booking locks one room for the whole stay.</p>
+        <p class="side-note">Pick the guest count on the booking page. Searching does not hold a room. Booking locks one room for the whole stay.</p>
       {% else %}
         <p class="muted small">Choose dates to see live availability and nightly prices.</p>
       {% endif %}

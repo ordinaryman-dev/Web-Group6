@@ -28,10 +28,10 @@ Managers can create front-desk accounts from Staff accounts.
 ## Schema
 
 Migrations are applied with `python -m flask --app app db upgrade`. The current head is
-`20261113_07`. Besides the original catalogue and booking tables, the migrations add
+`20261114_08`. Besides the original catalogue and booking tables, the migrations add
 booking notes/timestamps, manager request/payment records and actual-stay fields, the
 front-desk expected-arrival field, `room_types.bed_type` (`single`, `double`, `twin`,
-`king`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
+`king`, `studio`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
 `rooms.has_window` used by the front-desk ventilation filter.
 
 ## Workspaces

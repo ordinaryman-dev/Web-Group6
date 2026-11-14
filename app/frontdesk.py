@@ -73,6 +73,7 @@ BED_LABELS = {
     "double": "Double",
     "twin": "Twin",
     "king": "King",
+    "studio": "Studio",
     "suite": "Suite",
 }
 ORDER_TABS = {

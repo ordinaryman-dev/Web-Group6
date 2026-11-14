@@ -24,7 +24,7 @@
       </label>
       <label>Bed type
         <select name="bed"><option value="">All beds</option>
-          {% for bed in ('single','double','twin','king','suite') %}<option value="{{ bed }}"{% if filters.bed == bed %} selected{% endif %}>{{ bed|capitalize }}</option>{% endfor %}
+          {% for bed in ('single','double','twin','king','studio','suite') %}<option value="{{ bed }}"{% if filters.bed == bed %} selected{% endif %}>{{ bed|capitalize }}</option>{% endfor %}
         </select>
       </label>
       <label>Window
