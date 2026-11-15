@@ -399,3 +399,25 @@
   .plan-bar { flex: 1 1 auto; }
   .plan-service { flex-wrap: wrap; }
 }
+
+/* stepped wings: every room card is the same size, the outline steps instead */
+.plan-wing { display: flex; align-items: stretch; border: 0; background: none; }
+.plan-colbox { flex: 1 1 0; display: flex; flex-direction: column; gap: 6px; padding: 8px;
+  border: 2px solid #aab9b1; border-radius: 8px; background: #fcfdfc; }
+.plan-row.up { align-items: flex-end; }
+.plan-row.down { align-items: flex-start; }
+.plan-row.up .plan-corr { align-self: stretch; }
+.plan-row.down .plan-corr { align-self: stretch; }
+.plan-corr { flex: 0 0 38px; border-left: 0; border-right: 0;
+  border-top: 2px solid #aab9b1; border-bottom: 2px solid #aab9b1; border-radius: 0; }
+.plan-service { justify-content: center; gap: 10px; }
+.plan-service .plan-spacer { flex: 0 0 24px; }
+
+.plan-wing { align-items: stretch; }
+.plan-row.up .plan-wing { align-items: flex-end; }
+.plan-row.down .plan-wing { align-items: flex-start; }
+.plan-row.up .plan-colbox, .plan-row.down .plan-colbox { flex-grow: 0; }
+.plan-colbox { min-width: 0; }
+
+.plan-row.up .plan-colbox, .plan-row.down .plan-colbox { flex: 1 1 0; }
+.plan-colbox { min-width: 120px; }

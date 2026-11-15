@@ -214,14 +214,14 @@ def room_type_choices():
 def build_floor_plan(rooms):
     """Lay one floor out as an H: two wings, two columns each, split around a crossbar.
 
-    Rooms keep their number order. Two wings take the first and second half; inside a
-    wing consecutive rooms alternate between the two columns, and each column splits
-    into the part above and below the crossbar. An odd count puts the last room beside
-    the lift lobby, where a real hotel usually sells its accessible room.
+    Rooms keep their number order and every card is the same size. The first and
+    second half of the floor become the two wings; inside a wing consecutive rooms
+    alternate between the two columns, and each column splits into the part above
+    and below the crossbar. A floor whose count is not a multiple of four leaves one
+    column a card longer, which shows up as a single step in the building outline.
     """
 
-    core = rooms[-1] if len(rooms) % 2 else None
-    body = rooms[:-1] if core else list(rooms)
+    body = list(rooms)
     half = (len(body) + 1) // 2
     wings = []
     for wing in (body[:half], body[half:]):
@@ -233,7 +233,7 @@ def build_floor_plan(rooms):
             middle = (len(column) + 1) // 2
             groups.append({"up": column[:middle], "down": column[middle:]})
         wings.append(groups)
-    return {"core": core, "west": wings[0], "east": wings[1]}
+    return {"west": wings[0], "east": wings[1]}
 
 
 @manager.get("/rooms")

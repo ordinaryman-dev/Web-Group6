@@ -1,6 +1,6 @@
-{% macro card(room, extra='') -%}
+{% macro card(room) -%}
   {%- set state = states.get(room.id, 'available') -%}
-  <a class="plan-room {{ state }}{% if not room.has_window %} nowin{% endif %}{{ extra }}"
+  <a class="plan-room {{ state }}{% if not room.has_window %} nowin{% endif %}"
      href="{{ list_url('manager.room_form', record_id=room.id) }}"
      title="{{ room.number }} · {{ types_by_id[room.room_type_id].name }} · {{ state|replace('_', ' ') }}">
     <b>{{ room.number }}</b><span>{{ types_by_id[room.room_type_id].bed_type|capitalize }}</span>
@@ -8,15 +8,15 @@
   </a>
 {%- endmacro %}
 
-{% macro column(items) -%}
-  <div class="plan-col">{% for room in items %}{{ card(room) }}{% endfor %}</div>
+{% macro columnbox(items) -%}
+  <div class="plan-colbox">{% for room in items %}{{ card(room) }}{% endfor %}</div>
 {%- endmacro %}
 
 {% macro wing(side, position) -%}
   <div class="plan-wing">
-    {{ column(side[0][position]) }}
+    {{ columnbox(side[0][position]) }}
     <div class="plan-corr"><span>Corridor</span></div>
-    {{ column(side[1][position]) }}
+    {{ columnbox(side[1][position]) }}
   </div>
 {%- endmacro %}
 
@@ -26,7 +26,7 @@
   <span>Click a room to edit it · colour = tonight's status</span>
 </div>
 <div class="plan">
-  <div class="plan-row">
+  <div class="plan-row up">
     {{ wing(plan.west, 'up') }}
     <div class="plan-gap"></div>
     {{ wing(plan.east, 'up') }}
@@ -46,13 +46,13 @@
         <div class="plan-cell">Lift A</div>
         <div class="plan-cell">Lift B</div>
         <div class="plan-spacer"></div>
-        {% if plan.core %}{{ card(plan.core, ' service-card') }}{% else %}<div class="plan-cell">Linen</div>{% endif %}
+        <div class="plan-cell">Linen</div>
       </div>
     </div>
     <div class="plan-outside">outside</div>
   </div>
 
-  <div class="plan-row">
+  <div class="plan-row down">
     {{ wing(plan.west, 'down') }}
     <div class="plan-gap"></div>
     {{ wing(plan.east, 'down') }}
