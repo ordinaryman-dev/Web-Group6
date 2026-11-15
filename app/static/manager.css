@@ -421,3 +421,18 @@
 
 .plan-row.up .plan-colbox, .plan-row.down .plan-colbox { flex: 1 1 0; }
 .plan-colbox { min-width: 120px; }
+
+/* ---- one solid rectangle per wing: no seams between the column boxes ---- */
+.plan-wing { flex: 1 1 0; display: grid; grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+  border: 2px solid #aab9b1; border-radius: 0; background: #fcfdfc; overflow: hidden; }
+.plan-row.up .plan-wing { border-radius: 9px 9px 0 0; border-bottom: 0; align-items: stretch; }
+.plan-row.down .plan-wing { border-radius: 0 0 9px 9px; border-top: 0; align-items: stretch; }
+.plan-col { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 0; background: none; }
+.plan-corr { border: 0; border-left: 2px solid #aab9b1; border-right: 2px solid #aab9b1;
+  border-top: 0; border-bottom: 0; align-self: stretch; }
+
+/* close the wing where it does not meet the crossbar: only the corridor stays open */
+.plan-row.up .plan-col { border-bottom: 2px solid #aab9b1; }
+.plan-row.down .plan-col { border-top: 2px solid #aab9b1; }
+.plan-row.up .plan-col { border-bottom-left-radius: 0; }
+.plan-row.down .plan-col { border-top-left-radius: 0; }

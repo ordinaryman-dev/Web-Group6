@@ -8,15 +8,15 @@
   </a>
 {%- endmacro %}
 
-{% macro columnbox(items) -%}
-  <div class="plan-colbox">{% for room in items %}{{ card(room) }}{% endfor %}</div>
+{% macro column(items) -%}
+  <div class="plan-col">{% for room in items %}{{ card(room) }}{% endfor %}</div>
 {%- endmacro %}
 
 {% macro wing(side, position) -%}
   <div class="plan-wing">
-    {{ columnbox(side[0][position]) }}
+    {{ column(side[0][position]) }}
     <div class="plan-corr"><span>Corridor</span></div>
-    {{ columnbox(side[1][position]) }}
+    {{ column(side[1][position]) }}
   </div>
 {%- endmacro %}
 
