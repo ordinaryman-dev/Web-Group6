@@ -76,7 +76,7 @@ def contains_any(query, *columns):
 
 def list_query():
     names = (
-        "q", "day", "floor", "type", "bed", "window", "status", "sort", "per_page", "page",
+        "q", "day", "floor", "type", "bed", "window", "status", "sort", "per_page", "page", "view",
         "customer", "customer_page", "customer_sort", "customer_per_page", "history_page",
         "history_sort", "history_per_page", "history_q", "history_status",
         "actor", "action", "object_type", "object_id", "start", "end",
@@ -211,6 +211,31 @@ def room_type_choices():
     )]
 
 
+def build_floor_plan(rooms):
+    """Lay one floor out as an H: two wings, two columns each, split around a crossbar.
+
+    Rooms keep their number order. Two wings take the first and second half; inside a
+    wing consecutive rooms alternate between the two columns, and each column splits
+    into the part above and below the crossbar. An odd count puts the last room beside
+    the lift lobby, where a real hotel usually sells its accessible room.
+    """
+
+    core = rooms[-1] if len(rooms) % 2 else None
+    body = rooms[:-1] if core else list(rooms)
+    half = (len(body) + 1) // 2
+    wings = []
+    for wing in (body[:half], body[half:]):
+        columns = ([], [])
+        for index, room in enumerate(wing):
+            columns[index % 2].append(room)
+        groups = []
+        for column in columns:
+            middle = (len(column) + 1) // 2
+            groups.append({"up": column[:middle], "down": column[middle:]})
+        wings.append(groups)
+    return {"core": core, "west": wings[0], "east": wings[1]}
+
+
 @manager.get("/rooms")
 def rooms():
     today = hotel_now().date()
@@ -225,6 +250,9 @@ def rooms():
     bed = request.args.get("bed", "")
     window = request.args.get("window", "")
     status = request.args.get("status", "")
+    view = request.args.get("view", "plan")
+    if view not in ("plan", "table"):
+        view = "plan"
 
     floor_rooms = {}
     for room_id, number in db.session.execute(select(Room.id, Room.number)):
@@ -286,19 +314,59 @@ def rooms():
         statement = statement.where(Room.has_window.is_(window == "with"))
     if status in ROOM_STATUSES:
         statement = statement.where(room_status == status)
-    page = list_page(statement, options)
-    states = dict(db.session.execute(select(Room.id, room_status).where(
-        Room.id.in_([room.id for room in page.items]),
-    )).all()) if page.items else {}
-    by_floor = options["sort"] in ("number", "number_desc") or bool(floor)
-    groups = [
-        (floor_label(key), list(items))
-        for key, items in groupby(page.items, key=lambda room: floor_key(room.number))
-    ] if by_floor else [("Room results", page.items)]
+
+    common = {
+        "options": options, "statuses": ROOM_STATUSES, "floors": floors, "types_by_id": types_by_id,
+        "view": view, "floor": floor,
+        "filters": {"q": query, "day": day, "floor": floor, "type": type_id,
+                    "status": status, "bed": bed, "window": window},
+    }
+
+    if view == "table":
+        if floor:
+            statement = statement.where(Room.id.in_(floor_rooms[floor]))
+        page = list_page(statement, options)
+        states = dict(db.session.execute(select(Room.id, room_status).where(
+            Room.id.in_([room.id for room in page.items]),
+        )).all()) if page.items else {}
+        by_floor = options["sort"] in ("number", "number_desc") or bool(floor)
+        groups = [
+            (floor_label(key), list(items))
+            for key, items in groupby(page.items, key=lambda room: floor_key(room.number))
+        ] if by_floor else [("Room results", page.items)]
+        return render_template(
+            "manager/rooms.html", page=page, groups=groups, states=states, **common,
+        )
+
+    if floor:
+        plan_floor = floor
+    elif floors:
+        # Open on the floor where something is actually happening tonight, so the
+        # manager sees arrivals and maintenance instead of a wall of green rooms.
+        busy = {}
+        for number, state in db.session.execute(select(Room.number, room_status)):
+            key = floor_key(number)
+            busy.setdefault(key, 0)
+            if state != "available":
+                busy[key] += 1
+        plan_floor = max(
+            floors,
+            key=lambda item: (busy.get(item[0], 0), -int(item[0]) if item[0].isdigit() else 0),
+        )[0]
+    else:
+        plan_floor = ""
+    plan_rooms = []
+    states = {}
+    if plan_floor:
+        plan_rooms = db.session.scalars(
+            statement.where(Room.id.in_(floor_rooms[plan_floor])).order_by(*number_order)
+        ).all()
+        states = dict(db.session.execute(select(Room.id, room_status).where(
+            Room.id.in_([room.id for room in plan_rooms]),
+        )).all()) if plan_rooms else {}
     return render_template(
-        "manager/rooms.html", page=page, groups=groups, options=options, statuses=ROOM_STATUSES,
-        states=states, floors=floors, types_by_id=types_by_id,
-        filters={"q": query, "day": day, "floor": floor, "type": type_id, "status": status, "bed": bed, "window": window},
+        "manager/rooms.html", plan=build_floor_plan(plan_rooms), plan_floor=plan_floor,
+        plan_rooms=plan_rooms, states=states, **common,
     )
 
 

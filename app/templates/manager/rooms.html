@@ -7,6 +7,18 @@
   <a class="manager-button" href="{{ list_url('manager.room_form') }}">Add room</a>
 </header>
 <section class="manager-panel">
+  <div class="manager-viewbar">
+    <div class="manager-floortabs" aria-label="Floor">
+      {% for key, label, count in floors %}
+        <a href="{{ list_url('manager.rooms', floor=key, view='plan') }}"
+           {% if key == (floor or plan_floor) %}aria-current="page"{% endif %}>{{ label }}<small>{{ count }}</small></a>
+      {% endfor %}
+    </div>
+    <div class="manager-viewtoggle">
+      <a href="{{ list_url('manager.rooms', view='plan') }}" {% if view == 'plan' %}aria-current="page"{% endif %}>Floor plan</a>
+      <a href="{{ list_url('manager.rooms', view='table') }}" {% if view == 'table' %}aria-current="page"{% endif %}>Table</a>
+    </div>
+  </div>
   <details class="manager-facet" open>
     <summary>Search and filters</summary>
     <form method="get" class="manager-filters manager-list-filters">
@@ -42,6 +54,9 @@
       <a href="{{ url_for('manager.rooms') }}">Reset</a>
     </form>
   </details>
+  {% if view == 'plan' %}
+    {% include 'manager/_floorplan.html' %}
+  {% else %}
   <p class="manager-result-count">{{ list_count(page) }}{% if page.total %} rooms{% endif %}</p>
   {% if page.items %}
     {% for label, rooms in groups %}
@@ -61,5 +76,6 @@
     {% endfor %}
   {% else %}<p class="manager-empty">No rooms match the selected filters.</p>{% endif %}
   {{ pagination(page, 'manager.rooms', list_query) }}
+  {% endif %}
 </section>
 {% endblock %}

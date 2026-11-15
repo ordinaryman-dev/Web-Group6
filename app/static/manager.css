@@ -325,3 +325,77 @@
 @media (prefers-reduced-motion: reduce) {
   html:has(.manager-shell) { scroll-behavior: auto; }
 }
+
+/* ---------------- room floor plan ---------------- */
+.manager-viewbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.manager-floortabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.manager-floortabs a { display: inline-flex; align-items: baseline; gap: 5px; padding: 6px 10px; border: 1px solid var(--manager-line); border-radius: 7px; background: #fff; font-size: 12px; color: var(--manager-navy); text-decoration: none; }
+.manager-floortabs a small { color: var(--manager-text); font-size: 10.5px; }
+.manager-floortabs a[aria-current="page"] { background: var(--manager-navy); color: #fff; }
+.manager-floortabs a[aria-current="page"] small { color: rgba(255, 255, 255, .72); }
+.manager-viewtoggle { display: inline-flex; border: 1px solid var(--manager-line); border-radius: 7px; overflow: hidden; background: #fff; }
+.manager-viewtoggle a { padding: 6px 12px; font-size: 12px; color: var(--manager-navy); text-decoration: none; border-right: 1px solid var(--manager-line); }
+.manager-viewtoggle a:last-child { border-right: 0; }
+.manager-viewtoggle a[aria-current="page"] { background: #eef2f6; font-weight: 650; }
+
+.plan-legend { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 4px 0 10px; color: var(--manager-text); font-size: 12px; }
+.plan { display: flex; flex-direction: column; }
+.plan-row { display: flex; align-items: stretch; }
+.plan-gap { flex: 0 0 190px; }
+.plan-wing { flex: 1 1 0; display: grid; grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr); border: 2px solid #aab9b1; background: #fcfdfc; }
+.plan-row:first-child .plan-wing { border-radius: 9px 9px 0 0; border-bottom: 0; }
+.plan-row:last-child .plan-wing { border-radius: 0 0 9px 9px; border-top: 0; }
+.plan-col { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.plan-row:first-child .plan-col { justify-content: flex-end; }
+.plan-row:last-child .plan-col { justify-content: flex-start; }
+.plan-corr { display: flex; align-items: center; justify-content: center; border-left: 2px solid #aab9b1; border-right: 2px solid #aab9b1; background: repeating-linear-gradient(0deg, #f2f5f3, #f2f5f3 12px, #edf1ef 12px, #edf1ef 24px); color: #93a29a; font-size: 9.5px; letter-spacing: .14em; }
+.plan-corr span { writing-mode: vertical-rl; }
+
+.plan-row.plan-mid { height: auto; }
+.plan-outside { flex: 0 0 calc((100% - 190px) / 4 - 19px); display: flex; align-items: center; justify-content: center; color: #b7c2bb; font-size: 10px; letter-spacing: .1em; }
+.plan-bar { flex: 1 1 0; display: flex; flex-direction: column; border-top: 2px solid #aab9b1; border-bottom: 2px solid #aab9b1; }
+.plan-run { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; color: #93a29a; font-size: 9.5px; letter-spacing: .1em; background: repeating-linear-gradient(90deg, #f2f5f3, #f2f5f3 12px, #edf1ef 12px, #edf1ef 24px); border-bottom: 1.5px solid #ccd7d0; }
+.plan-run b { color: var(--manager-navy); font-weight: 600; letter-spacing: .04em; }
+.plan-dash { flex: 1; height: 2px; border-radius: 1px; background: repeating-linear-gradient(90deg, #c6d3cb 0 9px, transparent 9px 18px); }
+.plan-service { display: flex; align-items: stretch; gap: 7px; padding: 7px 16px; background: #e3ebef; border-top: 1.5px solid #aab9b1; }
+.plan-spacer { flex: 1; }
+.plan-cell { display: flex; align-items: center; justify-content: center; padding: 6px 10px; border: 1.5px solid #aab9b1; border-radius: 5px; background: #fff; color: var(--manager-text); font-size: 10px; }
+
+.plan-room { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 5px 8px; border: 1.5px solid #ccd7d0; border-radius: 6px; background: #fff; text-decoration: none; color: inherit; }
+.plan-room b { font-size: 13px; letter-spacing: -.2px; color: #22302a; }
+.plan-room span { font-size: 10px; color: var(--manager-text); }
+.plan-room .plan-flag { position: absolute; right: 5px; bottom: 3px; font-size: 8.5px; font-style: normal; color: #8b9a92; }
+.plan-room .plan-edit { position: absolute; right: 6px; top: 4px; font-size: 9px; font-style: normal; color: var(--manager-navy); opacity: 0; transition: opacity .12s ease; }
+.plan-room:hover, .plan-room:focus-visible { outline: 2px solid var(--manager-navy); outline-offset: 1px; text-decoration: none; }
+.plan-room:hover .plan-edit, .plan-room:focus-visible .plan-edit { opacity: 1; }
+.plan-room.nowin span::after { content: " · no window"; color: #9aa79f; }
+.plan-room.service-card { border-color: #bfd8ca; background: #eaf3ed; }
+
+.plan-room.available { background: #eaf3ed; border-color: #bfd8ca; }
+.plan-room.available b { color: #214d39; }
+.plan-room.reserved { background: #e8eef8; border-color: #c3d2ea; }
+.plan-room.reserved b { color: #2d446e; }
+.plan-room.occupied { background: #dbe5f4; border-color: #b2c5e3; }
+.plan-room.occupied b { color: #22375c; }
+.plan-room.departing { background: #eef3fa; border-color: #ccd9ee; }
+.plan-room.departing b { color: #44567d; }
+.plan-room.dirty { background: #fbf1e6; border-color: #e8cba9; }
+.plan-room.dirty b { color: #824b28; }
+.plan-room.maintenance { background: repeating-linear-gradient(45deg, #f8ebdf, #f8ebdf 6px, #f3e0cd 6px, #f3e0cd 12px); border-color: #e0bb95; }
+.plan-room.maintenance b { color: #824b28; }
+.plan-room.maintenance_conflict { background: repeating-linear-gradient(45deg, #f9e5e2, #f9e5e2 6px, #f3d3ce 6px, #f3d3ce 12px); border-color: #ddaaa2; }
+.plan-room.maintenance_conflict b { color: #8b352e; }
+.plan-room.out_of_service { background: #eef0f0; border-color: #d3dad6; }
+.plan-room.out_of_service b { color: #5a6660; }
+
+@media (max-width: 1100px) {
+  .plan-gap { flex-basis: 120px; }
+  .plan-outside { flex-basis: calc((100% - 120px) / 4 - 19px); }
+}
+@media (max-width: 900px) {
+  .plan-wing { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); }
+  .plan-gap { flex-basis: 80px; }
+  .plan-outside { display: none; }
+  .plan-bar { flex: 1 1 auto; }
+  .plan-service { flex-wrap: wrap; }
+}
