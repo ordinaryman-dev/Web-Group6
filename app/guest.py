@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from functools import wraps
 from uuid import uuid4
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import func
@@ -380,6 +380,26 @@ def bookings():
     )
 
 
+REQUEST_ERROR_KEY = "booking_request_error"
+
+
+def remember_request_error(booking_id, message):
+    """Carry a refused request back to the detail page so the guest sees why.
+
+    The request form is a POST that redirects; a flash alone scrolls past unnoticed,
+    so the message is stored for one render and shown inside the actions panel.
+    """
+
+    session[REQUEST_ERROR_KEY] = {"booking_id": booking_id, "message": message}
+
+
+def take_request_error(booking_id):
+    remembered = session.pop(REQUEST_ERROR_KEY, None)
+    if remembered and remembered.get("booking_id") == booking_id:
+        return remembered.get("message")
+    return None
+
+
 @guest.get("/bookings/<int:booking_id>")
 @guest_required
 def booking_detail(booking_id):
@@ -420,6 +440,7 @@ def booking_detail(booking_id):
     cancel_form = CancelRequestForm()
     note_form = NoteForm()
     note_form.note.data = booking.note
+    request_error = take_request_error(booking.id)
 
     return render_template(
         "guest/booking_detail.html",
@@ -440,6 +461,7 @@ def booking_detail(booking_id):
         dates_form=dates_form,
         extension_form=extension_form,
         cancel_form=cancel_form,
+        request_error=request_error,
     )
 
 
@@ -472,7 +494,7 @@ def request_room_type(booking_id):
         ).all()
     ]
     if not form.validate_on_submit():
-        flash("Choose a room type and give a reason.", "error")
+        remember_request_error(booking_id, "Choose a room type and give a reason.")
         return redirect(url_for("guest.booking_detail", booking_id=booking_id))
     try:
         create_guest_request(
@@ -483,7 +505,7 @@ def request_room_type(booking_id):
             form.reason.data,
         )
     except BookingRejected as exc:
-        flash(str(exc), "error")
+        remember_request_error(booking_id, str(exc))
     else:
         flash("Room-type request submitted. The original booking is unchanged.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))
@@ -495,7 +517,8 @@ def request_dates(booking_id):
     booking_or_404(booking_id)
     form = DatesRequestForm()
     if not form.validate_on_submit():
-        flash("Enter valid new dates and a reason.", "error")
+        remember_request_error(booking_id, "Enter new dates and a reason. "
+                               "The dates must differ from the current stay.")
         return redirect(url_for("guest.booking_detail", booking_id=booking_id))
     try:
         create_guest_request(
@@ -509,7 +532,7 @@ def request_dates(booking_id):
             form.reason.data,
         )
     except BookingRejected as exc:
-        flash(str(exc), "error")
+        remember_request_error(booking_id, str(exc))
     else:
         flash("Date-change request submitted. The original booking is unchanged.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))
@@ -521,7 +544,7 @@ def request_extension(booking_id):
     booking_or_404(booking_id)
     form = ExtensionRequestForm()
     if not form.validate_on_submit():
-        flash("Enter a valid new check-out date and a reason.", "error")
+        remember_request_error(booking_id, "Enter a new check-out date and a reason.")
         return redirect(url_for("guest.booking_detail", booking_id=booking_id))
     try:
         create_guest_request(
@@ -532,7 +555,7 @@ def request_extension(booking_id):
             form.reason.data,
         )
     except BookingRejected as exc:
-        flash(str(exc), "error")
+        remember_request_error(booking_id, str(exc))
     else:
         flash("Extension request submitted. The original booking is unchanged.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))
@@ -544,12 +567,12 @@ def request_cancel(booking_id):
     booking_or_404(booking_id)
     form = CancelRequestForm()
     if not form.validate_on_submit():
-        flash("Give a reason for the cancellation request.", "error")
+        remember_request_error(booking_id, "Give a reason for the cancellation request.")
         return redirect(url_for("guest.booking_detail", booking_id=booking_id))
     try:
         create_guest_request(current_user.id, booking_id, "cancel", {}, form.reason.data)
     except BookingRejected as exc:
-        flash(str(exc), "error")
+        remember_request_error(booking_id, str(exc))
     else:
         flash("Cancellation request submitted. The booking is unchanged until it is approved.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))

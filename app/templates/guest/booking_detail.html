@@ -95,6 +95,12 @@
 
       <div class="detail-card action-panel">
         <p class="eyebrow">ACTIONS</p>
+        {% if request_error %}
+        <div class="request-error" role="alert">
+          <b>Request not sent</b>
+          <span>{{ request_error }}</span>
+        </div>
+        {% endif %}
         {% if pending %}
           <p class="request-notice">
             A {{ pending.kind|replace('_', ' ') }} request is pending. The booking stays unchanged until the front desk replies.
@@ -171,7 +177,7 @@
       {{ room_type_form.target_room_type_id(id="room-type-select") }}
     </div>
     <div class="field">
-      {{ room_type_form.reason.label(for="room-type-reason") }}
+      <label for="room-type-reason">Reason <span class="field-req">required</span></label>
       {{ room_type_form.reason(id="room-type-reason", rows=3, maxlength=240, placeholder="Why do you need a different room type?") }}
     </div>
     <div class="modal-actions">
@@ -184,10 +190,14 @@
 
 {% if can_request %}
 <dialog class="modal" id="modal-dates">
-  <form method="post" action="{{ url_for('guest.request_dates', booking_id=booking.id) }}" class="modal-card">
+  <form method="post" action="{{ url_for('guest.request_dates', booking_id=booking.id) }}"
+        class="modal-card" id="dates-form"
+        data-current-check-in="{{ booking.check_in.isoformat() }}"
+        data-current-check-out="{{ booking.check_out.isoformat() }}">
     {{ dates_form.csrf_token }}
     <div class="modal-head">
-      <div><h2>Change dates</h2><p>Before arrival only. New dates are checked again before approval.</p></div>
+      <div><h2>Change dates</h2><p>Before arrival only. New dates are checked again before approval.</p>
+        <p class="modal-hint">Current stay: {{ booking.check_in.strftime("%d %b %Y") }} → {{ booking.check_out.strftime("%d %b %Y") }}. Pick different dates, otherwise nothing is sent.</p></div>
       <button class="modal-close" type="button" data-close aria-label="Close">×</button>
     </div>
     <div class="field">
@@ -198,13 +208,16 @@
       {{ dates_form.check_out.label(for="dates-check-out") }}
       {{ dates_form.check_out(id="dates-check-out") }}
     </div>
+    <p class="field-warning" data-dates-warning hidden>
+      Those are the current dates. Pick a different check-in or check-out first.
+    </p>
     <div class="field">
-      {{ dates_form.reason.label(for="dates-reason") }}
+      <label for="dates-reason">Reason <span class="field-req">required</span></label>
       {{ dates_form.reason(id="dates-reason", rows=3, maxlength=240, placeholder="Why do the dates need to change?") }}
     </div>
     <div class="modal-actions">
       <button class="button secondary" type="button" data-close>Cancel</button>
-      {{ dates_form.submit(class="button") }}
+      {{ dates_form.submit(class="button", id="dates-submit") }}
     </div>
   </form>
 </dialog>
@@ -212,7 +225,9 @@
 
 {% if can_extend %}
 <dialog class="modal" id="modal-extension">
-  <form method="post" action="{{ url_for('guest.request_extension', booking_id=booking.id) }}" class="modal-card">
+  <form method="post" action="{{ url_for('guest.request_extension', booking_id=booking.id) }}"
+        class="modal-card" id="extension-form"
+        data-current-check-out="{{ booking.check_out.isoformat() }}">
     {{ extension_form.csrf_token }}
     <div class="modal-head">
       <div><h2>Extend stay</h2><p>{% if booking.status == 'checked_in' %}Only the same room can be extended.{% else %}The same room must be free for the added nights.{% endif %}</p></div>
@@ -222,13 +237,16 @@
       {{ extension_form.check_out.label(for="extension-check-out") }}
       {{ extension_form.check_out(id="extension-check-out") }}
     </div>
+    <p class="field-warning" data-extension-warning hidden>
+      The new check-out must be after {{ booking.check_out.strftime("%d %b %Y") }}.
+    </p>
     <div class="field">
-      {{ extension_form.reason.label(for="extension-reason") }}
+      <label for="extension-reason">Reason <span class="field-req">required</span></label>
       {{ extension_form.reason(id="extension-reason", rows=3, maxlength=240, placeholder="Why do you need to stay longer?") }}
     </div>
     <div class="modal-actions">
       <button class="button secondary" type="button" data-close>Cancel</button>
-      {{ extension_form.submit(class="button") }}
+      {{ extension_form.submit(class="button", id="extension-submit") }}
     </div>
   </form>
 </dialog>
@@ -243,7 +261,7 @@
       <button class="modal-close" type="button" data-close aria-label="Close">×</button>
     </div>
     <div class="field">
-      {{ cancel_form.reason.label(for="cancel-reason") }}
+      <label for="cancel-reason">Reason <span class="field-req">required</span></label>
       {{ cancel_form.reason(id="cancel-reason", rows=3, maxlength=240, placeholder="Why do you need to cancel?") }}
     </div>
     <div class="modal-actions">

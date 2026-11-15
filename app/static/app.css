@@ -1533,3 +1533,35 @@ section.account-panel { padding: 20px; }
   .auth-form-pane { padding: 28px 34px 24px; }
   .auth-stage { padding-top: 76px; padding-bottom: 30px; }
 }
+/* a refused guest request: keep the reason on screen instead of a passing flash */
+.request-error {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e3b7b0;
+  border-left: 3px solid #c0533f;
+  border-radius: 8px;
+  background: #fdf1ef;
+  color: #7c2d1d;
+  font-size: 13px;
+}
+.request-error b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.modal-hint { margin: 8px 0 0; font-size: 12.5px; color: #6b7a72; }
+.field-req { color: #b4442f; font-weight: 600; }
+/* the dialog says what is wrong before the guest presses submit */
+.field-warning {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #e3b7b0;
+  border-radius: 8px;
+  background: #fdf1ef;
+  color: #7c2d1d;
+  font-size: 12.5px;
+}
+.button.is-disabled,
+.button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  pointer-events: none;
+}

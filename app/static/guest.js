@@ -66,6 +66,38 @@
     });
   });
 
+  // A change request that changes nothing is refused by the server. Say it in the
+  // dialog and disable the button, so the guest sees it before submitting.
+  function guardRequest(formId, submitId, warningSelector, isUnchanged) {
+    const form = document.getElementById(formId);
+    const warning = document.querySelector(warningSelector);
+    const submit = document.getElementById(submitId);
+    if (!form || !warning || !submit) return;
+    const check = function () {
+      const blocked = isUnchanged(form);
+      warning.hidden = !blocked;
+      submit.disabled = blocked;
+      submit.classList.toggle("is-disabled", blocked);
+    };
+    form.addEventListener("input", check);
+    form.addEventListener("change", check);
+    check();
+  }
+
+  guardRequest("dates-form", "dates-submit", "[data-dates-warning]", function (form) {
+    const checkIn = form.querySelector("#dates-check-in");
+    const checkOut = form.querySelector("#dates-check-out");
+    if (!checkIn || !checkOut) return false;
+    return checkIn.value === form.dataset.currentCheckIn &&
+      checkOut.value === form.dataset.currentCheckOut;
+  });
+
+  guardRequest("extension-form", "extension-submit", "[data-extension-warning]", function (form) {
+    const checkOut = form.querySelector("#extension-check-out");
+    if (!checkOut) return false;
+    return !checkOut.value || checkOut.value <= form.dataset.currentCheckOut;
+  });
+
   document.querySelectorAll("textarea[data-max-codepoints], textarea[data-max_codepoints]").forEach(function (area) {
     const max = parseInt(area.dataset.maxCodepoints || area.dataset.max_codepoints || "100", 10);
     let counter = area.parentElement.querySelector(".char-count");
