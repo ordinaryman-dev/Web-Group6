@@ -225,10 +225,14 @@ def build_floor_plan(rooms):
         return None
     half = (len(rooms) + 1) // 2
     legs = []
-    for leg in (rooms[:half], rooms[half:]):
+    for index, leg in enumerate((rooms[:half], rooms[half:])):
         slots = len(leg) // 2 + 1
-        outer = leg[:slots]
-        rest = leg[slots:]
+        # Keep room numbers increasing left to right: the west leg fills its outer
+        # column first, the east leg its inner column first.
+        if index == 0:
+            outer, rest = leg[:slots], leg[slots:]
+        else:
+            outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
         link_slot = max(0, (slots - 2) // 2)
         up = rest[:min(len(rest), link_slot)]
         legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):]})
