@@ -9,7 +9,10 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=2">
-<div class="desk{% if drawer_mode %} has-drawer{% endif %}">
+<div class="desk{% if drawer_mode %} has-drawer{% endif %}"
+     data-notify-feed="{{ url_for('frontdesk.notifications_feed') }}"
+     data-notify-version="{{ notify_version }}"
+     data-notify-interval="30000">
 
   <aside class="desk-side" aria-label="Desk sections">
     <div class="side-brand">
@@ -37,7 +40,7 @@
         <span class="side-icon" aria-hidden="true">◉</span>
         <span class="side-text"><b>Tasks</b><small>E05 · E06 · E08</small></span>
         {% set task_badge = pending|length + late_arrivals|length %}
-        {% if task_badge %}<span class="side-badge">{{ task_badge }}</span>{% endif %}
+        <span class="side-badge" data-notify-badge {% if not task_badge %}hidden{% endif %}>{{ task_badge }}</span>
       </a>
     </nav>
 
@@ -100,10 +103,11 @@
         <details class="bell">
           <summary aria-label="System notifications">
             <span aria-hidden="true">◔</span>
-            {% if notification_total %}<span class="bell-count">{{ notification_total }}</span>{% endif %}
+            <span class="bell-count" data-notify-total {% if not notification_total %}hidden{% endif %}>{{ notification_total }}</span>
           </summary>
           <div class="bell-panel">
             <p class="eyebrow">SYSTEM NOTIFICATIONS</p>
+            <div data-notify-items>
             {% for item in notifications %}
             <a class="bell-row tone-{{ item.tone }}"
                href="{{ desk_url(view=('grid' if item.kind == 'conflict' else 'tasks'), room=None, booking=None) }}">
@@ -113,6 +117,7 @@
             {% else %}
             <p class="bell-empty">All clear. Nothing needs attention.</p>
             {% endfor %}
+            </div>
           </div>
         </details>
       </div>
@@ -347,8 +352,8 @@
       </div>
       <div class="kpi-strip">
         <div class="kpi-pill"><b>{{ arrivals_today|length }}</b><span>Arriving</span></div>
-        <div class="kpi-pill"><b>{{ pending|length }}</b><span>Requests</span></div>
-        <div class="kpi-pill"><b>{{ conflicts|length }}</b><span>Conflicts</span></div>
+        <div class="kpi-pill"><b data-notify-count="requests">{{ pending|length }}</b><span>Requests</span></div>
+        <div class="kpi-pill"><b data-notify-count="conflicts">{{ conflicts|length }}</b><span>Conflicts</span></div>
       </div>
     </div>
 
@@ -439,9 +444,9 @@
         <p class="muted view-sub">Guest changes, late arrivals and housekeeping. Approvals apply to the booking only after they succeed.</p>
       </div>
       <div class="kpi-strip">
-        <div class="kpi-pill"><b>{{ pending|length }}</b><span>Requests</span></div>
-        <div class="kpi-pill"><b>{{ late_arrivals|length }}</b><span>Late</span></div>
-        <div class="kpi-pill"><b>{{ dirty_rooms|length }}</b><span>Dirty</span></div>
+        <div class="kpi-pill"><b data-notify-count="requests">{{ pending|length }}</b><span>Requests</span></div>
+        <div class="kpi-pill"><b data-notify-count="late">{{ late_arrivals|length }}</b><span>Late</span></div>
+        <div class="kpi-pill"><b data-notify-count="dirty">{{ dirty_rooms|length }}</b><span>Dirty</span></div>
       </div>
     </div>
 

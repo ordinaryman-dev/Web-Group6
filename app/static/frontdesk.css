@@ -1198,3 +1198,12 @@ form.is-loading .mini { opacity: .6; cursor: wait; }
   .search-row { flex-wrap: wrap; }
   .search-row .search-open { margin-left: 0; }
 }
+/* the bell pulses once when a poll brings in a new request */
+.bell-count.is-new {
+  animation: bell-pop 1.4s ease-out 3;
+}
+@keyframes bell-pop {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(214, 158, 46, .55); }
+  40% { transform: scale(1.18); box-shadow: 0 0 0 6px rgba(214, 158, 46, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(214, 158, 46, 0); }
+}

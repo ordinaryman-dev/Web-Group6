@@ -10,7 +10,7 @@ from decimal import Decimal
 from functools import wraps
 from urllib.parse import parse_qsl, urlsplit
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import or_, select
@@ -348,6 +348,149 @@ def _order_rows(session, tab, status, query, now):
     return rows
 
 
+def desk_snapshot(session, now=None):
+    """Pending requests, late arrivals, maintenance conflicts and dirty rooms.
+
+    The page and the polling endpoint both call this, so the bell and the counters
+    can never disagree about how much is waiting for the front desk.
+    """
+
+    now = now or hotel_now()
+    today = now.date()
+
+    pending = desk.pending_requests(session)
+
+    late_arrivals = []
+    late_candidates = session.scalars(
+        select(Booking)
+        .where(
+            Booking.status == desk.CONFIRMED,
+            Booking.checked_in_at.is_(None),
+            Booking.check_in <= today,
+        )
+        .order_by(Booking.check_in, Booking.id)
+    ).all()
+    for booking in late_candidates:
+        deadline = desk.contact_deadline(booking)
+        if now.replace(tzinfo=None) > deadline:
+            late_arrivals.append({"booking": booking, "deadline": deadline})
+
+    dirty_rooms = session.scalars(
+        select(Room).where(Room.housekeeping == "dirty").order_by(Room.number)
+    ).all()
+
+    # A block never overwrites a booking, it flags the pair.
+    blocks = session.scalars(
+        select(RoomBlock)
+        .where(
+            RoomBlock.effective.is_(True),
+            RoomBlock.start_date < today + timedelta(days=TIMELINE_DAYS),
+            RoomBlock.end_date > today,
+        )
+        .order_by(RoomBlock.start_date, RoomBlock.room_id)
+    ).all()
+    conflicts = []
+    for block in blocks:
+        affected = session.scalars(
+            select(Booking).where(
+                Booking.room_id == block.room_id,
+                Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
+                Booking.check_in < block.end_date,
+                Booking.check_out > block.start_date,
+            )
+        ).all()
+        for booking in affected:
+            conflicts.append({"block": block, "booking": booking})
+
+    notifications = []
+    if pending:
+        notifications.append({
+            "kind": "requests",
+            "tone": "amber",
+            "title": f"{len(pending)} pending request{'s' if len(pending) != 1 else ''}",
+            "text": "Guest changes waiting for a decision.",
+        })
+    if late_arrivals:
+        notifications.append({
+            "kind": "late",
+            "tone": "blue",
+            "title": f"{len(late_arrivals)} late arrival{'s' if len(late_arrivals) != 1 else ''}",
+            "text": "Expected time has passed; contact the guest.",
+        })
+    if conflicts:
+        notifications.append({
+            "kind": "conflict",
+            "tone": "red",
+            "title": f"{len(conflicts)} maintenance conflict{'s' if len(conflicts) != 1 else ''}",
+            "text": "A block overlaps an active booking.",
+        })
+    if dirty_rooms:
+        notifications.append({
+            "kind": "dirty",
+            "tone": "gray",
+            "title": f"{len(dirty_rooms)} room{'s' if len(dirty_rooms) != 1 else ''} to clean",
+            "text": "Mark them clean before selling them tonight.",
+        })
+
+    counts = {
+        "requests": len(pending),
+        "late": len(late_arrivals),
+        "conflicts": len(conflicts),
+        "dirty": len(dirty_rooms),
+    }
+    # Pending ids are part of the version so a new request is noticed even when the
+    # total stays the same (one approved, one submitted).
+    version = "|".join(
+        [*(str(value) for value in counts.values()),
+         *(str(row.id) for row in pending)]
+    )
+    return {
+        "pending": pending,
+        "late_arrivals": late_arrivals,
+        "conflicts": conflicts,
+        "dirty_rooms": dirty_rooms,
+        "notifications": notifications,
+        "counts": counts,
+        "total": sum(counts.values()),
+        "version": version,
+    }
+
+
+@frontdesk.get("/frontdesk/notifications.json")
+@desk_required
+def notifications_feed():
+    """What the bell shows, as JSON, so the page can refresh without a reload."""
+
+    snapshot = desk_snapshot(db.session)
+    return jsonify(
+        version=snapshot["version"],
+        total=snapshot["total"],
+        counts=snapshot["counts"],
+        items=[
+            {
+                "kind": item["kind"],
+                "tone": item["tone"],
+                "title": item["title"],
+                "text": item["text"],
+                "href": url_for(
+                    "frontdesk.index",
+                    view=("grid" if item["kind"] == "conflict" else "tasks"),
+                ),
+            }
+            for item in snapshot["notifications"]
+        ],
+        pending=[
+            {
+                "id": row.id,
+                "kind": row.kind,
+                "booking": row.booking.reference,
+                "submitted_at": row.submitted_at.isoformat(timespec="minutes"),
+            }
+            for row in snapshot["pending"]
+        ],
+    )
+
+
 @frontdesk.get("/frontdesk")
 @desk_required
 def index():
@@ -531,82 +674,17 @@ def index():
     ]
 
     arrivals_today, in_house, departures_today = desk.desk_today(db.session, now)
-    pending = desk.pending_requests(db.session)
-    late_candidates = db.session.scalars(
-        select(Booking)
-        .where(
-            Booking.status == desk.CONFIRMED,
-            Booking.checked_in_at.is_(None),
-            Booking.check_in <= today,
-        )
-        .order_by(Booking.check_in, Booking.id)
-    ).all()
-    late_arrivals = []
-    for booking in late_candidates:
-        deadline = desk.contact_deadline(booking)
-        if now.replace(tzinfo=None) > deadline:
-            late_arrivals.append({"booking": booking, "deadline": deadline})
+    snapshot = desk_snapshot(db.session, now)
+    pending = snapshot["pending"]
+    late_arrivals = snapshot["late_arrivals"]
 
     occupied_today = len(set(db.session.scalars(
         select(RoomNight.room_id).where(RoomNight.stay_date == today).distinct()
     ).all()))
-    dirty_rooms = db.session.scalars(
-        select(Room).where(Room.housekeeping == "dirty").order_by(Room.number)
-    ).all()
-
-    # Maintenance conflicts: a block never overwrites a booking, it flags the pair.
-    blocks = db.session.scalars(
-        select(RoomBlock)
-        .where(
-            RoomBlock.effective.is_(True),
-            RoomBlock.start_date < today + timedelta(days=TIMELINE_DAYS),
-            RoomBlock.end_date > today,
-        )
-        .order_by(RoomBlock.start_date, RoomBlock.room_id)
-    ).all()
-    conflicts = []
-    for block in blocks:
-        affected = db.session.scalars(
-            select(Booking).where(
-                Booking.room_id == block.room_id,
-                Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
-                Booking.check_in < block.end_date,
-                Booking.check_out > block.start_date,
-            )
-        ).all()
-        for booking in affected:
-            conflicts.append({"block": block, "booking": booking})
-
-    notifications = []
-    if pending:
-        notifications.append({
-            "kind": "requests",
-            "tone": "amber",
-            "title": f"{len(pending)} pending request{'s' if len(pending) != 1 else ''}",
-            "text": "Guest changes waiting for a decision.",
-        })
-    if late_arrivals:
-        notifications.append({
-            "kind": "late",
-            "tone": "blue",
-            "title": f"{len(late_arrivals)} late arrival{'s' if len(late_arrivals) != 1 else ''}",
-            "text": "Expected time has passed; contact the guest.",
-        })
-    if conflicts:
-        notifications.append({
-            "kind": "conflict",
-            "tone": "red",
-            "title": f"{len(conflicts)} maintenance conflict{'s' if len(conflicts) != 1 else ''}",
-            "text": "A block overlaps an active booking.",
-        })
-    if dirty_rooms:
-        notifications.append({
-            "kind": "dirty",
-            "tone": "gray",
-            "title": f"{len(dirty_rooms)} room{'s' if len(dirty_rooms) != 1 else ''} to clean",
-            "text": "Mark them clean before selling them tonight.",
-        })
-    notification_total = len(pending) + len(late_arrivals) + len(conflicts) + len(dirty_rooms)
+    dirty_rooms = snapshot["dirty_rooms"]
+    conflicts = snapshot["conflicts"]
+    notifications = snapshot["notifications"]
+    notification_total = snapshot["total"]
 
     # The drawer: an occupied cell opens its booking, a blocked cell opens the block,
     # a free cell opens walk-in / out-of-service actions.
@@ -809,6 +887,7 @@ def index():
         conflicts=conflicts,
         notifications=notifications,
         notification_total=notification_total,
+        notify_version=snapshot["version"],
         occupied_today=occupied_today,
         total_rooms=len(rooms),
         selected=selected_booking,

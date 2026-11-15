@@ -109,4 +109,94 @@
       }
     });
   });
+
+  // Live bell: poll the notification feed so a new guest request shows up without
+  // a page reload. Everything falls back to the server-rendered markup when the
+  // fetch fails, so the desk still works offline or with JS blocked.
+  var shell = document.querySelector("[data-notify-feed]");
+  if (shell) {
+    var feed = shell.dataset.notifyFeed;
+    var version = shell.dataset.notifyVersion || "";
+    var every = Number(shell.dataset.notifyInterval || 30000);
+
+    var flash = function (element) {
+      element.classList.remove("is-new");
+      void element.offsetWidth;
+      element.classList.add("is-new");
+      window.setTimeout(function () {
+        element.classList.remove("is-new");
+      }, 4000);
+    };
+
+    var paint = function (data, arriving) {
+      document.querySelectorAll("[data-notify-total]").forEach(function (element) {
+        element.textContent = data.total;
+        element.hidden = data.total === 0;
+        if (arriving) {
+          flash(element);
+        }
+      });
+      document.querySelectorAll("[data-notify-badge]").forEach(function (element) {
+        element.textContent = data.total;
+        element.hidden = data.total === 0;
+      });
+      document.querySelectorAll("[data-notify-count]").forEach(function (element) {
+        var key = element.dataset.notifyCount;
+        if (Object.prototype.hasOwnProperty.call(data.counts, key)) {
+          element.textContent = data.counts[key];
+        }
+      });
+      var list = document.querySelector("[data-notify-items]");
+      if (list) {
+        list.innerHTML = "";
+        if (!data.items.length) {
+          var empty = document.createElement("p");
+          empty.className = "bell-empty";
+          empty.textContent = "All clear. Nothing needs attention.";
+          list.appendChild(empty);
+        }
+        data.items.forEach(function (item) {
+          var link = document.createElement("a");
+          link.className = "bell-row tone-" + item.tone;
+          link.href = item.href;
+          var title = document.createElement("b");
+          title.textContent = item.title;
+          var note = document.createElement("small");
+          note.textContent = item.text;
+          link.appendChild(title);
+          link.appendChild(note);
+          list.appendChild(link);
+        });
+      }
+    };
+
+    var poll = function () {
+      if (document.hidden) {
+        return;
+      }
+      window
+        .fetch(feed, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          if (!data || data.version === version) {
+            return;
+          }
+          var arriving = data.counts.requests > 0;
+          version = data.version;
+          paint(data, arriving);
+        })
+        .catch(function () {
+          /* keep the server-rendered state */
+        });
+    };
+
+    window.setInterval(poll, every);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        poll();
+      }
+    });
+  }
 })();
