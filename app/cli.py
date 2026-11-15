@@ -1,4 +1,4 @@
-import re
+﻿import re
 from datetime import date, time, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -184,26 +184,26 @@ def seed_desk():
         click.echo(f"Front desk demo ready: {DEMO_STAFF_EMAIL} / {DEMO_STAFF_PASSWORD}")
 
 
-FLOOR_ROOM_COUNT = 25
+FLOOR_ROOM_COUNT = 24
 FLOOR_BED_PLAN = (
     (range(1, 7), "single"),
     (range(7, 9), "studio"),
     (range(9, 15), "double"),
     (range(15, 20), "twin"),
     (range(20, 24), "king"),
-    (range(24, 26), "suite"),
+    (range(24, 25), "suite"),
 )
 
 
 def floor_room_number(floor, suffix):
-    """301-325 and 1201-1225: the last two digits are the position on the floor."""
+    """301-324 and 1201-1224: the last two digits are the position on the floor."""
     return f"{floor}{suffix:02d}"
 
 
 @click.command("seed-rooms")
 @with_appcontext
 def seed_rooms():
-    """Create an idempotent 300-room inventory: 12 floors x 25 rooms."""
+    """Create an idempotent 288-room inventory: 12 floors x 24 rooms."""
     with Session(db.engine) as session, session.begin():
         bed_types = {}
         for _, bed_type in FLOOR_BED_PLAN:
@@ -354,3 +354,4 @@ def seed_demo():
             session.add(Customer(user=guest, name="Demo Guest", phone="13800000000"))
 
     click.echo("Demo catalogue and guest account are ready.")
+
