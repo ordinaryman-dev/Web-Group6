@@ -14,6 +14,7 @@ from . import manager_services as services
 from .auth import role_required
 from .booking import BookingRejected, HOTEL_ZONE, cancel_confirmed_booking, cancellation_deadline, hotel_now, refundable_amount
 from .extensions import db
+from .floorplan import render_floor_plan
 from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm
 from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
@@ -212,28 +213,26 @@ def room_type_choices():
 
 
 def build_floor_plan(rooms):
-    """Lay one floor out as an H: two wings, two columns each, split around a crossbar.
+    """Split one floor into the two legs of an H plan.
 
-    Rooms keep their number order and every card is the same size. The first and
-    second half of the floor become the two wings; inside a wing consecutive rooms
-    alternate between the two columns, and each column splits into the part above
-    and below the crossbar. A floor whose count is not a multiple of four leaves one
-    column a card longer, which shows up as a single step in the building outline.
+    Each leg keeps a full-height outer column and an inner column that stops above
+    and below the central link. For a 24-room floor each leg holds 12 rooms: 7 on
+    the outer column and 5 on the inner one, because the link takes two room slots.
     """
 
-    body = list(rooms)
-    half = (len(body) + 1) // 2
-    wings = []
-    for wing in (body[:half], body[half:]):
-        columns = ([], [])
-        for index, room in enumerate(wing):
-            columns[index % 2].append(room)
-        groups = []
-        for column in columns:
-            middle = (len(column) + 1) // 2
-            groups.append({"up": column[:middle], "down": column[middle:]})
-        wings.append(groups)
-    return {"west": wings[0], "east": wings[1]}
+    rooms = list(rooms)
+    if not rooms:
+        return None
+    half = (len(rooms) + 1) // 2
+    legs = []
+    for leg in (rooms[:half], rooms[half:]):
+        slots = len(leg) // 2 + 1
+        outer = leg[:slots]
+        rest = leg[slots:]
+        link_slot = max(0, (slots - 2) // 2)
+        up = rest[:min(len(rest), link_slot)]
+        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):]})
+    return {"west": legs[0], "east": legs[1]}
 
 
 @manager.get("/rooms")
@@ -357,15 +356,26 @@ def rooms():
         plan_floor = ""
     plan_rooms = []
     states = {}
+    matched = None
     if plan_floor:
+        floor_ids = floor_rooms[plan_floor]
         plan_rooms = db.session.scalars(
-            statement.where(Room.id.in_(floor_rooms[plan_floor])).order_by(*number_order)
+            select(Room).where(Room.id.in_(floor_ids)).order_by(*number_order)
         ).all()
+        matched = {room.id for room in db.session.scalars(
+            statement.where(Room.id.in_(floor_ids))
+        ).all()}
         states = dict(db.session.execute(select(Room.id, room_status).where(
             Room.id.in_([room.id for room in plan_rooms]),
         )).all()) if plan_rooms else {}
+    layout = build_floor_plan(plan_rooms)
+    floorplan = render_floor_plan(
+        layout, states, types_by_id,
+        lambda room: list_url("manager.room_form", record_id=room.id),
+        matched=matched,
+    )
     return render_template(
-        "manager/rooms.html", plan=build_floor_plan(plan_rooms), plan_floor=plan_floor,
+        "manager/rooms.html", plan=layout, floorplan=floorplan, plan_floor=plan_floor,
         plan_rooms=plan_rooms, states=states, **common,
     )
 

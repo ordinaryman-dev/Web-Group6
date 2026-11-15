@@ -436,3 +436,31 @@
 .plan-row.down .plan-col { border-top: 2px solid #aab9b1; }
 .plan-row.up .plan-col { border-bottom-left-radius: 0; }
 .plan-row.down .plan-col { border-top-left-radius: 0; }
+
+/* ---------------- SVG floor plan (exact geometry) ---------------- */
+.plan-wrap { overflow-x: auto; }
+.plan-svg { width: 100%; height: auto; display: block; min-width: 880px; }
+.plan-svg .fill { fill: #fcfdfc; }
+.plan-svg .wall { stroke: #a9b9af; stroke-width: 2; shape-rendering: crispEdges; }
+.plan-svg .inner { stroke: #ccd7d0; stroke-width: 1.5; shape-rendering: crispEdges; }
+.plan-svg .service { fill: #e3ebef; }
+.plan-svg .core { fill: #fff; stroke: #a9b9af; stroke-width: 1.5; }
+.plan-svg .core-label { font: 600 10px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #4e5b55; }
+.plan-svg .corr-label { font: 9.5px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #93a29a; letter-spacing: .1em; }
+.plan-svg .corr-strong { font: 600 10px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #33456b; letter-spacing: .04em; }
+.plan-svg .cap { font: 11px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #4e5b55; }
+.plan-svg .sv-room { cursor: pointer; }
+.plan-svg .r { stroke-width: 1.5; }
+.plan-svg .num { font: 600 13.5px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #22302a; }
+.plan-svg .bed { font: 10px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #4e5b55; }
+.plan-svg .sv-room:hover .r, .plan-svg .sv-room:focus-visible .r { stroke: #33456b; stroke-width: 2.5; }
+.plan-svg .r.available { fill: #eaf3ed; stroke: #bfd8ca; }
+.plan-svg .r.reserved { fill: #e8eef8; stroke: #c3d2ea; }
+.plan-svg .r.occupied { fill: #dbe5f4; stroke: #b2c5e3; }
+.plan-svg .r.departing { fill: #eef3fa; stroke: #ccd9ee; }
+.plan-svg .r.dirty { fill: #fbf1e6; stroke: #e8cba9; }
+.plan-svg .r.maintenance { fill: #f8ebdf; stroke: #e0bb95; }
+.plan-svg .r.maintenance_conflict { fill: #f9e5e2; stroke: #ddaaa2; }
+.plan-svg .r.out_of_service { fill: #eef0f0; stroke: #d3dad6; }
+.plan-svg .outside-label { font: 10.5px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #b7c2bb; letter-spacing: .12em; }
+.plan-svg .sv-room.dim { opacity: .3; }
