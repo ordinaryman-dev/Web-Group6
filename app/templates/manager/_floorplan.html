@@ -1,7 +1,7 @@
 {% if plan_rooms %}
 <div class="plan-legend">
   <span>Floor {{ plan_floor }}F · {{ plan_rooms|length }} rooms</span>
-  <span>Click a room to edit it · colour = tonight's status</span>
+  <span>Colour = tonight’s status · blue line = window · arc = door · crossed box = lift shaft</span>
 </div>
 <div class="plan-wrap">{{ floorplan }}</div>
 {% else %}

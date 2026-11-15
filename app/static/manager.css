@@ -466,3 +466,24 @@
 .plan-svg .sv-room.dim { opacity: .3; }
 .plan-svg .shell { fill: #fcfdfc; stroke: #a9b9af; stroke-width: 2; }
 .plan-svg .corridor-line { fill: none; stroke: #c8d4cc; stroke-width: 1.2; }
+/* ---------------- architectural plan ---------------- */
+.plan-svg .room { stroke: #b6c4bb; stroke-width: 1.2; fill: #eaf3ed; }
+.plan-svg .room.available { fill: #edf5ef; }
+.plan-svg .room.reserved { fill: #e9eff8; }
+.plan-svg .room.occupied { fill: #dde7f5; }
+.plan-svg .room.departing { fill: #f0f4fa; }
+.plan-svg .room.dirty { fill: #fbf2e7; }
+.plan-svg .room.maintenance { fill: #f7ecdf; }
+.plan-svg .room.maintenance_conflict { fill: #f8e8e4; }
+.plan-svg .room.out_of_service { fill: #eff1f1; }
+.plan-svg .num { font: 600 14px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #22302a; }
+.plan-svg .bed { font: 9.5px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #6b7a72; }
+.plan-svg .window { stroke: #9dc2da; stroke-width: 1.6; }
+.plan-svg .door-gap { fill: #fcfdfc; }
+.plan-svg .door-leaf { stroke: #77877d; stroke-width: 1.1; }
+.plan-svg .door-arc { fill: none; stroke: #b9c6bd; stroke-width: .8; }
+.plan-svg .shaft { stroke: #b6c4bb; stroke-width: 1; }
+.plan-svg .centre-line { stroke: #cfdad3; stroke-width: 1; stroke-dasharray: 6 6; }
+.plan-svg .shell { fill: #fcfdfc; stroke: #8fa196; stroke-width: 2.2; }
+.plan-svg .corridor-line { fill: none; stroke: #c3d0c8; stroke-width: 1; }
+.plan-svg .sv-room:hover .room, .plan-svg .sv-room:focus-visible .room { stroke: #33456b; stroke-width: 2.2; }
