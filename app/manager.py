@@ -227,6 +227,13 @@ def build_floor_plan(rooms):
     legs = []
     for index, leg in enumerate((rooms[:half], rooms[half:])):
         slots = len(leg) // 2 + 1
+        if slots < 4:
+            # A small floor has no room for a waist: two plain columns, no lift core.
+            outer = leg[::2]
+            inner = leg[1::2]
+            legs.append({"outer": outer, "inner_up": inner, "inner_down": [],
+                         "link": False, "slots": max(1, len(outer))})
+            continue
         # Keep room numbers increasing left to right: the west leg fills its outer
         # column first, the east leg its inner column first.
         if index == 0:
@@ -235,8 +242,10 @@ def build_floor_plan(rooms):
             outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
         link_slot = max(0, (slots - 2) // 2)
         up = rest[:min(len(rest), link_slot)]
-        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):]})
-    return {"west": legs[0], "east": legs[1]}
+        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):], "link": True})
+    slots = max(leg.get("slots") or len(leg["outer"]) for leg in legs)
+    return {"west": legs[0], "east": legs[1], "slots": slots,
+            "link": legs[0]["link"] and legs[1]["link"]}
 
 
 @manager.get("/rooms")

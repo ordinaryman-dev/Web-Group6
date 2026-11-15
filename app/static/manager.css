@@ -464,3 +464,5 @@
 .plan-svg .r.out_of_service { fill: #eef0f0; stroke: #d3dad6; }
 .plan-svg .outside-label { font: 10.5px "Segoe UI", "Microsoft YaHei", sans-serif; fill: #b7c2bb; letter-spacing: .12em; }
 .plan-svg .sv-room.dim { opacity: .3; }
+.plan-svg .shell { fill: #fcfdfc; stroke: #a9b9af; stroke-width: 2; }
+.plan-svg .corridor-line { fill: none; stroke: #c8d4cc; stroke-width: 1.2; }
