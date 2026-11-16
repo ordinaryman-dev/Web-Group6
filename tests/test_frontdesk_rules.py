@@ -364,7 +364,9 @@ def test_e08_contact_then_no_show_after_the_expected_time(app):
     with app.app_context():
         assert db.session.query(PaymentRecord).filter_by(
             booking_id=booking_id, kind="refund").count() == 0
-        assert db.session.query(AuditLog).filter_by(action="mark_no_show").count() == 1
+        assert db.session.query(AuditLog).filter_by(
+            action="mark_no_show", object_type="booking", object_id=booking_id
+        ).count() == 1
 
 
 def test_e08_no_show_refund_follows_the_manager_cancellation_rule(app):
@@ -375,6 +377,10 @@ def test_e08_no_show_refund_follows_the_manager_cancellation_rule(app):
                               paid=Decimal("200.00"))
     actor = staff_id(app)
     late = datetime(2030, 6, 18, 22, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
+    with app.app_context():
+        desk_service.contact_customer(db.session, booking_id, actor, "no_answer",
+                                      "rang twice", time(20, 30))
+        db.session.commit()
     with app.app_context():
         desk_service.mark_no_show(db.session, booking_id, actor, "unreachable", late)
         db.session.commit()

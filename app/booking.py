@@ -6,7 +6,7 @@ from time import sleep
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-from flask import current_app
+from flask import current_app, has_app_context
 from itsdangerous import BadData, URLSafeSerializer
 from sqlalchemy import case, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -64,7 +64,14 @@ class BookingResult:
 
 
 def hotel_now():
-    clock = current_app.config.get("HOTEL_CLOCK")
+    """Hotel wall clock.
+
+    Worker threads that open their own Session may run without an application
+    context (the concurrency tests do), so fall back to the hotel timezone instead
+    of raising. Inside a request the configured clock is always used.
+    """
+
+    clock = current_app.config.get("HOTEL_CLOCK") if has_app_context() else None
     return clock().astimezone(HOTEL_ZONE) if clock else datetime.now(HOTEL_ZONE)
 
 
@@ -92,7 +99,7 @@ def arrival_error(expected, stay, now):
     return None
 
 
-def free_room_conditions(stay):
+def free_room_conditions(stay, today=None):
     booked = exists().where(
         RoomNight.room_id == Room.id,
         RoomNight.stay_date >= stay.check_in,
@@ -110,13 +117,18 @@ def free_room_conditions(stay):
         Booking.status == "checked_in",
         Booking.check_out < stay.check_in,
     )
-    return (
+    conditions = [
         Room.operational_from <= stay.check_in,
         or_(Room.operational_until.is_(None), Room.operational_until >= stay.check_out),
         ~booked,
         ~blocked,
         ~overdue,
-    )
+    ]
+    # A guest arriving today walks straight into the room, so it has to be cleaned
+    # already. Future dates stay sellable while housekeeping is still working.
+    if stay.check_in <= (today or hotel_now().date()):
+        conditions.append(Room.housekeeping == "clean")
+    return tuple(conditions)
 
 
 def nightly_rates(session, room_type, stay):

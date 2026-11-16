@@ -88,7 +88,23 @@ def paid_totals(session, booking_ids):
     return totals
 
 
+def _lock_booking(session, booking):
+    """Re-read the booking under a row lock.
+
+    Two tabs pressing Collect at the same moment both used to pass the balance
+    check; the second one now waits, then sees the money already recorded.
+    """
+
+    return session.execute(
+        select(Booking)
+        .where(Booking.id == booking.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    ).scalar_one()
+
+
 def record_payment(session, booking, actor_id, amount=None):
+    booking = _lock_booking(session, booking)
     if booking.status in (CANCELLED, CHECKED_OUT):
         raise DeskError("This booking can no longer take a payment.")
     due = booking.total - paid_total(session, booking.id)
@@ -115,6 +131,7 @@ def record_payment(session, booking, actor_id, amount=None):
 
 def record_refund(session, booking, actor_id, amount=None):
     """Return simulated money to the guest, never more than was collected."""
+    booking = _lock_booking(session, booking)
     if booking.status not in (CANCELLED, CHECKED_OUT):
         raise DeskError("A refund is recorded after checkout or cancellation.")
     available = paid_total(session, booking.id)
@@ -746,6 +763,8 @@ def mark_no_show(session, booking_id, actor_id, reason, now):
     reason = (reason or "").strip()
     if not reason:
         raise DeskError("Give a reason before marking a no-show.")
+    if booking.last_contact_at is None and not (booking.last_contact_result or "").strip():
+        raise DeskError("Record the contact result before marking a no-show.")
     if not no_show_ready(booking, now):
         deadline = contact_deadline(booking)
         raise DeskError(
