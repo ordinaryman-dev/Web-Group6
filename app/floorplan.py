@@ -182,10 +182,10 @@ def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None
             f'<line x1="{x + 6}" y1="{y + ROOM_H - 6}" x2="{x + ROOM_W - 6}" y2="{y + 6}" class="out-slash"/>'
         )
     parts.append(_text(x + ROOM_W / 2, y + 25, room.number, "num", "middle"))
+    parts.append(_text(x + ROOM_W / 2, y + 41, room_type.bed_type.capitalize(), "bed", "middle"))
     if blocked:
-        parts.append(_text(x + ROOM_W / 2, y + 42, "OUT OF SERVICE", "out-label", "middle"))
-    else:
-        parts.append(_text(x + ROOM_W / 2, y + 41, room_type.bed_type.capitalize(), "bed", "middle"))
+        # Status sits in the corner so the room type stays readable.
+        parts.append(_text(x + ROOM_W - 8, y + 14, "OUT", "out-badge", "end"))
     # window: a thin double line on the facade side, absent for interior rooms
     if room.has_window:
         wy1, wy2 = y + WINDOW_INSET, y + ROOM_H - WINDOW_INSET

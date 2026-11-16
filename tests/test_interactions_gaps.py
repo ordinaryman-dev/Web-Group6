@@ -212,5 +212,5 @@ def test_a_blocked_room_is_marked_red_on_the_plan(app):
     page = staff.get(f"/frontdesk?view=plan&plan_floor={floor}")
 
     assert page.status_code == 200
-    assert "OUT OF SERVICE" in page.text
+    assert "out-badge" in page.text
     assert "room out_of_service" in page.text

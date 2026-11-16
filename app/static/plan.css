@@ -45,3 +45,8 @@
 }
 .plan-svg .out-slash { stroke: #d98b7c; stroke-width: 1.4; }
 .plan-svg .out-slash { stroke: #e3a99c; stroke-width: 1.2; opacity: .8; }
+.plan-svg .out-badge {
+  font: 700 9px "Segoe UI", "Microsoft YaHei", sans-serif;
+  fill: #a3341f;
+  letter-spacing: .08em;
+}
