@@ -10,10 +10,14 @@
       <h1>{{ booking.room_type.name }}</h1>
       <p class="muted">{{ booking.reference }} · booked {% if booking.created_at %}{{ booking.created_at|localtime }}{% endif %}</p>
     </div>
-    <span class="status large {{ booking.status }}">{{ booking.status.replace('_', ' ') }}</span>
+    <span class="status large {{ booking.status }}" data-booking-status="{{ booking.id }}">{{ booking.status.replace('_', ' ') }}</span>
+    <p class="status-hint" data-status-hint hidden>The front desk updated this booking.
+      <a href="{{ url_for('guest.booking_detail', booking_id=booking.id) }}">Refresh to see it</a>.</p>
   </div>
 
-  <div class="detail-shell">
+  <div class="detail-shell"
+       data-status-feed="{{ url_for('guest.status_feed') }}"
+       data-status-version="{{ status_version }}">
     <div class="detail-main">
       <div class="detail-card">
         <p class="eyebrow">YOUR STAY</p>
@@ -55,7 +59,7 @@
               <div class="request-item">
                 <div class="request-item-head">
                   <b>{{ change.kind|replace('_', ' ')|capitalize }}</b>
-                  <span class="status {{ change.status }}">{{ change.status.replace('_', ' ') }}</span>
+                  <span class="status {{ change.status }}" data-request-status="{{ change.id }}">{{ change.status.replace('_', ' ') }}</span>
                 </div>
                 {% if change.reason %}<p>{{ change.reason }}</p>{% endif %}
                 {% if change.comment %}<p class="side-note">Reply: {{ change.comment }}</p>{% endif %}

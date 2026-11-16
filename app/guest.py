@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from functools import wraps
 from uuid import uuid4
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import func
@@ -442,6 +442,10 @@ def booking_detail(booking_id):
     note_form = NoteForm()
     note_form.note.data = booking.note
     request_error = take_request_error(booking.id)
+    status_version = "|".join(
+        [f"{booking.id}={booking.status}"]
+        + [f"r{change.id}={change.status}" for change in changes]
+    )
 
     return render_template(
         "guest/booking_detail.html",
@@ -463,6 +467,7 @@ def booking_detail(booking_id):
         extension_form=extension_form,
         cancel_form=cancel_form,
         request_error=request_error,
+        status_version=status_version,
     )
 
 
@@ -590,6 +595,32 @@ def withdraw_request(booking_id, request_id):
     else:
         flash("Request withdrawn. The booking was not changed.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))
+
+
+@guest.get("/status.json")
+@guest_required
+def status_feed():
+    """What the front desk has done to this guest's bookings, for polling."""
+
+    bookings = db.session.scalars(
+        db.select(Booking)
+        .where(Booking.customer.has(Customer.user_id == current_user.id))
+        .order_by(Booking.id)
+    ).all()
+    ids = [booking.id for booking in bookings]
+    requests = db.session.scalars(
+        db.select(BookingRequest).where(BookingRequest.booking_id.in_(ids))
+    ).all() if ids else []
+
+    payload = {
+        "bookings": {str(booking.id): booking.status for booking in bookings},
+        "requests": {str(row.id): row.status for row in requests},
+    }
+    payload["version"] = "|".join(
+        [*(f"{key}={value}" for key, value in sorted(payload["bookings"].items())),
+         *(f"r{key}={value}" for key, value in sorted(payload["requests"].items()))]
+    )
+    return jsonify(payload)
 
 
 @guest.get("/account")

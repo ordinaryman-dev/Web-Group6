@@ -1584,3 +1584,13 @@ section.account-panel { padding: 20px; }
   cursor: pointer;
 }
 .status.withdrawn { background: #f1f2f1; color: var(--muted); }
+/* guest-side live status */
+.status-hint {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #cfe0d2;
+  border-radius: 8px;
+  background: #f2f8f3;
+  color: #2c4a37;
+  font-size: 13px;
+}

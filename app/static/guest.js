@@ -47,6 +47,49 @@
   });
   applyBedFilter(new URLSearchParams(window.location.search).get("bed_type") || "all");
 
+  // Poll for front-desk decisions so an approval shows up without a manual refresh.
+  var statusShell = document.querySelector("[data-status-feed]");
+  if (statusShell) {
+    var statusVersion = statusShell.dataset.statusVersion || "";
+    var hint = document.querySelector("[data-status-hint]");
+    var pollStatus = function () {
+      if (document.hidden) {
+        return;
+      }
+      window
+        .fetch(statusShell.dataset.statusFeed, {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin"
+        })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          if (!data || data.version === statusVersion) {
+            return;
+          }
+          statusVersion = data.version;
+          // Never yank the page out from under an open dialog or a half-typed form.
+          if (document.querySelector("dialog[open]") || document.activeElement.matches("input, textarea, select")) {
+            if (hint) {
+              hint.hidden = false;
+            }
+            return;
+          }
+          window.location.reload();
+        })
+        .catch(function () {
+          /* stay on the current page */
+        });
+    };
+    window.setInterval(pollStatus, 30000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        pollStatus();
+      }
+    });
+  }
+
   document.querySelectorAll("[data-open]").forEach(function (button) {
     button.addEventListener("click", function () {
       openDialog(button.dataset.open);
