@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, select
 
 from .booking import HOTEL_ZONE
 from .models import Booking, BookingPriceLine, Room, RoomBlock, RoomNight, RoomType

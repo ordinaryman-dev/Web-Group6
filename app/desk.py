@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from sqlalchemy import case, func, select
 from zoneinfo import ZoneInfo
-from sqlalchemy.orm import Session, lazyload
+from sqlalchemy.orm import lazyload
 
 from .audit import record_audit
 from .booking import (
@@ -314,15 +314,6 @@ def room_board(session, start, days=4, room_type_id=None, room_query=None):
             cells.append({"date": day, "state": state, "booking": booking, "block": block})
         board.append({"room": room, "cells": cells})
     return board
-
-
-def departing_rooms(session, day):
-    return {
-        booking.room_id: booking
-        for booking in session.scalars(
-            select(Booking).where(Booking.status == CHECKED_IN, Booking.check_out == day)
-        ).all()
-    }
 
 
 def pending_requests(session):

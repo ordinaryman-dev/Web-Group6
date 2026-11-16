@@ -22,7 +22,6 @@ from .models import (
     Customer,
     GUEST,
     PaymentRecord,
-    PriceRule,
     Room,
     RoomBlock,
     RoomNight,
