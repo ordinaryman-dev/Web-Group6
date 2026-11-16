@@ -457,34 +457,6 @@ def desk_snapshot(session, now=None):
     }
 
 
-@frontdesk.get("/frontdesk/blocks/preview")
-@desk_required
-def block_preview():
-    """How many active bookings a would-be outage would collide with."""
-
-    room_id = request.args.get("room_id", type=int)
-    start = request.args.get("start", type=lambda value: date.fromisoformat(value))
-    end = request.args.get("end", type=lambda value: date.fromisoformat(value))
-    if room_id is None or start is None or end is None:
-        return jsonify(conflicts=0, bookings=[], error="Choose both dates.")
-    if end <= start:
-        return jsonify(conflicts=0, bookings=[], error="The end date must follow the start date.")
-
-    rows = db.session.scalars(
-        select(Booking).where(
-            Booking.room_id == room_id,
-            Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
-            Booking.check_in < end,
-            Booking.check_out > start,
-        ).order_by(Booking.check_in)
-    ).all()
-    return jsonify(
-        conflicts=len(rows),
-        bookings=[row.reference for row in rows],
-        error=None,
-    )
-
-
 @frontdesk.get("/frontdesk/notifications.json")
 @desk_required
 def notifications_feed():

@@ -15,10 +15,7 @@ from .auth import role_required
 from .booking import BookingRejected, HOTEL_ZONE, cancel_confirmed_booking, cancellation_deadline, hotel_now, refundable_amount
 from .extensions import db
 from .floorplan import build_floor_plan, render_floor_plan
-from .manager_forms import (
-    BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm,
-    StaffForm, StaffPasswordForm,
-)
+from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm
 from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,
@@ -449,23 +446,6 @@ def staff_form():
     return edit_form(
         form, "New front-desk account", "manager.accounts", "Staff account created.",
         services.create_staff, form.email.data, form.password.data,
-    )
-
-
-@manager.post("/accounts/<int:staff_id>/enable")
-def enable_staff(staff_id):
-    return row_action(services.enable_staff, "Staff account is active again.",
-                      "manager.accounts", staff_id)
-
-
-@manager.route("/accounts/<int:staff_id>/password", methods=["GET", "POST"])
-def reset_staff_password(staff_id):
-    db.get_or_404(User, staff_id)
-    form = StaffPasswordForm()
-    return edit_form(
-        form, "Reset staff password", "manager.accounts",
-        "Password reset. The old password no longer works.",
-        services.reset_staff_password, staff_id, form.password.data,
     )
 
 

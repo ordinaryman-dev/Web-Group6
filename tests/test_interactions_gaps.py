@@ -1,5 +1,5 @@
-"""The remaining interaction gaps: window flag, guest profile, staff recovery,
-blacklisted extensions, outage preview and the front-desk floor plan.
+"""Cross-end gaps that belong to this task: a blacklisted guest cannot extend a
+stay, and the front desk can read the floor plan without opening each room.
 """
 
 import re
@@ -17,107 +17,6 @@ TODAY = date(2030, 6, 18)
 
 def csrf_of(html):
     return re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html).group(1)
-
-
-# ---------------------------------------------------------------- P1-4 windows
-def test_the_room_form_can_set_the_window_flag(app):
-    _, manager_email = manager_user(app, "manager")
-    manager, _ = manager_sign_in(app, manager_email)
-    with app.app_context():
-        from app.models import RoomType
-
-        room_type = RoomType(code="win-room", name="Window room", description="test",
-                             capacity=2, base_price=200)
-        db.session.add(room_type)
-        db.session.commit()
-        type_id = room_type.id
-
-    page = manager.get("/manage/rooms/new")
-    assert "Has a window" in page.text
-
-    room = {"number": "W-101", "room_type_id": type_id, "operational_from": str(TODAY),
-            "operational_until": "", "has_window": "y"}
-    assert manager_post(manager, "/manage/rooms/new", room).status_code == 302
-    with app.app_context():
-        created = db.session.scalar(select(Room).where(Room.number == "W-101"))
-        assert created.has_window is True
-        room_id = created.id
-
-    edit = {"number": "W-101", "room_type_id": type_id, "operational_from": str(TODAY),
-            "operational_until": ""}
-    assert manager_post(manager, f"/manage/rooms/{room_id}", edit).status_code == 302
-    with app.app_context():
-        assert db.session.get(Room, room_id).has_window is False
-
-
-# ---------------------------------------------------------------- P1-5 profile
-def test_a_guest_can_update_name_and_phone(app):
-    _, guest_email = new_user(app, GUEST)
-    guest = sign_in(app, guest_email)
-
-    page = guest.get("/guest/account")
-    assert "Contact details" in page.text
-
-    response = guest.post(
-        "/guest/account/profile",
-        data={"csrf_token": csrf_of(page.text), "name": "New Name", "phone": "13900001111"},
-        follow_redirects=True,
-    )
-    assert "contact details were updated" in response.text
-    with app.app_context():
-        user_id = db.session.scalar(select(User.id).where(User.email == guest_email))
-        customer = db.session.scalar(select(Customer).where(Customer.user_id == user_id))
-        assert (customer.name, customer.phone) == ("New Name", "13900001111")
-
-
-def test_a_bad_phone_number_is_refused(app):
-    _, guest_email = new_user(app, GUEST)
-    guest = sign_in(app, guest_email)
-    page = guest.get("/guest/account")
-    response = guest.post(
-        "/guest/account/profile",
-        data={"csrf_token": csrf_of(page.text), "name": "Still Here", "phone": "abc"},
-        follow_redirects=True,
-    )
-    assert "Enter a name and a phone number" in response.text
-
-
-# ---------------------------------------------------------------- P1-7 staff
-def test_a_disabled_staff_account_can_be_enabled_again(app):
-    _, manager_email = manager_user(app, "manager")
-    manager, _ = manager_sign_in(app, manager_email)
-    staff_id, staff_email = manager_user(app, STAFF)
-
-    assert manager_post(manager, f"/manage/accounts/{staff_id}/disable", {},
-                        form_path="/manage/accounts").status_code == 302
-    with app.app_context():
-        assert db.session.get(User, staff_id).active is False
-
-    assert manager_post(manager, f"/manage/accounts/{staff_id}/enable", {},
-                        form_path="/manage/accounts").status_code == 302
-    with app.app_context():
-        assert db.session.get(User, staff_id).active is True
-
-
-def test_a_manager_can_reset_a_staff_password(app):
-    _, manager_email = manager_user(app, "manager")
-    manager, _ = manager_sign_in(app, manager_email)
-    staff_id, staff_email = manager_user(app, STAFF)
-
-    page = manager.get(f"/manage/accounts/{staff_id}/password")
-    assert page.status_code == 200
-    response = manager.post(
-        f"/manage/accounts/{staff_id}/password",
-        data={"csrf_token": csrf_of(page.text), "password": "Brand-new-pass-1"},
-    )
-    assert response.status_code == 302
-
-    client = app.test_client()
-    login = client.get("/login")
-    assert client.post("/login", data={
-        "email": staff_email, "password": "Brand-new-pass-1",
-        "csrf_token": csrf_of(login.text),
-    }).status_code == 302
 
 
 # ---------------------------------------------------------------- P1-10 blocked
@@ -152,31 +51,6 @@ def test_a_blacklisted_guest_cannot_extend(app):
             select(BookingRequest).where(BookingRequest.booking_id == booking_id)
         ).all()
     assert rows == []
-
-
-# ---------------------------------------------------------------- P1-1 preview
-def test_the_outage_form_previews_booking_conflicts(app):
-    room_type_id, room_id = make_room(app, "preview-room")
-    _, guest_email = new_user(app, GUEST)
-    guest = sign_in(app, guest_email)
-    reserve(guest, room_type_id, TODAY + timedelta(days=2), nights=2)
-
-    _, staff_email = new_user(app, STAFF)
-    staff = sign_in(app, staff_email)
-    start = TODAY + timedelta(days=2)
-    response = staff.get("/frontdesk/blocks/preview", query_string={
-        "room_id": room_id, "start": str(start), "end": str(start + timedelta(days=1)),
-    })
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload["conflicts"] == 1
-    assert payload["bookings"][0].startswith("BK-")
-
-    clear = staff.get("/frontdesk/blocks/preview", query_string={
-        "room_id": room_id, "start": str(start + timedelta(days=20)),
-        "end": str(start + timedelta(days=21)),
-    })
-    assert clear.get_json()["conflicts"] == 0
 
 
 # ---------------------------------------------------------------- plan view

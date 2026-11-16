@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import click
 from flask.cli import with_appcontext
-from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
@@ -63,10 +62,8 @@ DEMO_STAFF_PASSWORD = "Desk2026!"
 
 
 @click.command("seed-desk")
-@click.option("--reset", is_flag=True,
-              help="Delete the seeded bookings and rebuild them for today.")
 @with_appcontext
-def seed_desk(reset):
+def seed_desk():
     """Add a demo front desk: staff login, rooms 301-305, today's bookings."""
     today = hotel_now().date()
     with Session(db.engine) as session, session.begin():
@@ -104,20 +101,8 @@ def seed_desk(reset):
                                      operational_from=date(2020, 1, 1)))
         session.flush()
 
-        seeded = session.scalars(
-            db.select(Booking.id).where(Booking.request_digest == "seed")
-        ).all()
-        if reset and seeded:
-            # Only the demo bookings go; room types, rooms and real bookings stay.
-            for table in (RoomNight, BookingPriceLine, PaymentRecord, BookingRequest):
-                session.execute(delete(table).where(table.booking_id.in_(seeded)))
-            session.execute(delete(RoomBlock).where(RoomBlock.created_by_id == staff.id))
-            session.execute(delete(Booking).where(Booking.id.in_(seeded)))
-            session.flush()
-            click.echo(f"Removed {len(seeded)} demo bookings; rebuilding for {today}.")
-
-        if seeded and not reset:
-            click.echo("Front desk demo data is already present. Use --reset to rebuild it for today.")
+        if session.scalar(db.select(Booking.id).where(Booking.actor_user_id == staff.id).limit(1)):
+            click.echo("Front desk demo data is already present.")
             return
 
         king = created["harbour-king"]

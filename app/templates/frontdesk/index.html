@@ -995,8 +995,7 @@
       <details class="drawer-section">
         <summary>Set out of service</summary>
         <p class="hint">Existing bookings in this period stay and are flagged, never overwritten. You will be offered a same-type move for each one.</p>
-        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard
-              id="block-form" data-room-id="{{ room.id }}">
+        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard>
           {{ block_form.hidden_tag() }}
           <input type="hidden" name="back" value="{{ request.full_path }}">
           <div class="form-grid">
@@ -1004,7 +1003,6 @@
             <div class="field"><label>To</label>{{ block_form.end_date(class_="input") }}</div>
           </div>
           <div class="field"><label>Reason</label>{{ block_form.reason(class_="input", placeholder="Bathroom leak, repainting…") }}</div>
-          <p class="field-warning" data-block-preview hidden></p>
           <button class="btn danger wide" type="submit">Set out of service</button>
         </form>
       </details>
