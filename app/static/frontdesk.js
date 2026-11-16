@@ -146,6 +146,27 @@
           element.textContent = data.counts[key];
         }
       });
+      // A task card whose request is no longer pending was handled in another tab.
+      var waiting = {};
+      (data.pending || []).forEach(function (row) {
+        waiting[String(row.id)] = true;
+      });
+      document.querySelectorAll("[data-request-id]").forEach(function (card) {
+        if (waiting[card.dataset.requestId] || card.classList.contains("is-stale")) {
+          return;
+        }
+        card.classList.add("is-stale");
+        card.querySelectorAll("button, input[type='submit']").forEach(function (control) {
+          control.disabled = true;
+        });
+        if (!card.querySelector(".stale-note")) {
+          var note = document.createElement("p");
+          note.className = "stale-note";
+          note.textContent = "Handled in another tab. Refresh to see the result.";
+          card.appendChild(note);
+        }
+      });
+
       var list = document.querySelector("[data-notify-items]");
       if (list) {
         list.innerHTML = "";

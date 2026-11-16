@@ -37,6 +37,7 @@ from .booking import (
     search_results,
     stay_error,
     update_booking_note,
+    withdraw_guest_request,
 )
 from .extensions import db
 from .models import Booking, BookingRequest, Customer, GUEST, PaymentRecord, RoomType, User, utc_now
@@ -575,6 +576,19 @@ def request_cancel(booking_id):
         remember_request_error(booking_id, str(exc))
     else:
         flash("Cancellation request submitted. The booking is unchanged until it is approved.", "success")
+    return redirect(url_for("guest.booking_detail", booking_id=booking_id))
+
+
+@guest.post("/bookings/<int:booking_id>/requests/<int:request_id>/withdraw")
+@guest_required
+def withdraw_request(booking_id, request_id):
+    booking_or_404(booking_id)
+    try:
+        withdraw_guest_request(current_user.id, booking_id, request_id)
+    except BookingRejected as exc:
+        remember_request_error(booking_id, str(exc))
+    else:
+        flash("Request withdrawn. The booking was not changed.", "success")
     return redirect(url_for("guest.booking_detail", booking_id=booking_id))
 
 

@@ -462,7 +462,7 @@
 
         {% for task in task_rows %}
         {% set b = task.booking %}
-        <article class="task-card">
+        <article class="task-card" data-request-id="{{ task.request.id }}">
           <header class="task-head">
             <span class="chip chip-{{ task.request.kind }}">{{ task.request.kind.replace('_', ' ') }}</span>
             <b class="mono">{{ b.reference }}</b>

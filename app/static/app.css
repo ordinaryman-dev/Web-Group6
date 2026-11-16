@@ -1565,3 +1565,22 @@ section.account-panel { padding: 20px; }
   cursor: not-allowed;
   pointer-events: none;
 }
+.request-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.request-item-foot .inline-form { margin: 0; }
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #b4442f;
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.status.withdrawn { background: #f1f2f1; color: var(--muted); }

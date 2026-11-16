@@ -481,6 +481,43 @@ def create_guest_request(actor_id, booking_id, kind, target, reason):
         return request.id
 
 
+def withdraw_guest_request(actor_id, booking_id, request_id):
+    """Let a guest pull back a request the front desk has not decided yet.
+
+    The booking itself never changed while the request was pending, so withdrawing
+    only moves the request row; nothing is written to the booking.
+    """
+
+    with Session(db.engine) as session, session.begin():
+        request = session.scalar(
+            db.select(BookingRequest)
+            .join(Booking, Booking.id == BookingRequest.booking_id)
+            .join(Customer, Customer.id == Booking.customer_id)
+            .where(
+                BookingRequest.id == request_id,
+                BookingRequest.booking_id == booking_id,
+                Customer.user_id == actor_id,
+            )
+            .options(lazyload("*"))
+            .with_for_update()
+        )
+        if request is None:
+            raise BookingRejected("NOT_FOUND", "This request could not be found.")
+        if request.status != "pending":
+            raise BookingRejected(
+                "REQUEST_HANDLED",
+                "This request has already been handled. Refresh the page to see the answer.",
+            )
+        request.status = "withdrawn"
+        request.handled_at = utc_now()
+        request.comment = "Withdrawn by the guest"
+        record_audit(
+            session, actor_id, "withdraw_request", "booking_request", request.id,
+            details={"booking_id": booking_id, "kind": request.kind},
+        )
+        return request.id
+
+
 def get_booking(session, booking_id, user_id):
     return session.scalar(
         db.select(Booking).where(Booking.id == booking_id, Booking.customer.has(Customer.user_id == user_id))

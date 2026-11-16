@@ -59,7 +59,16 @@
                 </div>
                 {% if change.reason %}<p>{{ change.reason }}</p>{% endif %}
                 {% if change.comment %}<p class="side-note">Reply: {{ change.comment }}</p>{% endif %}
-                {% if change.submitted_at %}<span class="request-time">Submitted {{ change.submitted_at|localtime }}</span>{% endif %}
+                <div class="request-item-foot">
+                  {% if change.submitted_at %}<span class="request-time">Submitted {{ change.submitted_at|localtime }}</span>{% endif %}
+                  {% if change.status == 'pending' %}
+                  <form method="post" class="inline-form"
+                        action="{{ url_for('guest.withdraw_request', booking_id=booking.id, request_id=change.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="link-button" type="submit">Withdraw request</button>
+                  </form>
+                  {% endif %}
+                </div>
               </div>
             {% endfor %}
           </div>

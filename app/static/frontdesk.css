@@ -1207,3 +1207,14 @@ form.is-loading .mini { opacity: .6; cursor: wait; }
   40% { transform: scale(1.18); box-shadow: 0 0 0 6px rgba(214, 158, 46, 0); }
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(214, 158, 46, 0); }
 }
+.task-card.is-stale {
+  opacity: .55;
+}
+.task-card .stale-note {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f1f2f1;
+  color: #6b7a72;
+  font-size: 12px;
+}
