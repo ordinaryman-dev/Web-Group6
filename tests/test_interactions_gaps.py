@@ -190,3 +190,27 @@ def test_the_front_desk_has_a_floor_plan_view(app):
     assert 'class="plan-svg"' in page.text
     assert "Tonight’s plan" in page.text
     assert 'data-notify-feed="/frontdesk/notifications.json"' in page.text
+
+
+def test_a_blocked_room_is_marked_red_on_the_plan(app):
+    from uuid import uuid4
+
+    room_type_id, room_id = make_room(app, "plan-blocked")
+    floor = "97"
+    with app.app_context():
+        from app.models import Room, RoomBlock
+
+        room = db.session.get(Room, room_id)
+        room.number = f"{floor}{uuid4().int % 90 + 10}"
+        db.session.add(RoomBlock(room_id=room_id, start_date=TODAY,
+                                 end_date=TODAY + timedelta(days=2),
+                                 reason="Bathroom leak", created_by_id=None))
+        db.session.commit()
+
+    _, staff_email = new_user(app, STAFF)
+    staff = sign_in(app, staff_email)
+    page = staff.get(f"/frontdesk?view=plan&plan_floor={floor}")
+
+    assert page.status_code == 200
+    assert "OUT OF SERVICE" in page.text
+    assert "room out_of_service" in page.text

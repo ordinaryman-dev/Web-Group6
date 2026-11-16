@@ -590,7 +590,17 @@ def index():
     plan_html = None
     if view == "plan":
         type_by_id = {room_type.id: room_type for room_type in room_types}
-        tonight = {row["room"].id: row["cells"][0]["state"]
+        # The board speaks free/arriving/in_house/departing/dirty/blocked; the plan
+        # drawing speaks its own state names, so translate once here.
+        plan_state = {
+            "free": "available",
+            "arriving": "reserved",
+            "in_house": "occupied",
+            "departing": "departing",
+            "dirty": "dirty",
+            "blocked": "out_of_service",
+        }
+        tonight = {row["room"].id: plan_state.get(row["cells"][0]["state"], "available")
                    for row in desk.room_board(db.session, today, 1)}
         by_floor = {}
         for room in db.session.scalars(select(Room).order_by(Room.number)):

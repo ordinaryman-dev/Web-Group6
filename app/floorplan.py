@@ -174,9 +174,18 @@ def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None
         f'<a href="{href_for(room)}" class="sv-room{dim}">',
         f"<title>{room.number} · {room_type.name} · {state.replace('_', ' ')}</title>",
         f'<rect x="{x}" y="{y}" width="{ROOM_W}" height="{ROOM_H}" class="room {state}"/>',
-        _text(x + ROOM_W / 2, y + 25, room.number, "num", "middle"),
-        _text(x + ROOM_W / 2, y + 41, room_type.bed_type.capitalize(), "bed", "middle"),
     ]
+    blocked = state in ("out_of_service", "maintenance", "maintenance_conflict")
+    if blocked:
+        # Struck through and labelled, so a closed room reads as closed from a distance.
+        parts.append(
+            f'<line x1="{x + 6}" y1="{y + ROOM_H - 6}" x2="{x + ROOM_W - 6}" y2="{y + 6}" class="out-slash"/>'
+        )
+    parts.append(_text(x + ROOM_W / 2, y + 25, room.number, "num", "middle"))
+    if blocked:
+        parts.append(_text(x + ROOM_W / 2, y + 42, "OUT OF SERVICE", "out-label", "middle"))
+    else:
+        parts.append(_text(x + ROOM_W / 2, y + 41, room_type.bed_type.capitalize(), "bed", "middle"))
     # window: a thin double line on the facade side, absent for interior rooms
     if room.has_window:
         wy1, wy2 = y + WINDOW_INSET, y + ROOM_H - WINDOW_INSET
@@ -237,7 +246,11 @@ def build_floor_plan(rooms):
             outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
         link_slot = max(0, (slots - 2) // 2)
         up = rest[:min(len(rest), link_slot)]
-        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):], "link": True})
+        down = rest[len(up):]
+        # A short floor must still show every room: grow the grid instead of
+        # clipping the inner column.
+        slots = max(slots, link_slot + 2 + len(down), len(up), len(outer))
+        legs.append({"outer": outer, "inner_up": up, "inner_down": down, "link": True})
     slots = max(leg.get("slots") or len(leg["outer"]) for leg in legs)
     return {"west": legs[0], "east": legs[1], "slots": slots,
             "link": legs[0]["link"] and legs[1]["link"]}

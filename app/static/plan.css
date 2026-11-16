@@ -30,3 +30,18 @@
 .plan-svg .sv-room.dim { opacity: .3; }
 .plan-svg .sv-room:hover .room, .plan-svg .sv-room:focus-visible .room { stroke: #33456b; stroke-width: 2.2; }
 .plan-legend { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 4px 0 6px; color: #4e5b55; font-size: 12.5px; }
+/* closed rooms must read as closed without opening the drawer */
+.plan-svg .room.out_of_service,
+.plan-svg .room.maintenance,
+.plan-svg .room.maintenance_conflict {
+  fill: #fbe3df;
+  stroke: #c0533f;
+  stroke-width: 2;
+}
+.plan-svg .out-label {
+  font: 700 9px "Segoe UI", "Microsoft YaHei", sans-serif;
+  fill: #a3341f;
+  letter-spacing: .08em;
+}
+.plan-svg .out-slash { stroke: #d98b7c; stroke-width: 1.4; }
+.plan-svg .out-slash { stroke: #e3a99c; stroke-width: 1.2; opacity: .8; }
