@@ -110,6 +110,63 @@
     });
   });
 
+  // Before submitting an outage, show how many bookings it would collide with.
+  var blockForm = document.getElementById("block-form");
+  var blockWarning = document.querySelector("[data-block-preview]");
+  if (blockForm && blockWarning) {
+    var fromInput = blockForm.querySelector("input[name='start_date']");
+    var toInput = blockForm.querySelector("input[name='end_date']");
+    var preview = function () {
+      if (!fromInput || !toInput || !fromInput.value || !toInput.value) {
+        blockWarning.hidden = true;
+        return;
+      }
+      var query = new URLSearchParams({
+        room_id: blockForm.dataset.roomId,
+        start: fromInput.value,
+        end: toInput.value
+      });
+      window
+        .fetch("/frontdesk/blocks/preview?" + query.toString(), {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin"
+        })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          if (!data) {
+            blockWarning.hidden = true;
+            return;
+          }
+          if (data.error) {
+            blockWarning.textContent = data.error;
+            blockWarning.hidden = false;
+            return;
+          }
+          if (!data.conflicts) {
+            blockWarning.textContent = "No active bookings in this period.";
+            blockWarning.hidden = false;
+            return;
+          }
+          var noun = data.conflicts === 1 ? "booking" : "bookings";
+          blockWarning.textContent =
+            data.conflicts + " " + noun + " overlap this period: " +
+            data.bookings.join(", ") + ". They stay and are listed after saving.";
+          blockWarning.hidden = false;
+        })
+        .catch(function () {
+          blockWarning.hidden = true;
+        });
+    };
+    [fromInput, toInput].forEach(function (input) {
+      if (input) {
+        input.addEventListener("change", preview);
+        input.addEventListener("input", preview);
+      }
+    });
+  }
+
   // Live bell: poll the notification feed so a new guest request shows up without
   // a page reload. Everything falls back to the server-rendered markup when the
   // fetch fails, so the desk still works offline or with JS blocked.

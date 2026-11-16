@@ -3,7 +3,7 @@ from decimal import Decimal
 from flask_wtf import FlaskForm
 from wtforms import (
     BooleanField, DateField, DecimalField, IntegerField, PasswordField, SelectChoice, SelectField,
-    StringField, TextAreaField,
+    StringField, SubmitField, TextAreaField,
 )
 from wtforms.validators import DataRequired, EqualTo, InputRequired, Length, NumberRange, Optional, Regexp, ValidationError
 
@@ -45,6 +45,7 @@ class RoomForm(FlaskForm):
     room_type_id = SelectField("Room type", coerce=int, validators=[InputRequired()])
     operational_from = DateField("First operating date", validators=[InputRequired()])
     operational_until = DateField("First unavailable date (optional)", validators=[Optional()])
+    has_window = BooleanField("Has a window")
 
 
 class PriceForm(FlaskForm):
@@ -53,6 +54,11 @@ class PriceForm(FlaskForm):
     start_date = DateField("First night", validators=[InputRequired()])
     end_date = DateField("End date (excluded)", validators=[InputRequired()])
     amount = DecimalField("Nightly price (CNY)", validators=[InputRequired(), currency])
+
+
+class StaffPasswordForm(FlaskForm):
+    password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
+    submit = SubmitField("Reset password")
 
 
 class StaffForm(FlaskForm):

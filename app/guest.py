@@ -18,7 +18,7 @@ from wtforms import (
     TextAreaField,
     TimeField,
 )
-from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional
+from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional, Regexp
 from wtforms.widgets import HiddenInput
 
 from .audit import record_audit
@@ -77,6 +77,18 @@ class BookForm(FlaskForm):
 class NoteForm(FlaskForm):
     note = TextAreaField("Note", validators=[Optional()])
     submit = SubmitField("Save note")
+
+
+class ProfileForm(FlaskForm):
+    name = StringField("Name", validators=[InputRequired(), Length(min=1, max=80)])
+    phone = StringField(
+        "Phone",
+        validators=[
+            InputRequired(),
+            Regexp(r"^[0-9+\- ]{6,20}$", message="Enter a phone number with 6 to 20 digits."),
+        ],
+    )
+    submit = SubmitField("Save details")
 
 
 class PasswordForm(FlaskForm):
@@ -601,12 +613,45 @@ def account():
     blocked = bool(
         customer and customer_is_blocked(db.session, customer.id, utc_now())
     )
+    profile_form = ProfileForm()
+    if customer is not None:
+        profile_form.name.data = customer.name
+        profile_form.phone.data = customer.phone
     return render_template(
         "guest/account.html",
         customer=customer,
         blocked=blocked,
+        profile_form=profile_form,
         form=PasswordForm(),
     )
+
+
+@guest.post("/account/profile")
+@guest_required
+def update_profile():
+    form = ProfileForm()
+    if not form.validate_on_submit():
+        flash("Enter a name and a phone number the hotel can reach.", "error")
+        return redirect(url_for("guest.account"))
+
+    name = form.name.data.strip()
+    phone = form.phone.data.strip()
+    with Session(db.engine) as session, session.begin():
+        customer = session.scalar(
+            db.select(Customer).where(Customer.user_id == current_user.id).with_for_update()
+        )
+        if customer is None:
+            flash("This account has no guest profile yet.", "error")
+            return redirect(url_for("guest.account"))
+        before = {"name": customer.name, "phone": customer.phone}
+        customer.name = name
+        customer.phone = phone
+        record_audit(
+            session, current_user.id, "update_profile", "customer", customer.id,
+            details={"before": before, "after": {"name": name, "phone": phone}},
+        )
+    flash("Your contact details were updated.", "success")
+    return redirect(url_for("guest.account"))
 
 
 @guest.post("/account/password")

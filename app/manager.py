@@ -14,8 +14,11 @@ from . import manager_services as services
 from .auth import role_required
 from .booking import BookingRejected, HOTEL_ZONE, cancel_confirmed_booking, cancellation_deadline, hotel_now, refundable_amount
 from .extensions import db
-from .floorplan import render_floor_plan
-from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm
+from .floorplan import build_floor_plan, render_floor_plan
+from .manager_forms import (
+    BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm,
+    StaffForm, StaffPasswordForm,
+)
 from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,
@@ -210,42 +213,6 @@ def room_type_choices():
     return [SelectChoice(type_id, name) for type_id, name in db.session.execute(
         select(RoomType.id, RoomType.name).order_by(RoomType.name, RoomType.id)
     )]
-
-
-def build_floor_plan(rooms):
-    """Split one floor into the two legs of an H plan.
-
-    Each leg keeps a full-height outer column and an inner column that stops above
-    and below the central link. For a 24-room floor each leg holds 12 rooms: 7 on
-    the outer column and 5 on the inner one, because the link takes two room slots.
-    """
-
-    rooms = list(rooms)
-    if not rooms:
-        return None
-    half = (len(rooms) + 1) // 2
-    legs = []
-    for index, leg in enumerate((rooms[:half], rooms[half:])):
-        slots = len(leg) // 2 + 1
-        if slots < 4:
-            # A small floor has no room for a waist: two plain columns, no lift core.
-            outer = leg[::2]
-            inner = leg[1::2]
-            legs.append({"outer": outer, "inner_up": inner, "inner_down": [],
-                         "link": False, "slots": max(1, len(outer))})
-            continue
-        # Keep room numbers increasing left to right: the west leg fills its outer
-        # column first, the east leg its inner column first.
-        if index == 0:
-            outer, rest = leg[:slots], leg[slots:]
-        else:
-            outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
-        link_slot = max(0, (slots - 2) // 2)
-        up = rest[:min(len(rest), link_slot)]
-        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):], "link": True})
-    slots = max(leg.get("slots") or len(leg["outer"]) for leg in legs)
-    return {"west": legs[0], "east": legs[1], "slots": slots,
-            "link": legs[0]["link"] and legs[1]["link"]}
 
 
 @manager.get("/rooms")
@@ -482,6 +449,23 @@ def staff_form():
     return edit_form(
         form, "New front-desk account", "manager.accounts", "Staff account created.",
         services.create_staff, form.email.data, form.password.data,
+    )
+
+
+@manager.post("/accounts/<int:staff_id>/enable")
+def enable_staff(staff_id):
+    return row_action(services.enable_staff, "Staff account is active again.",
+                      "manager.accounts", staff_id)
+
+
+@manager.route("/accounts/<int:staff_id>/password", methods=["GET", "POST"])
+def reset_staff_password(staff_id):
+    db.get_or_404(User, staff_id)
+    form = StaffPasswordForm()
+    return edit_form(
+        form, "Reset staff password", "manager.accounts",
+        "Password reset. The old password no longer works.",
+        services.reset_staff_password, staff_id, form.password.data,
     )
 
 

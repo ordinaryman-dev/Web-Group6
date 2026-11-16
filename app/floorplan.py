@@ -205,3 +205,39 @@ def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None
                      f'class="door-arc"/>')
     parts.append("</a>")
     return "".join(parts)
+
+
+def build_floor_plan(rooms):
+    """Split one floor into the two legs of an H plan.
+
+    Each leg keeps a full-height outer column and an inner column that stops above
+    and below the central link. For a 24-room floor each leg holds 12 rooms: 7 on
+    the outer column and 5 on the inner one, because the link takes two room slots.
+    """
+
+    rooms = list(rooms)
+    if not rooms:
+        return None
+    half = (len(rooms) + 1) // 2
+    legs = []
+    for index, leg in enumerate((rooms[:half], rooms[half:])):
+        slots = len(leg) // 2 + 1
+        if slots < 4:
+            # A small floor has no room for a waist: two plain columns, no lift core.
+            outer = leg[::2]
+            inner = leg[1::2]
+            legs.append({"outer": outer, "inner_up": inner, "inner_down": [],
+                         "link": False, "slots": max(1, len(outer))})
+            continue
+        # Keep room numbers increasing left to right: the west leg fills its outer
+        # column first, the east leg its inner column first.
+        if index == 0:
+            outer, rest = leg[:slots], leg[slots:]
+        else:
+            outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
+        link_slot = max(0, (slots - 2) // 2)
+        up = rest[:min(len(rest), link_slot)]
+        legs.append({"outer": outer, "inner_up": up, "inner_down": rest[len(up):], "link": True})
+    slots = max(leg.get("slots") or len(leg["outer"]) for leg in legs)
+    return {"west": legs[0], "east": legs[1], "slots": slots,
+            "link": legs[0]["link"] and legs[1]["link"]}

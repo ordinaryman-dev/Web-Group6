@@ -64,7 +64,7 @@ def save_room_type(session, actor_id, record_id, form):
 
 
 def save_room(session, actor_id, record_id, form, today):
-    fields = ("number", "room_type_id", "operational_from", "operational_until")
+    fields = ("number", "room_type_id", "operational_from", "operational_until", "has_window")
     new_type = form.room_type_id.data
     previous_type = session.scalar(select(Room.room_type_id).where(Room.id == record_id)) if record_id else None
     if record_id and previous_type is None:
@@ -168,6 +168,29 @@ def disable_staff(session, actor_id, staff_id):
             session, actor_id, "disable_staff", "user", staff.id,
             details={"before": {"active": True}, "after": {"active": False}},
         )
+
+
+def enable_staff(session, actor_id, staff_id):
+    staff = locked_row(session, User, staff_id)
+    if staff.role != STAFF:
+        raise ManagerRejected("This staff account could not be found.", 404)
+    if not staff.active:
+        staff.active = True
+        record_audit(
+            session, actor_id, "enable_staff", "user", staff.id,
+            details={"before": {"active": False}, "after": {"active": True}},
+        )
+
+
+def reset_staff_password(session, actor_id, staff_id, password):
+    staff = locked_row(session, User, staff_id)
+    if staff.role != STAFF:
+        raise ManagerRejected("This staff account could not be found.", 404)
+    staff.password_hash = generate_password_hash(password)
+    record_audit(
+        session, actor_id, "reset_staff_password", "user", staff.id,
+        details={"email": staff.email},
+    )
 
 
 def change_password(session, actor_id, current_password, new_password):

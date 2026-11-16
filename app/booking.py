@@ -431,6 +431,10 @@ def create_guest_request(actor_id, booking_id, kind, target, reason):
         elif kind == "extend":
             if booking.status not in ("confirmed", "checked_in"):
                 raise BookingRejected("STATE_CONFLICT", "This booking can no longer be extended.")
+            if customer_is_blocked(session, booking.customer_id, utc_now()):
+                raise BookingRejected(
+                    "FORBIDDEN", "This guest is blacklisted, so the stay cannot be extended."
+                )
 
         if kind == "room_type":
             try:

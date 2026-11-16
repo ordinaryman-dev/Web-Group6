@@ -30,6 +30,7 @@ from wtforms.validators import InputRequired, Length, NumberRange, Optional
 from wtforms.widgets import HiddenInput
 
 from . import desk
+from .floorplan import build_floor_plan, render_floor_plan
 from .booking import (
     BookingRejected,
     HOTEL_ZONE,
@@ -456,6 +457,34 @@ def desk_snapshot(session, now=None):
     }
 
 
+@frontdesk.get("/frontdesk/blocks/preview")
+@desk_required
+def block_preview():
+    """How many active bookings a would-be outage would collide with."""
+
+    room_id = request.args.get("room_id", type=int)
+    start = request.args.get("start", type=lambda value: date.fromisoformat(value))
+    end = request.args.get("end", type=lambda value: date.fromisoformat(value))
+    if room_id is None or start is None or end is None:
+        return jsonify(conflicts=0, bookings=[], error="Choose both dates.")
+    if end <= start:
+        return jsonify(conflicts=0, bookings=[], error="The end date must follow the start date.")
+
+    rows = db.session.scalars(
+        select(Booking).where(
+            Booking.room_id == room_id,
+            Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
+            Booking.check_in < end,
+            Booking.check_out > start,
+        ).order_by(Booking.check_in)
+    ).all()
+    return jsonify(
+        conflicts=len(rows),
+        bookings=[row.reference for row in rows],
+        error=None,
+    )
+
+
 @frontdesk.get("/frontdesk/notifications.json")
 @desk_required
 def notifications_feed():
@@ -499,7 +528,7 @@ def index():
     is_manager = current_user.role == MANAGER
 
     view = request.args.get("view") or "grid"
-    if view not in ("grid", "orders", "tasks"):
+    if view not in ("grid", "orders", "tasks", "plan"):
         view = "grid"
 
     query = (request.args.get("q") or "").strip()
@@ -554,6 +583,31 @@ def index():
     rooms = [row["room"] for row in board]
 
     room_types = db.session.scalars(select(RoomType).order_by(RoomType.name)).all()
+
+    # The plan view reuses the manager floor drawing with tonight's desk states.
+    plan_floors = []
+    plan_floor = None
+    plan_html = None
+    if view == "plan":
+        type_by_id = {room_type.id: room_type for room_type in room_types}
+        tonight = {row["room"].id: row["cells"][0]["state"]
+                   for row in desk.room_board(db.session, today, 1)}
+        by_floor = {}
+        for room in db.session.scalars(select(Room).order_by(Room.number)):
+            by_floor.setdefault(_floor_key(room.number), []).append(room)
+        plan_floors = [(_floor_label(key), len(items), key)
+                       for key, items in sorted(by_floor.items(), key=lambda item: _floor_sort(item[0]))]
+        wanted = request.args.get("plan_floor")
+        keys = [key for _, _, key in plan_floors]
+        plan_floor = wanted if wanted in keys else (keys[0] if keys else None)
+        if plan_floor:
+            rooms_on_floor = by_floor[plan_floor]
+            layout = build_floor_plan(rooms_on_floor)
+            plan_html = render_floor_plan(
+                layout, tonight, type_by_id,
+                lambda room: url_for("frontdesk.index", view="plan", plan_floor=plan_floor,
+                                     room=room.id, date=today.isoformat()),
+            )
     room_type_by_id = {room_type.id: room_type for room_type in room_types}
 
     occupied_ids = set(db.session.scalars(
@@ -886,6 +940,9 @@ def index():
         dirty_rooms=dirty_rooms,
         conflicts=conflicts,
         notifications=notifications,
+        plan_floors=plan_floors,
+        plan_floor=plan_floor,
+        plan_html=plan_html,
         notification_total=notification_total,
         notify_version=snapshot["version"],
         occupied_today=occupied_today,

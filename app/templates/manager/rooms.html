@@ -2,6 +2,7 @@
 {% from "manager/_components.html" import status, list_controls, list_count, pagination %}
 {% set title = "Rooms" %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
 <header class="manager-heading">
   <div><h1>{{ title }}</h1><p>Room inventory and availability for {{ filters.day.strftime('%d %b %Y') }}.</p></div>
   <a class="manager-button" href="{{ list_url('manager.room_form') }}">Add room</a>

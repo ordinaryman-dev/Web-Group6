@@ -17,6 +17,7 @@ from .booking import (
     Stay,
     add_night,
     cancellation_deadline,
+    customer_is_blocked,
     free_room_conditions,
     hotel_now,
     nightly_rates,
@@ -558,6 +559,11 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
     elif row.kind == "extend":
         if booking.status not in (CONFIRMED, CHECKED_IN):
             raise DeskError("This booking can no longer be extended.")
+        if customer_is_blocked(session, booking.customer_id, utc_now()):
+            raise DeskError(
+                "This guest is blacklisted, so the extension cannot be approved. "
+                "The booking is unchanged."
+            )
         try:
             new_check_out = date.fromisoformat(str(target.get("check_out")))
         except (TypeError, ValueError):
@@ -629,7 +635,6 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
     Reuses the same availability, capacity and price rules as the guest portal and
     refuses blacklisted guests, because the desk cannot bypass that check.
     """
-    from .booking import customer_is_blocked
 
     room_type = session.get(RoomType, room_type_id)
     if room_type is None or not room_type.listed:

@@ -13,6 +13,30 @@
 </section>
 
 <div class="account-simple">
+  <details class="account-panel" open>
+    <summary>
+      <span>
+        <b>Contact details</b>
+        <small>The front desk uses these to reach you</small>
+      </span>
+      <span class="summary-arrow">›</span>
+    </summary>
+    <form method="post" action="{{ url_for('guest.update_profile') }}" class="stack">
+      {{ profile_form.csrf_token }}
+      <div class="field">
+        {{ profile_form.name.label }}
+        {{ profile_form.name(autocomplete="name", maxlength=80) }}
+        {% for error in profile_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field">
+        {{ profile_form.phone.label }}
+        {{ profile_form.phone(autocomplete="tel", maxlength=20) }}
+        {% for error in profile_form.phone.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {{ profile_form.submit(class="button") }}
+    </form>
+  </details>
+
   <details class="account-panel">
     <summary>
       <span>

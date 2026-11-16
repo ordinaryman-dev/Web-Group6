@@ -9,6 +9,7 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=2">
+<link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
 <div class="desk{% if drawer_mode %} has-drawer{% endif %}"
      data-notify-feed="{{ url_for('frontdesk.notifications_feed') }}"
      data-notify-version="{{ notify_version }}"
@@ -29,6 +30,11 @@
         <span class="side-icon" aria-hidden="true">▦</span>
         <span class="side-text"><b>Room board</b><small>E01 · {{ total_rooms }} rooms</small></span>
         <span class="side-count">{{ floor_numbers }}F</span>
+      </a>
+      <a class="side-link {{ 'is-active' if view == 'plan' }}"
+         href="{{ desk_url(view='plan', room=None, booking=None) }}">
+        <span class="side-icon" aria-hidden="true">⌗</span>
+        <span class="side-text"><b>Floor plan</b><small>Tonight, floor by floor</small></span>
       </a>
       <a class="side-link {{ 'is-active' if view == 'orders' }}"
          href="{{ desk_url(view='orders', tab='arrivals', room=None, booking=None) }}">
@@ -343,6 +349,36 @@
       </div>
     </section>
 
+    {% elif view == 'plan' %}
+    <section class="panel board-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">E01 · FLOOR PLAN</p>
+          <h2>Tonight’s plan</h2>
+        </div>
+        <div class="legend" aria-label="Room state colours">
+          <span><i class="dot dot-free"></i>Free</span>
+          <span><i class="dot dot-arriving"></i>Arriving / reserved</span>
+          <span><i class="dot dot-in_house"></i>In house / departing</span>
+          <span><i class="dot dot-dirty"></i>Dirty</span>
+          <span><i class="dot dot-blocked"></i>Out of service</span>
+        </div>
+      </div>
+
+      <nav class="floor-tabs" aria-label="Floors">
+        {% for label, count, key in plan_floors %}
+        <a class="{{ 'is-active' if key == plan_floor }}"
+           href="{{ desk_url(view='plan', plan_floor=key, room=None, booking=None) }}">
+          <b>{{ label }}</b>
+          <span>{{ count }} rooms</span>
+        </a>
+        {% endfor %}
+      </nav>
+
+      {% if plan_html %}<div class="plan-wrap">{{ plan_html }}</div>
+      {% else %}<p class="muted">No rooms on this floor.</p>{% endif %}
+      <p class="muted small">Click a room to open its drawer. Colour = tonight’s desk state.</p>
+    </section>
     {% elif view == 'orders' %}
     <div class="view-head">
       <div>
@@ -959,7 +995,8 @@
       <details class="drawer-section">
         <summary>Set out of service</summary>
         <p class="hint">Existing bookings in this period stay and are flagged, never overwritten. You will be offered a same-type move for each one.</p>
-        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard>
+        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard
+              id="block-form" data-room-id="{{ room.id }}">
           {{ block_form.hidden_tag() }}
           <input type="hidden" name="back" value="{{ request.full_path }}">
           <div class="form-grid">
@@ -967,6 +1004,7 @@
             <div class="field"><label>To</label>{{ block_form.end_date(class_="input") }}</div>
           </div>
           <div class="field"><label>Reason</label>{{ block_form.reason(class_="input", placeholder="Bathroom leak, repainting…") }}</div>
+          <p class="field-warning" data-block-preview hidden></p>
           <button class="btn danger wide" type="submit">Set out of service</button>
         </form>
       </details>
