@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} · Hero Hotel{% endblock %}
-{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}?v=2">{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}?v=3">
+<script defer src="{{ url_for('static', filename='manager.js') }}"></script>
+{% endblock %}
 {% block shell %}
 <div class="manager-shell">
   <aside class="manager-sidebar">
@@ -11,7 +14,7 @@
     <nav class="manager-nav" aria-label="Manager navigation">
       {% set entries = [
         ('overview', 'Overview', []), ('room_types', 'Room types', ['room_type_form']),
-        ('rooms', 'Rooms', ['room_form']), ('prices', 'Price rules', ['price_form']),
+        ('rooms', 'Rooms', ['room_form']), ('prices', 'Price rules', ['price_form', 'preview_price']),
         ('accounts', 'Staff accounts', ['staff_form']), ('blacklist', 'Blacklist', ['remove_blacklist']),
         ('bookings', 'Bookings', ['booking_detail', 'cancel_booking']),
         ('reports', 'Reports', []), ('audit', 'Audit log', [])

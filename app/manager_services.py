@@ -109,8 +109,7 @@ def save_room(session, actor_id, record_id, form, today):
     )
 
 
-def save_price_rule(session, actor_id, rule_id, room_type_id, form):
-    locked_row(session, RoomType, room_type_id)
+def proposed_price_rule(session, rule_id, room_type_id, form):
     old_rule = session.get(PriceRule, rule_id) if rule_id else None
     if rule_id and (old_rule is None or not old_rule.active or old_rule.room_type_id != room_type_id):
         raise ManagerRejected("This price rule was already replaced or retired.")
@@ -125,11 +124,16 @@ def save_price_rule(session, actor_id, rule_id, room_type_id, form):
         overlap = overlap.where(PriceRule.id != rule_id)
     if session.scalar(overlap.limit(1)) is not None:
         raise ManagerRejected("This date range overlaps a rule of the same priority for this room type.")
+    return old_rule, PriceRule(room_type_id=room_type_id, kind=kind, start_date=start, end_date=end, amount=form.amount.data)
+
+
+def save_price_rule(session, actor_id, rule_id, room_type_id, form):
+    locked_row(session, RoomType, room_type_id)
+    old_rule, rule = proposed_price_rule(session, rule_id, room_type_id, form)
     fields = ("kind", "start_date", "end_date", "amount")
     before = audit_values(old_rule, fields) if old_rule else None
     if old_rule:
         old_rule.active = False
-    rule = PriceRule(room_type_id=room_type_id, kind=kind, start_date=start, end_date=end, amount=form.amount.data)
     session.add(rule)
     session.flush()
     record_audit(

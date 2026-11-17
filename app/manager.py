@@ -20,6 +20,7 @@ from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,
 )
+from .pricing import price_for_night, stay_rules
 from .reports import DAY, occupancy_report, report_range
 from .room_numbers import floor_key, floor_label, floor_sort
 
@@ -120,7 +121,7 @@ def show_error(error):
     flash(str(error), "error")
 
 
-def edit_form(form, title, endpoint, message, operation, *args, change_own_password=False):
+def edit_form(form, title, endpoint, message, operation, *args, change_own_password=False, **context):
     status = 200
     if form.validate_on_submit():
         try:
@@ -133,7 +134,7 @@ def edit_form(form, title, endpoint, message, operation, *args, change_own_passw
             return redirect(list_url(endpoint))
     elif form.is_submitted():
         status = 400
-    return render_template("manager/form.html", form=form, title=title, back=list_url(endpoint)), status
+    return render_template("manager/form.html", form=form, title=title, back=list_url(endpoint), **context), status
 
 
 def row_action(operation, message, endpoint, *args):
@@ -169,7 +170,7 @@ def overview():
         in_house=count_rows(Booking, Booking.status == "checked_in"),
         arrivals=count_rows(Booking, Booking.status == "confirmed", Booking.check_in == today),
         pending=count_rows(BookingRequest, BookingRequest.status == "pending"),
-        candidate=candidate, refund=refundable_amount(db.session, candidate.id) if candidate else None,
+        candidate=candidate,
     )
 
 
@@ -226,9 +227,7 @@ def rooms():
     bed = request.args.get("bed", "")
     window = request.args.get("window", "")
     status = request.args.get("status", "")
-    view = request.args.get("view", "plan")
-    if view not in ("plan", "table"):
-        view = "plan"
+    requested_view = request.args.get("view")
 
     floor_rooms = {}
     for room_id, number in db.session.execute(select(Room.id, Room.number)):
@@ -278,8 +277,6 @@ def rooms():
         ("opening", "Operating date: newest first", Room.operational_from.desc(), *number_order),
     ), "number")
     statement = select(Room).join(RoomType)
-    if floor:
-        statement = statement.where(Room.id.in_(floor_rooms[floor]))
     if query:
         statement = statement.where(contains_any(query, Room.number, RoomType.name, RoomType.code))
     if type_id in types_by_id:
@@ -291,9 +288,19 @@ def rooms():
     if status in ROOM_STATUSES:
         statement = statement.where(room_status == status)
 
+    # Exact room searches can jump to another floor even if the last plan was scoped.
+    exact = None
+    if query and requested_view != "table":
+        exact = db.session.scalar(statement.where(Room.number == query))
+    if exact is not None:
+        floor = floor_key(exact.number)
+    if requested_view in ("plan", "table"):
+        view = requested_view
+    else:
+        view = "table" if query and exact is None else "plan"
     common = {
         "options": options, "statuses": ROOM_STATUSES, "floors": floors, "types_by_id": types_by_id,
-        "view": view, "floor": floor,
+        "view": view, "floor": floor, "exact": exact,
         "filters": {"q": query, "day": day, "floor": floor, "type": type_id,
                     "status": status, "bed": bed, "window": window},
     }
@@ -325,15 +332,19 @@ def rooms():
             busy.setdefault(key, 0)
             if state != "available":
                 busy[key] += 1
+        filtered = bool(query or type_id or bed or window or status)
+        matching_floors = {
+            floor_key(number) for number in db.session.scalars(statement.with_only_columns(Room.number))
+        } if filtered else set()
         plan_floor = max(
-            floors,
+            (item for item in floors if item[0] in matching_floors) if matching_floors else floors,
             key=lambda item: (busy.get(item[0], 0), -int(item[0]) if item[0].isdigit() else 0),
         )[0]
     else:
         plan_floor = ""
     plan_rooms = []
     states = {}
-    matched = None
+    matched = set()
     if plan_floor:
         floor_ids = floor_rooms[plan_floor]
         plan_rooms = db.session.scalars(
@@ -349,11 +360,12 @@ def rooms():
     floorplan = render_floor_plan(
         layout, states, types_by_id,
         lambda room: list_url("manager.room_form", record_id=room.id),
-        matched=matched,
+        matched=matched if query or type_id or bed or window or status else None,
+        focused=exact.id if exact is not None else None,
     )
     return render_template(
         "manager/rooms.html", plan=layout, floorplan=floorplan, plan_floor=plan_floor,
-        plan_rooms=plan_rooms, states=states, **common,
+        plan_rooms=plan_rooms, states=states, matched_count=len(matched), **common,
     )
 
 
@@ -374,10 +386,17 @@ def room_form(record_id):
 
 @manager.get("/prices")
 def prices():
+    today = hotel_now().date()
     query = search_query()
     status = request.args.get("status", "")
+    price_status = case(
+        (~PriceRule.active, "retired"),
+        (PriceRule.end_date <= today, "expired"),
+        (PriceRule.start_date > today, "upcoming"),
+        else_="in_effect",
+    )
     options = list_options((
-        ("active", "Active rules first", PriceRule.active.desc(), RoomType.name, PriceRule.start_date.desc(), PriceRule.id.desc()),
+        ("active", "In effect first", (price_status == "in_effect").desc(), PriceRule.active.desc(), RoomType.name, PriceRule.start_date.desc(), PriceRule.id.desc()),
         ("date", "Start date: latest first", PriceRule.start_date.desc(), PriceRule.id.desc()),
         ("date_asc", "Start date: earliest first", PriceRule.start_date, PriceRule.id),
         ("amount", "Price: lowest first", PriceRule.amount, PriceRule.id),
@@ -387,29 +406,71 @@ def prices():
     statement = select(PriceRule).join(RoomType)
     if query:
         statement = statement.where(contains_any(query, RoomType.name, RoomType.code, PriceRule.kind))
-    if status in ("active", "retired"):
-        statement = statement.where(PriceRule.active.is_(status == "active"))
+    if status in ("in_effect", "upcoming", "expired", "retired"):
+        statement = statement.where(price_status == status)
+    elif status == "active":
+        statement = statement.where(PriceRule.active.is_(True))
     page = list_page(statement, options)
     types_by_id = dict(db.session.execute(select(RoomType.id, RoomType.name).where(
         RoomType.id.in_({rule.room_type_id for rule in page.items}),
     )).all()) if page.items else {}
+    price_states = dict(db.session.execute(select(PriceRule.id, price_status).where(
+        PriceRule.id.in_([rule.id for rule in page.items]),
+    )).all()) if page.items else {}
     return render_template(
         "manager/catalogue.html", section="prices", page=page, options=options,
-        types_by_id=types_by_id, filters={"q": query, "status": status},
+        types_by_id=types_by_id, price_states=price_states, report_day=DAY,
+        filters={"q": query, "status": status},
     )
 
 
 @manager.route("/prices/new", defaults={"rule_id": None}, methods=["GET", "POST"])
 @manager.route("/prices/<int:rule_id>", methods=["GET", "POST"])
+@manager.post("/prices/preview", defaults={"rule_id": None}, endpoint="preview_price")
+@manager.post("/prices/<int:rule_id>/preview", endpoint="preview_price")
 def price_form(rule_id):
     rule = db.get_or_404(PriceRule, rule_id) if rule_id is not None else None
     if rule and not rule.active:
         abort(404)
     form = PriceForm(obj=rule)
     form.room_type_id.choices = [choice for choice in room_type_choices() if rule is None or choice.value == rule.room_type_id]
+    title = "Edit price rule" if rule else "New price rule"
+    price_preview = list_url("manager.preview_price", rule_id=rule_id)
+    price_save = list_url("manager.price_form", rule_id=rule_id)
+    preview = None
+    if request.endpoint == "manager.preview_price":
+        status = 400
+        if form.validate():
+            try:
+                room_type_id = form.room_type_id.data
+                room_type = db.get_or_404(RoomType, room_type_id)
+                _, draft = services.proposed_price_rule(db.session, rule_id, room_type_id, form)
+                try:
+                    day = date.fromisoformat(request.form["preview_night"]) if request.form.get("preview_night") else draft.start_date
+                except ValueError:
+                    raise services.ManagerRejected("Enter a valid preview date.", 400)
+                if not draft.start_date <= day < draft.end_date:
+                    raise services.ManagerRejected("The preview date must be within the rule's nights.", 400)
+                rules = stay_rules(db.session, room_type_id, day, day + DAY)
+                before = price_for_night(room_type, day, rules)
+                draft.id = 0  # Identify the unsaved rule without adding it to the session.
+                competing = [item for item in rules if item.id != rule_id]
+                after = price_for_night(room_type, day, [*competing, draft])
+                labels = {item.id: "Date-specific rule" if item.kind == "date" else "Seasonal rule" for item in rules}
+                labels.update({None: "Base rate", 0: "Proposed rule"})
+                preview = {"day": day, "before": before, "after": after, "labels": labels}
+                status = 200
+            except services.ManagerRejected as error:
+                show_error(error)
+                status = error.status
+        return render_template(
+            "manager/form.html", form=form, title=title, back=list_url("manager.prices"),
+            price_preview=price_preview, price_save=price_save, preview=preview,
+        ), status
     return edit_form(
-        form, "Edit price rule" if rule else "New price rule", "manager.prices",
+        form, title, "manager.prices",
         "Price rule saved.", services.save_price_rule, rule_id, form.room_type_id.data, form,
+        price_preview=price_preview, price_save=price_save,
     )
 
 

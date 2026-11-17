@@ -7,6 +7,7 @@
 <div class="manager-grid">
   <section class="manager-panel">
     <div class="manager-panel-title"><h2>Reservation</h2>{{ status(booking.status) }}</div>
+    <a href="{{ url_for('manager.audit', object_type='booking', object_id=booking.id) }}">View booking audit</a>
     <dl class="manager-facts">
       <dt>Stay dates</dt><dd>{{ booking.check_in }} – {{ booking.check_out }}</dd>
       <dt>Guests</dt><dd>{{ booking.guests }}</dd>
@@ -26,15 +27,19 @@
     </table></div>{% else %}<p class="manager-empty">No payment or refund records.</p>{% endif %}
   </section>
   {% if booking.status in ('confirmed', 'no_show') and not booking.checked_in_at %}
-  <section class="manager-panel manager-danger-panel">
+  <section class="manager-panel manager-danger-panel" id="cancel-booking">
     <div class="manager-panel-title"><h2>Cancel booking</h2></div>
     <p>Normal cancellation deadline {{ deadline.strftime('%d %b %Y, %H:%M') }} Beijing time.</p>
     {% if not exception_available %}<p class="muted">The late exception becomes available after this deadline. Hotel-initiated cancellation is available for a hotel reason.</p>{% endif %}
     <p>Estimated simulated refund <strong>¥{{ refundable|money }}</strong></p>
+    <details class="manager-row-menu manager-lower" {% if form.errors or request.method == 'POST' %}open{% endif %}>
+    <summary>Review cancellation</summary>
+    <p><strong>{{ booking.reference }}</strong> · {{ booking.customer.name }}. Cancellation releases the room nights and records any simulated refund.</p>
     <form method="post" class="manager-form manager-lower" action="{{ list_url('manager.cancel_booking', booking_id=booking.id) }}">
       {{ fields(form) }}
-      <button class="manager-button danger" type="submit">Cancel and refund</button>
+      <button class="manager-button danger" type="submit">Confirm cancellation{% if refundable %} and refund{% endif %}</button>
     </form>
+    </details>
   </section>
   {% endif %}
   <section class="manager-panel">

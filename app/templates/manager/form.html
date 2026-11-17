@@ -6,9 +6,30 @@
   <a class="manager-button secondary" href="{{ url_for('manager.overview') if request.endpoint == 'manager.profile' else back }}">Back</a>
 </header>
 <section class="manager-panel manager-form-panel">
-  <form method="post" class="manager-form">
+  <form method="post" class="manager-form"{% if price_preview %} action="{{ price_preview }}"{% endif %}>
     {{ fields(form) }}
-    <button type="submit" class="manager-button">{{ 'Change password' if request.endpoint == 'manager.profile' else 'Save' }}</button>
+    {% if price_preview %}
+      <div class="manager-field">
+        <label for="preview-night">Night to preview</label>
+        <input id="preview-night" name="preview_night" type="date" value="{{ request.form.get('preview_night', '') }}">
+        <p class="manager-footnote manager-preview-hint">Leave blank to preview the first night. The end date is excluded.</p>
+      </div>
+      {% if preview %}
+        <section class="manager-price-preview" aria-label="Price preview">
+          <h2>{{ preview.day.strftime('%d %b %Y') }}</h2>
+          <dl class="manager-facts">
+            <dt>Current price</dt><dd>¥{{ preview.before.amount|money }} · {{ preview.labels[preview.before.rule_id] }}</dd>
+            <dt>Price after saving</dt><dd><strong>¥{{ preview.after.amount|money }}</strong> · {{ preview.labels[preview.after.rule_id] }}</dd>
+          </dl>
+        </section>
+      {% endif %}
+      <div class="manager-row-actions">
+        <button type="submit" class="manager-button secondary">Preview price</button>
+        <button type="submit" class="manager-button" formaction="{{ price_save }}">Save rule</button>
+      </div>
+    {% else %}
+      <button type="submit" class="manager-button">{{ 'Change password' if request.endpoint == 'manager.profile' else 'Save' }}</button>
+    {% endif %}
   </form>
 </section>
 {% endblock %}

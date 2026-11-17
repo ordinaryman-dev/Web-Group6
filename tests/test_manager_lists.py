@@ -54,6 +54,16 @@ def test_room_inventory_paginates_and_searches_all_floors(app):
     blocked = client.get("/manage/rooms?view=table&q=1225&status=maintenance&floor=12")
     assert re.findall(r'data-room-number="([^"]+)"', blocked.text) == ["1225"]
     assert "manager-status maintenance" in blocked.text
+    plan = client.get("/manage/rooms?view=plan&floor=3&q=1225")
+    assert plan.status_code == 200
+    assert "12F · 25 rooms" in plan.text and "Edit room 1225" in plan.text
+    assert 'class="sv-room is-match" aria-current="true"' in plan.text
+    assert 'aria-label="Room status legend"' in plan.text
+    assert 'name="per_page"' not in plan.text
+    broad = client.get("/manage/rooms?q=Pagination+Twin&per_page=50")
+    assert re.search(r"of 300\s+rooms", broad.text) and 'class="plan-svg"' not in broad.text
+    empty = client.get("/manage/rooms?q=unknown-room")
+    assert "No rooms match the selected filters." in empty.text
     editor = client.get(select_link(blocked, "Edit"))
     back = urlsplit(select_link(editor, "Back"))
     assert back.path == "/manage/rooms"

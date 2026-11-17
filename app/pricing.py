@@ -78,6 +78,12 @@ def stay_rules(session, room_type_id, check_in, check_out):
     ).all()
 
 
+def price_for_night(room_type, day, rules):
+    matches = (rule for rule in rules if rule.start_date <= day < rule.end_date)
+    best = max(matches, key=rule_precedence, default=None)
+    return NightPrice(day, best.amount, best.id) if best else NightPrice(day, room_type.base_price, None)
+
+
 def quote(session, room_type_id, check_in, check_out):
     """Return one :class:`NightPrice` per night of ``[check_in, check_out)``.
 
@@ -96,12 +102,7 @@ def quote(session, room_type_id, check_in, check_out):
     prices = []
     day = check_in
     while day < check_out:
-        matches = [rule for rule in rules if rule.start_date <= day < rule.end_date]
-        best = max(matches, key=rule_precedence, default=None)
-        if best is None:
-            prices.append(NightPrice(day, room_type.base_price, None))
-        else:
-            prices.append(NightPrice(day, best.amount, best.id))
+        prices.append(price_for_night(room_type, day, rules))
         day += timedelta(days=1)
     return prices
 

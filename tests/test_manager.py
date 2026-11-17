@@ -175,6 +175,13 @@ def test_catalogue_price_rule_precedence_and_reconfirmation(app):
               "end_date": str(arrival + timedelta(days=4)), "amount": "250.00"}
     override = {**season, "kind": "date", "end_date": str(arrival + timedelta(days=1)), "amount": "310.00"}
     assert post(manager, "/manage/prices/new", season).status_code == 302
+    preview = post(manager, "/manage/prices/preview", override, form_path="/manage/prices/new")
+    assert preview.status_code == 200
+    assert "¥250.00 · Seasonal rule" in preview.text and "¥310.00</strong> · Proposed rule" in preview.text
+    with app.app_context():
+        assert db.session.scalar(select(PriceRule.id).where(
+            PriceRule.room_type_id == type_id, PriceRule.kind == "date",
+        )) is None
     assert post(manager, "/manage/prices/new", {**season, "start_date": str(arrival + timedelta(days=1))}).status_code == 409
     assert post(manager, "/manage/prices/new", {**override, "amount": "bad"}).status_code == 400
     assert post(manager, "/manage/prices/new", override).status_code == 302
@@ -183,6 +190,9 @@ def test_catalogue_price_rule_precedence_and_reconfirmation(app):
             PriceRule.room_type_id == type_id, PriceRule.kind == "date",
         ))
     stale = booking_fields(guest, type_id, arrival)
+    preview = post(manager, f"/manage/prices/{original_rule_id}/preview", {**override, "amount": "330.00"},
+                   form_path=f"/manage/prices/{original_rule_id}")
+    assert preview.status_code == 200 and "¥330.00</strong> · Proposed rule" in preview.text
     assert post(manager, f"/manage/prices/{original_rule_id}", {**override, "amount": "330.00"}).status_code == 302
     rejected = guest.post("/guest/book", data=stale, follow_redirects=True)
     assert "The price changed" in rejected.text

@@ -3,7 +3,7 @@
 {% set title = "Rooms" %}
 {% block styles %}
 {{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=2">
 {% endblock %}
 
 {% block content %}
@@ -12,22 +12,31 @@
   <a class="manager-button" href="{{ list_url('manager.room_form') }}">Add room</a>
 </header>
 <section class="manager-panel">
+  <form method="get" class="manager-filters manager-room-search" role="search">
+    <input type="hidden" name="day" value="{{ filters.day }}">
+    <label>Search all floors
+      <input type="search" name="q" value="{{ filters.q }}" maxlength="254" placeholder="Room number, type or code">
+    </label>
+    <button class="manager-button" type="submit">Search rooms</button>
+    {% if filters.q %}<a href="{{ url_for('manager.rooms', day=filters.day) }}">Clear search</a>{% endif %}
+  </form>
   <div class="manager-viewbar">
     <div class="manager-floortabs" aria-label="Floor">
       {% for key, label, count in floors %}
-        <a href="{{ list_url('manager.rooms', floor=key, view='plan') }}"
+        <a href="{{ list_url('manager.rooms', floor=key, view=view, q=none if exact else filters.q, page=none) }}"
            {% if key == (floor or plan_floor) %}aria-current="page"{% endif %}>{{ label }}<small>{{ count }}</small></a>
       {% endfor %}
     </div>
     <div class="manager-viewtoggle">
-      <a href="{{ list_url('manager.rooms', view='plan') }}" {% if view == 'plan' %}aria-current="page"{% endif %}>Floor plan</a>
-      <a href="{{ list_url('manager.rooms', view='table') }}" {% if view == 'table' %}aria-current="page"{% endif %}>Table</a>
+      <a href="{{ list_url('manager.rooms', view='plan', floor=floor or none, page=none) }}" {% if view == 'plan' %}aria-current="page"{% endif %}>Floor plan</a>
+      <a href="{{ list_url('manager.rooms', view='table', floor=floor or none, page=none) }}" {% if view == 'table' %}aria-current="page"{% endif %}>Table</a>
     </div>
   </div>
-  <details class="manager-facet" open>
-    <summary>Search and filters</summary>
+  <details class="manager-facet" {% if filters.type or filters.bed or filters.window or filters.status %}open{% endif %}>
+    <summary>Advanced filters</summary>
     <form method="get" class="manager-filters manager-list-filters">
-      <label>Room number, type or code <input type="search" name="q" value="{{ filters.q }}" maxlength="254" placeholder="e.g. 1201 or King"></label>
+      <input type="hidden" name="view" value="{{ view }}">
+      {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
       <label>Night of <input type="date" name="day" value="{{ filters.day }}" required></label>
       <label>Floor
         <select name="floor"><option value="">All floors</option>
@@ -54,9 +63,9 @@
           {% for key in statuses %}<option value="{{ key }}"{% if filters.status == key %} selected{% endif %}>{{ key|replace('_',' ')|capitalize }}</option>{% endfor %}
         </select>
       </label>
-      {{ list_controls(options) }}
+      {% if view == 'table' %}{{ list_controls(options) }}{% endif %}
       <button class="manager-button secondary" type="submit">Apply</button>
-      <a href="{{ url_for('manager.rooms') }}">Reset</a>
+      <a href="{{ url_for('manager.rooms', view=view) }}">Reset</a>
     </form>
   </details>
   {% if view == 'plan' %}
@@ -67,14 +76,14 @@
     {% for label, rooms in groups %}
       <details class="manager-result-group"{% if loop.first or filters.q %} open{% endif %}>
         <summary><span>{{ label }}</span><span>{{ rooms|length }} on this page</span></summary>
-        <div class="manager-table-wrap"><table class="manager-table">
+        <div class="manager-table-wrap manager-rooms-list"><table class="manager-table" role="table">
           <thead><tr><th>Room number</th><th>Room type</th><th>Bed</th><th>Window</th><th>First operating date</th><th>First unavailable date</th><th>Night status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
-          <tbody>{% for room in rooms %}{% set room_type = types_by_id[room.room_type_id] %}<tr data-room-number="{{ room.number }}">
-            <td><strong>{{ room.number }}</strong></td><td>{{ room_type.name }}</td><td>{{ room_type.bed_type|capitalize }}</td>
-            <td>{{ 'Yes' if room.has_window else 'No' }}</td>
-            <td>{{ room.operational_from }}</td><td>{{ room.operational_until or '—' }}</td>
-            <td>{{ status(states[room.id]) }}</td>
-            <td><a href="{{ list_url('manager.room_form', record_id=room.id) }}">Edit</a></td>
+          <tbody role="rowgroup">{% for room in rooms %}{% set room_type = types_by_id[room.room_type_id] %}<tr role="row" data-room-number="{{ room.number }}">
+            <td role="cell" class="manager-room-number"><strong>{{ room.number }}</strong></td><td role="cell" class="manager-room-type">{{ room_type.name }}</td><td role="cell" class="manager-room-detail"><span>Bed</span>{{ room_type.bed_type|capitalize }}</td>
+            <td role="cell" class="manager-room-detail"><span>Window</span>{{ 'Yes' if room.has_window else 'No' }}</td>
+            <td role="cell" class="manager-room-detail manager-nowrap"><span>Operating from</span>{{ room.operational_from }}</td><td role="cell" class="manager-room-detail manager-nowrap"><span>Unavailable from</span>{{ room.operational_until or '—' }}</td>
+            <td role="cell" class="manager-room-status">{{ status(states[room.id]) }}</td>
+            <td role="cell" class="manager-room-action"><a href="{{ list_url('manager.room_form', record_id=room.id) }}">Edit</a></td>
           </tr>{% endfor %}</tbody>
         </table></div>
       </details>

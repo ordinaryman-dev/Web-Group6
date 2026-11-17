@@ -14,7 +14,7 @@ Drawn as a real plan rather than a card grid:
 Each room rectangle links to the room form.
 """
 
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 # ---- geometry -------------------------------------------------------------
 ROOM_W = 150
@@ -45,16 +45,16 @@ HATCH = (
 
 
 def _text(x, y, value, cls, anchor="start"):
-    return f'<text x="{x}" y="{y}" class="{cls}" text-anchor="{anchor}">{value}</text>'
+    return f'<text x="{x}" y="{y}" class="{cls}" text-anchor="{anchor}">{escape(value)}</text>'
 
 
-def _inner(body, rooms, x, first, start_slot, side, states, types_by_id, href_for, matched):
+def _inner(body, rooms, x, first, start_slot, side, states, types_by_id, href_for, matched, focused):
     for index, room in enumerate(rooms):
         body.append(room_card(room, x, first + (start_slot + index) * PITCH, side,
-                              states, types_by_id, href_for, matched))
+                              states, types_by_id, href_for, matched, focused))
 
 
-def render_floor_plan(plan, states, types_by_id, href_for, matched=None):
+def render_floor_plan(plan, states, types_by_id, href_for, matched=None, *, focused=None):
     """Return the SVG markup for one floor, or Markup() when there is nothing to draw."""
 
     if not plan:
@@ -126,15 +126,15 @@ def render_floor_plan(plan, states, types_by_id, href_for, matched=None):
             outer_door, inner_door = "right", "left"
         for index, room in enumerate(leg["outer"][:slots]):
             body.append(room_card(room, outer_x, first + index * PITCH, outer_door,
-                                  states, types_by_id, href_for, matched))
+                                  states, types_by_id, href_for, matched, focused))
         if link:
             _inner(body, leg["inner_up"][:link_slot], inner_x, first, 0, inner_door,
-                   states, types_by_id, href_for, matched)
+                   states, types_by_id, href_for, matched, focused)
             _inner(body, leg["inner_down"][:slots - link_slot - LINK_SLOTS], inner_x, first,
-                   link_slot + LINK_SLOTS, inner_door, states, types_by_id, href_for, matched)
+                   link_slot + LINK_SLOTS, inner_door, states, types_by_id, href_for, matched, focused)
         else:
             _inner(body, leg["inner_up"][:slots], inner_x, first, 0, inner_door,
-                   states, types_by_id, href_for, matched)
+                   states, types_by_id, href_for, matched, focused)
 
     if link:
         core_h = 40
@@ -166,13 +166,16 @@ def render_floor_plan(plan, states, types_by_id, href_for, matched=None):
     )
 
 
-def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None):
+def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None, focused=None):
     state = states.get(room.id, "available")
     room_type = types_by_id[room.room_type_id]
     dim = " dim" if matched is not None and room.id not in matched else ""
+    highlight = " is-match" if room.id == focused else ""
+    current = ' aria-current="true"' if highlight else ""
+    label = escape(f"{room.number} · {room_type.name} · {state.replace('_', ' ')}")
     parts = [
-        f'<a href="{href_for(room)}" class="sv-room{dim}">',
-        f"<title>{room.number} · {room_type.name} · {state.replace('_', ' ')}</title>",
+        f'<a href="{escape(href_for(room))}" class="sv-room{dim}{highlight}"{current}>',
+        f"<title>{label}</title>",
         f'<rect x="{x}" y="{y}" width="{ROOM_W}" height="{ROOM_H}" class="room {state}"/>',
     ]
     blocked = state in ("out_of_service", "maintenance", "maintenance_conflict")

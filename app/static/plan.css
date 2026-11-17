@@ -44,3 +44,49 @@
   fill: #a3341f;
   letter-spacing: .08em;
 }
+
+.manager-plan-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 8px; }
+.manager-plan-heading h2 { font-size: 18px; }
+.manager-plan-match { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 8px 0 12px; }
+.manager-plan-match a { text-decoration: underline; }
+.manager-plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  padding: 0;
+  margin: 0 0 8px;
+  list-style: none;
+  font-size: 14px;
+  color: var(--manager-text);
+}
+.manager-plan-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.manager-plan-help { margin-bottom: 6px; font-size: 13px; color: var(--manager-text); }
+.manager-plan-legend, .manager-floor-map {
+  --state-available: #daf0e2;
+  --state-reserved: #e4e3fa;
+  --state-occupied: #c4dcf8;
+  --state-departing: #d8f2ee;
+  --state-dirty: #f8e3b7;
+  --state-maintenance: #f7d4be;
+  --state-conflict: #f3b7ae;
+  --state-out: #e6e8eb;
+}
+.manager-plan-swatch { width: 14px; height: 14px; border: 1px solid #78867e; border-radius: 3px; background: var(--room-colour); }
+.manager-plan-swatch.available, .manager-floor-map .room.available { --room-colour: var(--state-available); }
+.manager-plan-swatch.reserved, .manager-floor-map .room.reserved { --room-colour: var(--state-reserved); }
+.manager-plan-swatch.occupied, .manager-floor-map .room.occupied { --room-colour: var(--state-occupied); }
+.manager-plan-swatch.departing, .manager-floor-map .room.departing { --room-colour: var(--state-departing); }
+.manager-plan-swatch.dirty, .manager-floor-map .room.dirty { --room-colour: var(--state-dirty); }
+.manager-plan-swatch.maintenance, .manager-floor-map .room.maintenance { --room-colour: var(--state-maintenance); }
+.manager-plan-swatch.maintenance_conflict, .manager-floor-map .room.maintenance_conflict { --room-colour: var(--state-conflict); }
+.manager-plan-swatch.out_of_service, .manager-floor-map .room.out_of_service { --room-colour: var(--state-out); }
+.manager-floor-map .room { fill: var(--room-colour); }
+.manager-floor-map .plan-svg { min-width: 840px; }
+.manager-floor-map.is-zoomed .plan-svg { width: 145%; min-width: 1060px; }
+.manager-floor-map .num { font-size: 18px; font-weight: 700; }
+.manager-floor-map .bed { font-size: 15px; fill: #394b43; }
+.manager-floor-map .core-label { font-size: 13px; }
+.manager-floor-map .out-badge { font-size: 12px; }
+.manager-floor-map .sv-room.dim { opacity: .48; }
+.manager-floor-map .sv-room.is-match .room { stroke: #243c73; stroke-width: 4; }
+.manager-floor-map .sv-room.is-match .num { fill: #243c73; }

@@ -35,12 +35,35 @@
             <tr>
               <td class="manager-nowrap">{{ entry.occurred_at|localtime('%d %b, %H:%M') }}</td>
               <td>{{ entry.actor.email }}</td><td>{{ entry.action|replace('_', ' ')|capitalize }}</td>
-              <td>{{ entry.object_type|replace('_', ' ')|capitalize }} #{{ entry.object_id }}</td>
+              <td>{% if entry.object_type == 'booking' %}
+                <a href="{{ url_for('manager.booking_detail', booking_id=entry.object_id) }}">{{ 'BK-%06d'|format(entry.object_id) }}</a>
+              {% else %}{{ entry.object_type|replace('_', ' ')|capitalize }} #{{ entry.object_id }}{% endif %}</td>
               {% if details %}
                 <td>{{ status(entry.result) }}</td>
                 <td>
                   {% if entry.reason %}<p>{{ entry.reason }}</p>{% endif %}
-                  {% if entry.details %}<details><summary>View changes</summary><pre>{{ entry.details|tojson(indent=2) }}</pre></details>{% endif %}
+                  {% if entry.details %}
+                  <details><summary>View changes</summary>
+                    {% set before = entry.details.before if entry.details.before is mapping else {} %}
+                    {% set after = entry.details.after if entry.details.after is mapping else {} %}
+                    {% if before or after %}
+                      <dl class="manager-audit-changes">
+                      {% for field in (before.keys()|list + after.keys()|list)|unique if before.get(field) != after.get(field) %}
+                        <dt>{{ field|replace('_', ' ')|capitalize }}</dt>
+                        <dd>{{ before.get(field, '—') if before.get(field) is not none else '—' }} → {{ after.get(field, '—') if after.get(field) is not none else '—' }}</dd>
+                      {% endfor %}
+                      </dl>
+                    {% endif %}
+                    {% set extra = entry.details.items()|rejectattr('0', 'in', ('before','after'))|list if entry.details is mapping else [] %}
+                    {% if extra %}
+                      <dl class="manager-audit-changes">
+                      {% for field, value in extra %}
+                        <dt>{{ field|replace('_', ' ')|capitalize }}</dt><dd>{{ value if value is not mapping and value is not iterable or value is string else value|tojson }}</dd>
+                      {% endfor %}
+                      </dl>
+                    {% endif %}
+                  </details>
+                  {% endif %}
                   {% if not entry.reason and not entry.details %}—{% endif %}
                 </td>
               {% endif %}

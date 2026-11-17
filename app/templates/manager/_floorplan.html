@@ -1,9 +1,28 @@
 {% if plan_rooms %}
-<div class="plan-legend">
-  <span>Floor {{ plan_floor }}F · {{ plan_rooms|length }} rooms</span>
-  <span>Colour = tonight’s status · blue line = window · arc = door · crossed box = lift shaft</span>
+{% set floor_name = floors|selectattr('0', 'equalto', plan_floor)|map(attribute=1)|first %}
+<div class="manager-plan-heading">
+  <h2>{{ floor_name }} · {{ plan_rooms|length }} rooms</h2>
+  <button type="button" class="manager-button secondary" data-plan-zoom aria-controls="manager-floor-map" aria-pressed="false" hidden>Zoom in</button>
 </div>
-<div class="plan-wrap">{{ floorplan }}</div>
+{% if exact %}
+  <p class="manager-plan-match">
+    <strong>Room {{ exact.number }}</strong> · {{ types_by_id[exact.room_type_id].name }}
+    {{ status(states[exact.id]) }}
+    <a href="{{ list_url('manager.room_form', record_id=exact.id, view='plan', floor=plan_floor) }}">Edit room {{ exact.number }}</a>
+  </p>
+{% elif filters.q or filters.type or filters.bed or filters.window or filters.status %}
+  <p class="manager-plan-match">
+    {{ matched_count }} matching {{ 'room' if matched_count == 1 else 'rooms' }} on {{ floor_name }}.
+    <a href="{{ list_url('manager.rooms', view='table', floor=none, page=none) }}">See matches on all floors</a>
+  </p>
+{% endif %}
+<ul class="manager-plan-legend" aria-label="Room status legend">
+  {% for key in statuses %}
+    <li><span class="manager-plan-swatch {{ key }}" aria-hidden="true"></span>{{ key|replace('_', ' ')|capitalize }}</li>
+  {% endfor %}
+</ul>
+<p id="manager-map-help" class="manager-plan-help">Select a room to edit it. Scroll sideways to see the full plan on a narrow screen. Blue line: window; arc: door.</p>
+<div id="manager-floor-map" class="plan-wrap manager-floor-map" role="region" aria-label="{{ floor_name }} room map" aria-describedby="manager-map-help" tabindex="0">{{ floorplan }}</div>
 {% else %}
-<p class="manager-empty">No rooms on this floor match the filters.</p>
+<p class="manager-empty">No rooms are configured for this floor.</p>
 {% endif %}
