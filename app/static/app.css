@@ -1503,7 +1503,7 @@ section.account-panel { padding: 20px; }
   .auth-sheet { grid-template-columns: 1fr; width: min(560px, 100%); }
   .auth-story { padding: 30px 30px 22px; gap: 10px; }
   .auth-story h1 { font-size: 30px; }
-  .auth-lead, .role-list, .auth-foot { display: none; }
+  .auth-lead, .role-list, .auth-team, .auth-foot { display: none; }
   .auth-form-pane { padding: 28px 30px 30px; }
   .auth-topbar { top: 14px; left: 14px; }
   .auth-stage { padding: 82px 18px 40px; }
@@ -1593,4 +1593,20 @@ section.account-panel { padding: 20px; }
   background: #f2f8f3;
   color: #2c4a37;
   font-size: 13px;
+}
+
+/* Development team photo on the registration story panel */
+.auth-team { margin: 4px 0 0; }
+.auth-team img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgba(23, 32, 28, .18);
+}
+.auth-team figcaption {
+  margin-top: 9px;
+  color: #6f7c74;
+  font-size: 11.5px;
+  letter-spacing: .02em;
 }

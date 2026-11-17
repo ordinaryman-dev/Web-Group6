@@ -12,7 +12,11 @@
   <li><span class="dot admin"></span><div><b>One team, start to finish</b><small>The same desk from check-in to check-out, so nothing slips between shifts.</small></div></li>
 </ul>
 
-<p class="auth-foot">Hero Hotel is a fictional property built for the COMP3019J course project.</p>
+<figure class="auth-team">
+  <img src="{{ url_for('static', filename='images/team.jpg') }}?v=2" alt="The Hero Hotel development team" width="1400" height="747" loading="lazy">
+  <figcaption>Development team · Wang Yongqi, Gu Dongrui, Dong Jiahao, Zhang Jin</figcaption>
+</figure>
+
 {% endblock %}
 
 {% block panel %}
