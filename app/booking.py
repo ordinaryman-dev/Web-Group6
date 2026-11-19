@@ -12,6 +12,7 @@ from sqlalchemy import case, delete, exists, func, or_, select
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session, lazyload
 
+from . import allocation
 from .audit import record_audit
 from .extensions import db
 from .models import (
@@ -99,35 +100,7 @@ def arrival_error(expected, stay, now):
 
 
 def free_room_conditions(stay, today=None):
-    booked = exists().where(
-        RoomNight.room_id == Room.id,
-        RoomNight.stay_date >= stay.check_in,
-        RoomNight.stay_date < stay.check_out,
-    )
-    blocked = exists().where(
-        RoomBlock.room_id == Room.id,
-        RoomBlock.start_date < stay.check_out,
-        RoomBlock.end_date > stay.check_in,
-    )
-    # A guest who is still checked in after their departure date keeps the room
-    # physically occupied even though no RoomNight row covers the new stay.
-    overdue = exists().where(
-        Booking.room_id == Room.id,
-        Booking.status == "checked_in",
-        Booking.check_out < stay.check_in,
-    )
-    conditions = [
-        Room.operational_from <= stay.check_in,
-        or_(Room.operational_until.is_(None), Room.operational_until >= stay.check_out),
-        ~booked,
-        ~blocked,
-        ~overdue,
-    ]
-    # A guest arriving today walks straight into the room, so it has to be cleaned
-    # already. Future dates stay sellable while housekeeping is still working.
-    if stay.check_in <= (today or hotel_now().date()):
-        conditions.append(Room.housekeeping == "clean")
-    return tuple(conditions)
+    return allocation.free_room_conditions(stay, today or hotel_now().date())
 
 
 def nightly_rates(session, room_type, stay):
@@ -251,49 +224,40 @@ def allocate_once(session, actor_id, room_type_id, stay, key, digest, note, expe
 
     rates = nightly_rates(session, room_type, stay)
 
-    candidates = session.scalars(
-        db.select(Room.id).where(Room.room_type_id == room_type_id).order_by(Room.id)
-    ).all()
-    for room_id in candidates:
-        room = session.scalar(db.select(Room).where(Room.id == room_id).with_for_update())
-        existing = existing_booking(session, actor_id, key)
-        if existing:
-            return booking_result(existing, digest)
-        if not room or room.room_type_id != room_type_id:
-            continue
-        available = session.scalar(
-            db.select(Room.id).where(Room.id == room_id, *free_room_conditions(stay))
-        )
-        if available is not None:
-            if expected_quote is not None and expected_quote != quote_signature(room_type_id, stay, rates):
-                total = format(total_for_rates(rates), ",.2f")
-                raise BookingRejected("PRICE_CHANGED", f"The price changed to ¥{total}. Review the updated quote and book again.")
-            booking = Booking(
-                actor_user_id=actor_id,
-                customer_id=customer.id,
-                room_type_id=room_type_id,
-                room_id=room_id,
-                check_in=stay.check_in,
-                check_out=stay.check_out,
-                guests=stay.guests,
-                total=total_for_rates(rates),
-                idempotency_key=key,
-                request_digest=digest,
-                note=note,
-                expected_arrival=expected_arrival,
-            )
-            session.add(booking)
-            session.flush()
-            for rate in rates:
-                day = rate.start
-                while day < rate.end:
-                    add_night(session, booking, day, rate)
-                    day += timedelta(days=1)
-            record_audit(session, actor_id, "create_booking", "booking", booking.id,
-                         details={"source": "guest_portal", "confirmation": "automatic"})
-            return booking_result(booking, digest)
-
-    raise BookingRejected("SOLD_OUT", "No single room covers the entire stay.")
+    room = allocation.select_room(session, room_type_id, stay, hotel_now().date())
+    existing = existing_booking(session, actor_id, key)
+    if existing:
+        return booking_result(existing, digest)
+    if room is None:
+        raise BookingRejected("SOLD_OUT", "No single room covers the entire stay.")
+    if expected_quote is not None and expected_quote != quote_signature(room_type_id, stay, rates):
+        total = format(total_for_rates(rates), ",.2f")
+        raise BookingRejected("PRICE_CHANGED", f"The price changed to ¥{total}. Review the updated quote and book again.")
+    booking = Booking(
+        actor_user_id=actor_id,
+        customer_id=customer.id,
+        room_type_id=room_type_id,
+        room_id=room.id,
+        check_in=stay.check_in,
+        check_out=stay.check_out,
+        guests=stay.guests,
+        total=total_for_rates(rates),
+        idempotency_key=key,
+        request_digest=digest,
+        note=note,
+        expected_arrival=expected_arrival,
+    )
+    session.add(booking)
+    session.flush()
+    for rate in rates:
+        day = rate.start
+        while day < rate.end:
+            add_night(session, booking, day, rate)
+            day += timedelta(days=1)
+    allocation.record_assignment(room)
+    record_audit(session, actor_id, "create_booking", "booking", booking.id,
+                 details={"source": "guest_portal", "confirmation": "automatic"})
+    return booking_result(booking, digest)
 
 
 def create_booking(
@@ -348,6 +312,8 @@ def create_booking(
                     return booking_result(existing, digest)
             if "uq_room_night" not in str(exc.orig):
                 raise
+        except allocation.AllocationRetry:
+            pass
         except OperationalError as exc:
             if not exc.orig.args or exc.orig.args[0] not in (1205, 1213):
                 raise

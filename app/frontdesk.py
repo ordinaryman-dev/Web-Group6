@@ -8,13 +8,14 @@ import re
 from datetime import date, timedelta, timezone
 from decimal import Decimal
 from functools import wraps
+from time import sleep
 from urllib.parse import parse_qsl, urlsplit
 
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import or_, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from wtforms import (
     DateField,
@@ -29,7 +30,7 @@ from wtforms import (
 from wtforms.validators import InputRequired, Length, NumberRange, Optional
 from wtforms.widgets import HiddenInput
 
-from . import desk
+from . import allocation, desk
 from .floorplan import build_floor_plan, render_floor_plan
 from .booking import (
     BookingRejected,
@@ -97,7 +98,7 @@ class RefundForm(FlaskForm):
 
 class WalkInForm(FlaskForm):
     customer_id = HiddenField()
-    room_id = IntegerField(widget=HiddenInput())
+    room_id = IntegerField(widget=HiddenInput(), validators=[Optional()])
     name = StringField("Guest name", validators=[Optional(), Length(max=120)])
     phone = StringField("Phone", validators=[Optional(), Length(max=40)])
     room_type_id = SelectField("Room type", coerce=int, validators=[InputRequired()])
@@ -165,16 +166,34 @@ def desk_required(view):
 
 
 def _run(action, success):
-    """One transaction per action: a rule failure changes nothing."""
-    try:
-        with Session(db.engine) as session, session.begin():
-            action(session)
-    except desk.DeskError as exc:
-        flash(str(exc), "error")
-    except IntegrityError:
-        flash("That change collides with another record. Nothing was saved.", "error")
-    else:
-        flash(success() if callable(success) else success, "success")
+    """Retry only rolled-back attempts; every attempt owns a fresh Session."""
+    engine = db.engine.execution_options(isolation_level="READ COMMITTED")
+    for attempt in range(3):
+        try:
+            with Session(engine) as session, session.begin():
+                actor = session.get(User, current_user.id, with_for_update={"read": True})
+                if actor is None or not actor.active or actor.role not in (STAFF, MANAGER):
+                    abort(403)
+                action(session)
+        except desk.DeskError as exc:
+            flash(str(exc), "error")
+            return False
+        except allocation.AllocationRetry:
+            pass
+        except IntegrityError as exc:
+            if not exc.orig.args or exc.orig.args[0] != 1062 or "uq_room_night" not in str(exc.orig):
+                flash("That change collides with another record. Nothing was saved.", "error")
+                return False
+        except OperationalError as exc:
+            if not exc.orig.args or exc.orig.args[0] not in (1205, 1213):
+                raise
+        else:
+            flash(success() if callable(success) else success, "success")
+            return True
+        if attempt < 2:
+            sleep(0.02 * (attempt + 1))
+    flash("The rooms are busy. Please try the action again.", "error")
+    return False
 
 
 def _back(**overrides):
@@ -1034,12 +1053,12 @@ def check_out(booking_id):
     def action(session):
         outcome.update(desk.check_out(session, booking_id, current_user.id, now))
 
-    _run(action, f"{booking.reference} checked out. The room is now marked dirty.")
-    if outcome.get("overdue"):
+    succeeded = _run(action, f"{booking.reference} checked out. The room is now marked dirty.")
+    if succeeded and outcome.get("overdue"):
         flash("Recorded after the planned departure date.", "info")
-    if outcome.get("late"):
+    if succeeded and outcome.get("late"):
         flash("Recorded after 12:00, so this is a late check-out.", "info")
-    if outcome.get("early"):
+    if succeeded and outcome.get("early"):
         flash("Departed early: the unused nights were released.", "info")
     return _back(booking=booking_id, room=None)
 
@@ -1056,6 +1075,7 @@ def cancel_booking(booking_id):
         return _back(booking=booking_id)
     now = hotel_now()
     source = "exception" if now.replace(tzinfo=None) > cancellation_deadline(booking) else "hotel"
+    refund = {}
 
     def action(session):
         try:
@@ -1064,9 +1084,10 @@ def cancel_booking(booking_id):
             )
         except BookingRejected as exc:
             raise desk.DeskError(str(exc)) from exc
-        flash(f"Simulated refund: ¥{amount:,.2f}.", "info")
+        refund["amount"] = amount
 
-    _run(action, f"{booking.reference} cancelled by manager authority.")
+    if _run(action, f"{booking.reference} cancelled by manager authority."):
+        flash(f"Simulated refund: ¥{refund['amount']:,.2f}.", "info")
     return _back(booking=booking_id)
 
 
@@ -1144,8 +1165,8 @@ def walk_in():
         )
         booking_id["id"] = booking.id
 
-    _run(action, "Walk-in booked, paid and checked in.")
-    return _back(booking=booking_id.get("id"), room=None)
+    succeeded = _run(action, "Walk-in booked, paid and checked in.")
+    return _back(booking=booking_id.get("id") if succeeded else None, room=None)
 
 
 @frontdesk.post("/frontdesk/blocks")
@@ -1164,10 +1185,10 @@ def create_block():
             session, room_id, form.start_date.data, form.end_date.data,
             form.reason.data, current_user.id,
         )
-        conflicts.extend(found)
+        conflicts[:] = found
 
-    _run(action, "Out-of-service block saved.")
-    if conflicts:
+    succeeded = _run(action, "Out-of-service block saved.")
+    if succeeded and conflicts:
         flash(f"{len(conflicts)} booking(s) now conflict and need reassignment.", "info")
     return _back(room=room_id, booking=None)
 

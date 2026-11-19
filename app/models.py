@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from flask_login import UserMixin
+from sqlalchemy.dialects.mysql import DATETIME
 
 from .extensions import db
 
@@ -84,6 +85,7 @@ class Room(db.Model):
     has_window = db.Column(
         db.Boolean, nullable=False, default=True, server_default=db.true()
     )
+    last_allocated_at = db.Column(db.DateTime().with_variant(DATETIME(fsp=6), "mysql"))
 
 
 class PriceRule(db.Model):

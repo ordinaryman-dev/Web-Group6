@@ -12,6 +12,7 @@ from sqlalchemy import case, func, select
 from zoneinfo import ZoneInfo
 from sqlalchemy.orm import lazyload
 
+from . import allocation
 from .audit import record_audit
 from .booking import (
     Stay,
@@ -330,7 +331,7 @@ def create_block(session, room_id, start, end, reason, actor_id):
     reason = (reason or "").strip()
     if not reason:
         raise DeskError("Give a reason for the block.")
-    room = session.get(Room, room_id)
+    room = session.get(Room, room_id, with_for_update=True)
     if room is None:
         raise DeskError("Choose a room.")
     block = RoomBlock(room_id=room.id, start_date=start, end_date=end, reason=reason,
@@ -381,14 +382,22 @@ def mark_room_clean(session, room_id, actor_id):
 
 
 def free_rooms(session, room_type_id, stay, clean_only=False):
-    conditions = [Room.room_type_id == room_type_id, *free_room_conditions(stay)]
-    if clean_only:
-        # A room that has not been cleaned cannot be sold for tonight. Future stays are
-        # unaffected: housekeeping will have cleaned it long before arrival.
-        conditions.append(Room.housekeeping == "clean")
-    return session.scalars(
-        select(Room.id).where(*conditions).order_by(Room.id)
-    ).all()
+    return [
+        candidate.room_id for candidate in allocation.ranked_candidates(
+            session, room_type_id, stay, hotel_now().date(), clean_only=clean_only,
+        )
+    ]
+
+
+def allocation_room_type(session, room_type_id, guests, *, original_type_id=None):
+    for type_id in sorted({room_type_id, original_type_id or room_type_id}):
+        session.get(RoomType, type_id, with_for_update={"read": True}, populate_existing=True)
+    room_type = session.get(RoomType, room_type_id)
+    if room_type is None or not room_type.listed:
+        raise DeskError("Choose a listed room type.")
+    if room_type.capacity < guests:
+        raise DeskError("The room type is too small for that party.")
+    return room_type
 
 
 def reassign(session, booking_id, actor_id, reason, room_type_id=None, today=None):
@@ -403,31 +412,30 @@ def reassign(session, booking_id, actor_id, reason, room_type_id=None, today=Non
     if not reason:
         raise DeskError("Give a reason for the reassignment.")
     stay = Stay(booking.check_in, booking.check_out, booking.guests)
+    target_type_id = room_type_id or booking.room_type_id
+    room_type = allocation_room_type(session, target_type_id, stay.guests, original_type_id=booking.room_type_id)
     old_room = booking.room.number
-    # Release the held nights inside the transaction before looking for a replacement.
-    session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
-    session.flush()
-    # The released room is free again, so drop it from the candidates: a reassignment
-    # has to move the guest somewhere else, not back into the same room.
-    candidates = [
-        room_id for room_id in free_rooms(
-            session, room_type_id or booking.room_type_id, stay,
-            clean_only=bool(today and booking.check_in <= today),
-        )
-        if room_id != booking.room_id
-    ]
-    if not candidates:
+    target_room = allocation.select_room(
+        session, target_type_id, stay, today or hotel_now().date(),
+        ignore_booking_id=booking.id, exclude_room_ids=(booking.room_id,),
+        original_room_id=booking.room_id,
+    )
+    if target_room is None:
         raise DeskError("No other room of this type covers the stay. Ask the manager to cancel.")
-    booking.room_id = candidates[0]
-    booking.room = session.get(Room, candidates[0])
+    session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
+    booking.room_id = target_room.id
+    booking.room = target_room
+    booking.room_type_id = target_type_id
+    booking.room_type = room_type
     for night in range(booking.nights):
-        session.add(RoomNight(room_id=candidates[0],
+        session.add(RoomNight(room_id=target_room.id,
                               stay_date=booking.check_in + timedelta(days=night),
                               booking_id=booking.id))
+    allocation.record_assignment(target_room)
     session.flush()
     record_audit(session, actor_id, "reassign", "booking", booking.id, reason=reason,
                  details={"from": old_room,
-                          "to": session.get(Room, candidates[0]).number})
+                          "to": target_room.number})
     return booking
 
 
@@ -445,22 +453,29 @@ def _reprice(session, booking, stay):
 
 
 def _rehouse(session, booking, stay, room_type_id, today=None):
+    if booking.status != CONFIRMED or booking.checked_in_at is not None:
+        raise DeskError("Only a confirmed booking that has not arrived can change rooms or dates.")
+    room_type = allocation_room_type(
+        session, room_type_id, stay.guests, original_type_id=booking.room_type_id,
+    )
+    target_room = allocation.select_room(
+        session, room_type_id, stay, today or hotel_now().date(),
+        ignore_booking_id=booking.id, original_room_id=booking.room_id,
+    )
+    if target_room is None:
+        raise DeskError("No room covers the requested stay. The booking is unchanged.")
     session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
     session.flush()
-    candidates = free_rooms(
-        session, room_type_id, stay,
-        clean_only=bool(today and stay.check_in <= today),
-    )
-    if not candidates:
-        raise DeskError("No room covers the requested stay. The booking is unchanged.")
-    booking.room_id = candidates[0]
+    booking.room_id = target_room.id
+    booking.room = target_room
     booking.check_in, booking.check_out = stay.check_in, stay.check_out
     booking.room_type_id = room_type_id
-    booking.room_type = session.get(RoomType, room_type_id)
+    booking.room_type = room_type
     for night in range((stay.check_out - stay.check_in).days):
-        session.add(RoomNight(room_id=candidates[0],
+        session.add(RoomNight(room_id=target_room.id,
                               stay_date=stay.check_in + timedelta(days=night),
                               booking_id=booking.id))
+    allocation.record_assignment(target_room)
     session.flush()
     _reprice(session, booking, stay)
 
@@ -533,6 +548,7 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
     elif row.kind == "extend":
         if booking.status not in (CONFIRMED, CHECKED_IN):
             raise DeskError("This booking can no longer be extended.")
+        session.get(Customer, booking.customer_id, with_for_update={"read": True})
         if customer_is_blocked(session, booking.customer_id, utc_now()):
             raise DeskError(
                 "This guest is blacklisted, so the extension cannot be approved. "
@@ -545,6 +561,8 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
         if new_check_out <= booking.check_out:
             raise DeskError("The new check-out must be later than the current one.")
         added = Stay(booking.check_out, new_check_out, booking.guests)
+        allocation_room_type(session, booking.room_type_id, booking.guests)
+        session.get(Room, booking.room_id, with_for_update=True, populate_existing=True)
         room = session.scalar(
             select(Room.id).where(Room.id == booking.room_id, *free_room_conditions(added))
         )
@@ -610,14 +628,8 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
     refuses blacklisted guests, because the desk cannot bypass that check.
     """
 
-    room_type = session.get(RoomType, room_type_id)
-    if room_type is None or not room_type.listed:
-        raise DeskError("Choose a listed room type.")
-    if room_type.capacity < stay.guests:
-        raise DeskError("The room type is too small for that party.")
-
     if customer_id:
-        customer = session.get(Customer, customer_id)
+        customer = session.get(Customer, customer_id, with_for_update={"read": True})
         if customer is None:
             raise DeskError("That guest record no longer exists.")
     else:
@@ -635,29 +647,23 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
         raise DeskError("This guest is blacklisted; the desk cannot book or check them in.")
 
     now = hotel_now()
+    room_type = allocation_room_type(session, room_type_id, stay.guests)
     if room_id is not None:
         room = session.get(Room, room_id)
         if room is None or room.room_type_id != room_type_id:
             raise DeskError("That room does not match the selected room type.")
         if room.housekeeping != "clean" and stay.check_in <= now.date():
             raise DeskError("That room is still marked dirty. Mark it cleaned first.")
-        available = session.scalar(
-            select(Room.id).where(Room.id == room.id, *free_room_conditions(stay))
-        )
-        if available is None:
-            raise DeskError("That room is not free for the whole stay. Nothing was booked.")
-        candidates = [room.id]
-    else:
-        candidates = free_rooms(
-            session, room_type_id, stay, clean_only=stay.check_in <= now.date(),
-        )
-        if not candidates:
-            raise DeskError("No room covers the whole stay. Nothing was booked.")
+    chosen_room = allocation.select_room(
+        session, room_type_id, stay, now.date(), requested_room_id=room_id,
+    )
+    if chosen_room is None:
+        raise DeskError("No room covers the whole stay. Nothing was booked.")
     rates = nightly_rates(session, room_type, stay)
     total = total_for_rates(rates)
     booking = Booking(
         customer_id=customer.id,
-        room_id=candidates[0],
+        room_id=chosen_room.id,
         room_type_id=room_type_id,
         actor_user_id=actor_id,
         idempotency_key=f"walkin-{uuid4()}",
@@ -677,6 +683,7 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
         rate = next(rate for rate in rates if rate.start <= day < rate.end)
         add_night(session, booking, day, rate)
         day += timedelta(days=1)
+    allocation.record_assignment(chosen_room)
 
     if pay_now:
         session.add(PaymentRecord(

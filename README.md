@@ -28,11 +28,15 @@ Managers can create front-desk accounts from Staff accounts.
 ## Schema
 
 Migrations are applied with `python -m flask --app app db upgrade`. The current head is
-`20261114_08`. Besides the original catalogue and booking tables, the migrations add
+`20261120_09`. Besides the original catalogue and booking tables, the migrations add
 booking notes/timestamps, manager request/payment records and actual-stay fields, the
 front-desk expected-arrival field, `room_types.bed_type` (`single`, `double`, `twin`,
 `king`, `studio`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
-`rooms.has_window` used by the front-desk ventilation filter.
+`rooms.has_window` used by the front-desk ventilation filter, and microsecond-precision
+`rooms.last_allocated_at` used for allocation rotation. After pulling this change, run
+`python -m flask --app app db upgrade` before starting the site. The rotation migration
+initialises existing rooms from the latest known booking creation time; rooms without
+orders remain unassigned. Subsequent successful assignments record their own timestamps.
 
 ## Workspaces
 
@@ -61,6 +65,53 @@ and night. Upcoming reservations appear separately. The CSV calls the same repor
 function as the page. Cancellation refunds the net successful simulated payments and
 releases allocated nights in the same transaction, retaining the original booking and
 price lines. No real payment provider is used.
+
+## Automatic room allocation
+
+Guest reservations, automatic front-desk walk-ins, maintenance reassignments and approved
+room-type/date changes use `app/allocation.py`. First filter to rooms of the required
+type that cover the entire stay, respect operating dates and maintenance, have no
+overlapping booking or overdue occupant, and are clean for a same-day arrival.
+
+For each eligible room, compute its **room-night load** in Beijing time:
+
+```text
+load = actual occupied nights in [today - 30 days, today)
+     + committed reservation nights in [today, infinity)
+```
+
+Each retained `RoomNight` contributes 1, regardless of guest count or price. Historical
+nights require a checked-in/checked-out booking and fall between its actual Beijing
+arrival/departure dates. The second term includes every retained future/current night
+of confirmed or checked-in bookings, including long stays whose departure extends
+beyond the 14-day arrival-booking window. The date ranges do not overlap. Cancelled,
+no-show and unfulfilled past reservations contribute no load; released nights no
+longer count. Overdue nights without a `RoomNight` are not
+invented for this score; a still-occupied room remains excluded by availability checks.
+
+Choose the lowest load, then the oldest successful `last_allocated_at` (never assigned
+first), then room ID as a stable final tie-breaker. For example, loads 8 / 3 / 3 choose
+one of the last two rooms, preferring the one allocated longer ago. This balances
+booked nights rather than reservation counts and does not force floor-by-floor placement.
+During a replacement, exclude the replaced booking from both availability and load.
+An explicitly selected walk-in room is honoured after the same availability/locking
+checks; it also updates rotation history. An extension retains its existing room,
+increases load by the added nights and does not reset the assignment timestamp.
+
+Allocation uses InnoDB `FOR UPDATE` locks and READ COMMITTED transactions. Select one
+candidate, lock it, then query current availability/ranking again. Reassignments lock
+the original and target rooms in ascending ID order. A stale candidate aborts the
+whole attempt instead of keeping its lock while trying other rooms. Room-type shared
+locks coordinate with catalogue/price edits; maintenance creation locks its room.
+The unique `(room_id, stay_date)` constraint remains the final overbooking guard.
+
+Booking, room nights, price lines, payment/audit writes and the rotation timestamp
+commit together. Failure rolls everything back, including a newly registered walk-in
+customer. Idempotent booking replay neither adds nights nor advances rotation.
+MySQL deadlock (1213), lock timeout (1205), stale candidates and room-night uniqueness
+collisions retry with a fresh Session, at most three attempts with short backoff.
+Business refusals are not retried. Exhausted contention returns a busy/retry message;
+it is not reported as sold out and does not leave partial writes.
 
 ## MySQL integration tests
 
