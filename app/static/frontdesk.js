@@ -60,48 +60,6 @@
     });
   }
 
-  function placeTip(card) {
-    var tip = card.querySelector(".card-tip");
-    if (!tip) {
-      return;
-    }
-    tip.style.visibility = "hidden";
-    tip.style.opacity = "0";
-    tip.style.left = "0px";
-    tip.style.top = "0px";
-    var rect = card.getBoundingClientRect();
-    var width = tip.offsetWidth || 218;
-    var height = tip.offsetHeight || 90;
-    var margin = 8;
-    var left = Math.min(Math.max(margin, rect.left), window.innerWidth - width - margin);
-    var top = rect.top - height - 6;
-    if (top < margin) {
-      top = rect.bottom + 6;
-    }
-    tip.style.left = left + "px";
-    tip.style.top = top + "px";
-    tip.style.visibility = "visible";
-    tip.style.opacity = "1";
-  }
-
-  function hideTip(card) {
-    var tip = card.querySelector(".card-tip");
-    if (tip) {
-      tip.style.visibility = "hidden";
-      tip.style.opacity = "0";
-    }
-  }
-
-  document.querySelectorAll(".room-card").forEach(function (card) {
-    card.addEventListener("mouseenter", function () { placeTip(card); });
-    card.addEventListener("mouseleave", function () { hideTip(card); });
-    card.addEventListener("focus", function () { placeTip(card); });
-    card.addEventListener("blur", function () { hideTip(card); });
-  });
-  window.addEventListener("scroll", function () {
-    document.querySelectorAll(".room-card").forEach(hideTip);
-  }, true);
-
   document.addEventListener("click", function (event) {
     document.querySelectorAll("details.bell[open]").forEach(function (bell) {
       if (!bell.contains(event.target)) {

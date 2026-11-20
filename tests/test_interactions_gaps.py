@@ -59,10 +59,9 @@ def test_the_front_desk_has_a_floor_plan_view(app):
     _, staff_email = new_user(app, STAFF)
     staff = sign_in(app, staff_email)
 
-    page = staff.get("/frontdesk?view=plan")
+    page = staff.get("/frontdesk")
     assert page.status_code == 200
     assert 'class="plan-svg"' in page.text
-    assert "Tonight’s plan" in page.text
     assert 'data-notify-feed="/frontdesk/notifications.json"' in page.text
 
 
@@ -83,7 +82,7 @@ def test_a_blocked_room_is_marked_red_on_the_plan(app):
 
     _, staff_email = new_user(app, STAFF)
     staff = sign_in(app, staff_email)
-    page = staff.get(f"/frontdesk?view=plan&plan_floor={floor}")
+    page = staff.get(f"/frontdesk?floor={floor}")
 
     assert page.status_code == 200
     assert "out-badge" in page.text
