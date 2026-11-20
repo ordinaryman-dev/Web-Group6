@@ -31,11 +31,6 @@
         <span class="side-text"><b>Room board</b><small>E01 · {{ total_rooms }} rooms</small></span>
         <span class="side-count">{{ floor_numbers }}F</span>
       </a>
-      <a class="side-link {{ 'is-active' if view == 'plan' }}"
-         href="{{ desk_url(view='plan', room=None, booking=None) }}">
-        <span class="side-icon" aria-hidden="true">⌗</span>
-        <span class="side-text"><b>Floor plan</b><small>Tonight, floor by floor</small></span>
-      </a>
       <a class="side-link {{ 'is-active' if view == 'orders' }}"
          href="{{ desk_url(view='orders', tab='arrivals', room=None, booking=None) }}">
         <span class="side-icon" aria-hidden="true">☰</span>
@@ -282,103 +277,14 @@
       </p>
       {% endif %}
 
-      <div class="room-grid">
-        {% for info in cards %}
-        {% set cell = info.cell %}
-        {% set booking = cell.booking %}
-        <a class="room-card state-{{ cell.state }} {{ 'is-dim' if info.dim }} {{ 'is-spotlight' if spotlight and not info.dim }}"
-           href="{{ desk_url(view='grid', date=selected_date.isoformat(), floor=active_floor, room=info.room.id, booking=None) }}"
-           title="Room {{ info.room.number }} · {{ state_labels[cell.state] }}"
-           aria-label="Room {{ info.room.number }}, {{ state_labels[cell.state] }}">
-          <span class="room-number">{{ info.room.number }}</span>
-          <span class="room-state">{{ state_labels[cell.state] }}</span>
-          <span class="room-meta">{{ bed_labels.get(info.room_type.bed_type, info.room_type.bed_type) }} · sleeps {{ info.room_type.capacity }}</span>
-          {% if not info.room.has_window %}<span class="room-window">No window</span>{% endif %}
-          {% if booking %}
-            {% if cell.state in ('in_house', 'departing', 'arriving', 'reserved') %}
-            <span class="room-guest">{{ info.headline }}</span>
-            {% endif %}
-            {% if cell.state in ('in_house', 'departing') %}
-              {% if booking.check_out < today %}
-              <span class="room-note overdue">Past check-out</span>
-              {% elif cell.state == 'departing' %}
-              <span class="room-note">Out today</span>
-              {% else %}
-              <span class="room-note">Out {{ booking.check_out.strftime('%d %b') }}</span>
-              {% endif %}
-            {% elif booking.check_in < today and booking.status == 'confirmed' %}
-            <span class="room-note overdue">Arrival date passed</span>
-            {% elif cell.state in ('arriving', 'reserved') %}
-            <span class="room-note">ETA {{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}</span>
-            {% endif %}
-          {% elif cell.block %}
-          <span class="room-note">{{ cell.block.reason|truncate(24) }}</span>
-          {% elif cell.state == 'dirty' %}
-          <span class="room-note">Needs housekeeping</span>
-          {% elif stay_on and info.stay_free %}
-          <span class="room-note">Free for the stay</span>
-          {% else %}
-          <span class="room-note">Tap to open</span>
-          {% endif %}
-          {% if stay_on and not info.stay_free %}
-          <span class="stay-flag">Not free</span>
-          {% endif %}
-          <span class="card-tip" role="tooltip">
-            <b>Room {{ info.room.number }}</b> · {{ info.room_type.name }}<br>
-            {{ bed_labels.get(info.room_type.bed_type, info.room_type.bed_type) }} bed · sleeps {{ info.room_type.capacity }}<br>
-            {{ state_labels[cell.state] }}{% if info.room.housekeeping == 'dirty' %} · housekeeping: dirty{% endif %}<br>
-            {{ 'No window' if not info.room.has_window else 'Window' }}<br>
-            {% if booking %}
-            {{ booking.reference }} · {{ booking.customer.name }}<br>
-            {{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}
-            {% if cell.state in ('arriving', 'reserved') %} · ETA {{ booking.expected_arrival.strftime('%H:%M') if booking.expected_arrival else '—' }}{% endif %}
-            {% if cell.state in ('in_house', 'departing') %} · out {{ booking.check_out.strftime('%d %b') }}{% endif %}
-            {% elif cell.block %}
-            Blocked {{ cell.block.start_date.strftime('%d %b') }} → {{ cell.block.end_date.strftime('%d %b') }}<br>
-            {{ cell.block.reason }}
-            {% elif cell.state == 'dirty' %}
-            Waiting for housekeeping. Mark it clean before selling it tonight.
-            {% else %}
-            Free for {{ selected_date.strftime('%d %b') }}. Click to open the room.
-            {% endif %}
-          </span>
-        </a>
-        {% else %}
-        <p class="empty">No rooms on this floor with the current filters.</p>
-        {% endfor %}
-      </div>
+      {% if plan_html %}
+      <div class="plan-wrap">{{ plan_html }}</div>
+      <p class="muted small">Click a room to open its drawer. Colour = {{ selected_date.strftime('%d %b') }} room state.</p>
+      {% else %}
+      <p class="empty">No rooms on this floor with the current filters.</p>
+      {% endif %}
     </section>
 
-    {% elif view == 'plan' %}
-    <section class="panel board-panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">E01 · FLOOR PLAN</p>
-          <h2>Tonight’s plan</h2>
-        </div>
-        <div class="legend" aria-label="Room state colours">
-          <span><i class="dot dot-free"></i>Free</span>
-          <span><i class="dot dot-arriving"></i>Arriving / reserved</span>
-          <span><i class="dot dot-in_house"></i>In house / departing</span>
-          <span><i class="dot dot-dirty"></i>Dirty</span>
-          <span><i class="dot dot-blocked"></i>Out of service</span>
-        </div>
-      </div>
-
-      <nav class="floor-tabs" aria-label="Floors">
-        {% for label, count, key in plan_floors %}
-        <a class="{{ 'is-active' if key == plan_floor }}"
-           href="{{ desk_url(view='plan', plan_floor=key, room=None, booking=None) }}">
-          <b>{{ label }}</b>
-          <span>{{ count }} rooms</span>
-        </a>
-        {% endfor %}
-      </nav>
-
-      {% if plan_html %}<div class="plan-wrap">{{ plan_html }}</div>
-      {% else %}<p class="muted">No rooms on this floor.</p>{% endif %}
-      <p class="muted small">Click a room to open its drawer. Colour = tonight’s desk state.</p>
-    </section>
     {% elif view == 'orders' %}
     <div class="view-head">
       <div>

@@ -5,7 +5,6 @@
 * an overdue in-house guest keeps the room off the market.
 """
 
-import re
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -31,15 +30,6 @@ def free_rooms(app, stay, room_ids):
                 select(Room.id).where(Room.id == room_id, *free_room_conditions(stay))
             )
         }
-
-
-def card_classes(html, number):
-    match = re.search(
-        r'<a class="room-card([^"]*)"[^>]*title="Room ' + re.escape(str(number)) + r"\b",
-        html,
-    )
-    assert match, f"room {number} is not on the board"
-    return match.group(1)
 
 
 def test_check_out_makes_the_room_dirty_until_it_is_cleaned(app):

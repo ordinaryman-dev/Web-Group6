@@ -500,7 +500,7 @@ def index():
     is_manager = current_user.role == MANAGER
 
     view = request.args.get("view") or "grid"
-    if view not in ("grid", "orders", "tasks", "plan"):
+    if view not in ("grid", "orders", "tasks"):
         view = "grid"
 
     query = (request.args.get("q") or "").strip()
@@ -556,40 +556,6 @@ def index():
 
     room_types = db.session.scalars(select(RoomType).order_by(RoomType.name)).all()
 
-    # The plan view reuses the manager floor drawing with tonight's desk states.
-    plan_floors = []
-    plan_floor = None
-    plan_html = None
-    if view == "plan":
-        type_by_id = {room_type.id: room_type for room_type in room_types}
-        # The board speaks free/arriving/in_house/departing/dirty/blocked; the plan
-        # drawing speaks its own state names, so translate once here.
-        plan_state = {
-            "free": "available",
-            "arriving": "reserved",
-            "in_house": "occupied",
-            "departing": "departing",
-            "dirty": "dirty",
-            "blocked": "out_of_service",
-        }
-        tonight = {row["room"].id: plan_state.get(row["cells"][0]["state"], "available")
-                   for row in desk.room_board(db.session, today, 1)}
-        by_floor = {}
-        for room in db.session.scalars(select(Room).order_by(Room.number)):
-            by_floor.setdefault(_floor_key(room.number), []).append(room)
-        plan_floors = [(_floor_label(key), len(items), key)
-                       for key, items in sorted(by_floor.items(), key=lambda item: _floor_sort(item[0]))]
-        wanted = request.args.get("plan_floor")
-        keys = [key for _, _, key in plan_floors]
-        plan_floor = wanted if wanted in keys else (keys[0] if keys else None)
-        if plan_floor:
-            rooms_on_floor = by_floor[plan_floor]
-            layout = build_floor_plan(rooms_on_floor)
-            plan_html = render_floor_plan(
-                layout, tonight, type_by_id,
-                lambda room: url_for("frontdesk.index", view="plan", plan_floor=plan_floor,
-                                     room=room.id, date=today.isoformat()),
-            )
     room_type_by_id = {room_type.id: room_type for room_type in room_types}
 
     occupied_ids = set(db.session.scalars(
@@ -683,6 +649,29 @@ def index():
     for info in room_info:
         if info["floor"] != active_floor:
             info["dim"] = False
+
+    plan_html = None
+    if view == "grid" and cards:
+        # The floor plan IS the room board: same filters, same states, same drawer.
+        type_by_id = {room_type.id: room_type for room_type in room_types}
+        plan_state = {
+            "free": "available",
+            "arriving": "reserved",
+            "in_house": "occupied",
+            "departing": "departing",
+            "dirty": "dirty",
+            "blocked": "out_of_service",
+        }
+        layout = build_floor_plan([info["room"] for info in cards])
+        plan_html = render_floor_plan(
+            layout,
+            {info["room"].id: plan_state.get(info["cell"]["state"], "available") for info in cards},
+            type_by_id,
+            lambda room: url_for("frontdesk.index", view="grid",
+                                 date=selected_date.isoformat(), floor=active_floor,
+                                 room=room.id),
+            matched={info["room"].id for info in cards if not info["dim"]},
+        )
 
     timeline = []
     for offset in range(TIMELINE_DAYS):
@@ -922,8 +911,6 @@ def index():
         dirty_rooms=dirty_rooms,
         conflicts=conflicts,
         notifications=notifications,
-        plan_floors=plan_floors,
-        plan_floor=plan_floor,
         plan_html=plan_html,
         notification_total=notification_total,
         notify_version=snapshot["version"],
