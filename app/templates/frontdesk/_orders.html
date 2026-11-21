@@ -1,0 +1,102 @@
+{# 订单视图：按到店、在住、离店或历史分页，点订单查看对应抽屉。 #}<div class="view-head">
+  <div>
+    <p class="eyebrow">ORDER MANAGEMENT</p>
+    <h1>Orders</h1>
+    <p class="muted view-sub">Every booking, its money and its arrival state. Click a row to open the action drawer.</p>
+  </div>
+  <div class="kpi-strip">
+    <div class="kpi-pill"><b>{{ arrivals_today|length }}</b><span>Arriving</span></div>
+    <div class="kpi-pill"><b data-notify-count="requests">{{ pending|length }}</b><span>Requests</span></div>
+    <div class="kpi-pill"><b data-notify-count="conflicts">{{ conflicts|length }}</b><span>Conflicts</span></div>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">BOOKINGS</p>
+      <h2>Order list</h2>
+    </div>
+    <span class="muted small">{{ order_total }} order{{ '' if order_total == 1 else 's' }} · page {{ order_page }} of {{ order_pages }}</span>
+  </div>
+
+  <nav class="segmented" aria-label="Order tabs">
+    {% for key, label in order_tabs.items() %}
+    <a class="{{ 'is-active' if order_tab == key }}"
+       href="{{ desk_url(view='orders', tab=key, status=None, room=None, booking=None) }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if order_tab == 'all' %}
+  <form class="order-filter" method="get" action="{{ url_for('frontdesk.index') }}">
+    <input type="hidden" name="view" value="orders">
+    <input type="hidden" name="tab" value="all">
+    {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+    <label>Status
+      <select name="status">
+        <option value="">All</option>
+        {% for key, label in [('confirmed','Confirmed'), ('checked_in','Checked in'), ('checked_out','Checked out'), ('cancelled','Cancelled'), ('no_show','No-show')] %}
+        <option value="{{ key }}" {{ 'selected' if status_filter == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="mini" type="submit">Filter</button>
+  </form>
+  {% endif %}
+
+  {% if order_rows %}
+  <div class="table-wrap">
+    <table class="order-table">
+      <thead>
+        <tr>
+          <th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th>Status</th>
+          <th>Paid</th><th>Due</th><th>ETA</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in order_rows %}
+        {% set b = row.booking %}
+        <tr class="row-link {{ 'is-late' if row.late }}"
+            data-href="{{ desk_url(view='orders', booking=b.id, room=None) }}">
+          <td class="mono">{{ b.reference }}</td>
+          <td>
+            <b>{{ b.customer.name }}</b>
+            <small>{{ b.customer.phone or 'no phone' }}</small>
+          </td>
+          <td>
+            <b>{{ b.room.number }}</b>
+            <small>{{ b.room_type.name }}</small>
+          </td>
+          <td>
+            {{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }}
+            <small>{{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</small>
+          </td>
+          <td><span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span></td>
+          <td class="mono">¥{{ row.paid|money }}</td>
+          <td class="mono {{ 'due' if row.due > 0 }}">¥{{ row.due|money }}</td>
+          <td class="mono">{{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else '—' }}</td>
+          <td class="order-actions">
+            <a class="mini" href="{{ desk_url(view='orders', booking=b.id, room=None) }}">Open</a>
+            {% if row.overdue %}<span class="chip chip-late">Overdue</span>{% endif %}
+            {% if row.late %}<a class="mini danger" href="{{ desk_url(view='orders', booking=b.id, room=None) }}">Late arrival</a>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if order_pages > 1 %}
+  <nav class="pager" aria-label="Order pages">
+    {% if order_page > 1 %}
+    <a class="mini" href="{{ desk_url(view='orders', tab=order_tab, status=status_filter or None, page=order_page - 1, room=None, booking=None) }}">Previous</a>
+    {% endif %}
+    <span class="muted small">Page {{ order_page }} of {{ order_pages }}</span>
+    {% if order_page < order_pages %}
+    <a class="mini" href="{{ desk_url(view='orders', tab=order_tab, status=status_filter or None, page=order_page + 1, room=None, booking=None) }}">Next</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="empty">No orders in this tab.</p>
+  {% endif %}
+</section>

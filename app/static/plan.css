@@ -1,3 +1,4 @@
+/* 两端共用的 SVG 房态样式：颜色和线条表示占用、维修、清洁、门窗及搜索命中。 */
 /* Floor plan drawing, shared by the manager rooms page and the front desk. */
 .plan-wrap { overflow-x: auto; }
 .plan-svg { width: 100%; height: auto; display: block; min-width: 720px; }

@@ -1,3 +1,4 @@
+# 搜索 JSON 接口：验证请求校验、整段可用数量及与页面一致的逐晚报价。
 from datetime import date
 from decimal import Decimal
 from uuid import uuid4

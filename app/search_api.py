@@ -1,3 +1,4 @@
+# 公开搜索 JSON 接口：检查日期及人数后返回整段可用房型和逐晚报价；搜索不会锁房或创建订单。
 """Public JSON search endpoint.
 
 Availability and pricing come from :mod:`app.booking` and :mod:`app.pricing`,

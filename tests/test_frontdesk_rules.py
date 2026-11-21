@@ -1,3 +1,4 @@
+# 员工业务边界：验证到店时间、联系、未到店、差价和禁止操作的情况。
 """Rule-level tests for the front-desk requirements E01–E08."""
 
 import re

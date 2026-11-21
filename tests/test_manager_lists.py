@@ -1,4 +1,5 @@
-﻿import re
+# 管理员大列表：验证搜索、自然排序、分页、房态筛选及报表展示。
+import re
 from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, urlsplit

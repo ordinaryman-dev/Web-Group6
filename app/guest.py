@@ -1,3 +1,4 @@
+# 客户页面与操作入口：搜索房型、预订、查看本人订单、提交申请和管理个人资料；始终核验订单归属。
 from datetime import datetime, time, timedelta
 from functools import wraps
 from uuid import uuid4
@@ -11,16 +12,17 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from wtforms import (
     DateField,
     IntegerField,
-    PasswordField,
+    SelectChoice,
     SelectField,
     StringField,
     SubmitField,
     TextAreaField,
     TimeField,
 )
-from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional, Regexp
+from wtforms.validators import InputRequired, Length, NumberRange, Optional, Regexp
 from wtforms.widgets import HiddenInput
 
+from .account_forms import PasswordForm
 from .audit import record_audit
 from .booking import (
     BookingRejected,
@@ -77,16 +79,6 @@ class BookForm(FlaskForm):
 class NoteForm(FlaskForm):
     note = TextAreaField("Note", validators=[Optional()])
     submit = SubmitField("Save note")
-
-
-class PasswordForm(FlaskForm):
-    current_password = PasswordField("Current password", validators=[InputRequired(), Length(max=128)])
-    new_password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
-    confirm = PasswordField(
-        "Confirm new password",
-        validators=[InputRequired(), EqualTo("new_password", message="Passwords must match.")],
-    )
-    submit = SubmitField("Change password")
 
 
 class ProfileForm(FlaskForm):
@@ -444,7 +436,7 @@ def booking_detail(booking_id):
     ).all()
     room_type_form = RoomTypeRequestForm()
     room_type_form.target_room_type_id.choices = [
-        (room_type.id, f"{room_type.name} · ¥{room_type.base_price}")
+        SelectChoice(room_type.id, f"{room_type.name} · ¥{room_type.base_price}")
         for room_type in room_type_choices
     ]
     dates_form = DatesRequestForm()
@@ -508,7 +500,7 @@ def request_room_type(booking_id):
     booking_or_404(booking_id)
     form = RoomTypeRequestForm()
     form.target_room_type_id.choices = [
-        (room_type.id, room_type.name)
+        SelectChoice(room_type.id, room_type.name)
         for room_type in db.session.scalars(
             db.select(RoomType).where(RoomType.listed.is_(True)).order_by(RoomType.name)
         ).all()

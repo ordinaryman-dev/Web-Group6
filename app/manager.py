@@ -1,3 +1,4 @@
+# 管理员页面与操作入口：配置房型、房间、价格、员工账号和黑名单，查看订单、报表及只读审计。
 import csv
 from datetime import date, datetime, time, timedelta, timezone
 from io import StringIO
@@ -11,11 +12,12 @@ from sqlalchemy.orm import joinedload, lazyload
 from wtforms import SelectChoice
 
 from . import manager_services as services
+from .account_forms import PasswordForm
 from .auth import role_required
 from .booking import BookingRejected, HOTEL_ZONE, cancel_confirmed_booking, cancellation_deadline, hotel_now, refundable_amount
 from .extensions import db
 from .floorplan import build_floor_plan, render_floor_plan
-from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm, StaffPasswordForm
+from .manager_forms import BlacklistForm, CancelForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm, StaffPasswordForm
 from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,

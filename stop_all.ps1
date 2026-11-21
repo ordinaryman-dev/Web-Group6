@@ -1,4 +1,5 @@
-﻿# 一键停止：Web + MySQL
+# 本机停止辅助：脚本按固定端口寻找进程；运行前确认这些端口确实属于本项目。
+# 一键停止：Web + MySQL
 # 用法：powershell -ExecutionPolicy Bypass -File .\stop_all.ps1
 
 $mysqladmin = "C:\Users\a7268\mysql\mysql-8.0.29-winx64\bin\mysqladmin.exe"

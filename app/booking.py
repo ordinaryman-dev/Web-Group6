@@ -1,3 +1,4 @@
+# 客户预订业务：检查日期和报价，原子保存订单、房晚、价格快照及审计；申请经过审批后才修改订单。
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
@@ -64,6 +65,7 @@ class BookingResult:
 
 
 def hotel_now():
+    # 业务日期统一按北京时间计算；测试可注入固定时钟，避免依赖测试当天。
     """Hotel wall clock.
 
     Worker threads that open their own Session may run without an application
@@ -200,6 +202,7 @@ def add_night(session, booking, day, rate):
 
 
 def allocate_once(session, actor_id, room_type_id, stay, key, digest, note, expected_quote, expected_arrival):
+    # 一次预订尝试使用同一事务：先复查身份、报价和可用性，再写订单、房晚及价格快照。
     actor = session.get(User, actor_id)
     if not actor or not actor.active or actor.role != GUEST:
         raise BookingRejected("FORBIDDEN", "An active guest account is required.")
@@ -269,6 +272,7 @@ def create_booking(
     actor_id, room_type_id, stay, idempotency_key, note=None, *,
     confirmed_quote=None, expected_arrival=None,
 ):
+    # 只对死锁、锁超时等竞争错误有限重试；每次使用新 Session，业务拒绝直接返回原因。
     now = hotel_now()
     error = stay_error(stay, now)
     if error:
@@ -359,6 +363,7 @@ def update_booking_note(actor_id, booking_id, note):
 
 
 def create_guest_request(actor_id, booking_id, kind, target, reason):
+    # 申请先排队，不能在这里直接改变原订单；审批成功后才应用修改。
     reason = (reason or "").strip()
     if kind not in {"room_type", "dates", "extend", "cancel"}:
         raise BookingRejected("INVALID_REQUEST", "Choose a valid request type.")
@@ -464,6 +469,7 @@ def create_guest_request(actor_id, booking_id, kind, target, reason):
 
 
 def withdraw_guest_request(actor_id, booking_id, request_id):
+    # 先锁订单再锁申请，和审批、退房保持相同顺序，减少互相等待。
     """Let a guest pull back a request the front desk has not decided yet.
 
     The booking itself never changed while the request was pending, so withdrawing
@@ -538,6 +544,7 @@ def cancellation_deadline(booking):
 
 
 def close_pending_requests(session, booking, actor_id, reason, *, exclude_request_id=None, handled_at=None):
+    # 调用者必须先持有订单锁；订单结束时一并关闭剩余待处理申请，防止任务队列留下无效事项。
     """The caller holds Booking FOR UPDATE, as do request decisions/withdrawal."""
     statement = select(BookingRequest).where(
         BookingRequest.booking_id == booking.id, BookingRequest.status == "pending",
@@ -556,6 +563,7 @@ def close_pending_requests(session, booking, actor_id, reason, *, exclude_reques
 
 def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now):
     # Front-desk flows that write payment records must take the same booking lock.
+    # 取消、释放房晚、模拟退款和关闭申请必须在同一事务完成。
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
     if booking is None:
         raise BookingRejected("NOT_FOUND", "This booking could not be found.")

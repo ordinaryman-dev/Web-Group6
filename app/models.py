@@ -1,3 +1,4 @@
+# 数据库表结构：模型描述字段、关系和约束；修改结构后要新增迁移，不能只改 Python 文件。
 from datetime import datetime, timezone
 
 from flask_login import UserMixin
@@ -17,6 +18,7 @@ def utc_now():
 
 
 class User(UserMixin, db.Model):
+    # 登录账号和角色；停用账号保留历史关联，不直接删除操作记录。
     __tablename__ = "users"
     __table_args__ = (
         db.CheckConstraint("role IN ('guest', 'staff', 'manager')", name="ck_users_role"),
@@ -34,6 +36,7 @@ class User(UserMixin, db.Model):
 
 
 class Customer(db.Model):
+    # 入住客户档案；线上客户关联账号，线下客户也可只有档案而没有登录账号。
     __tablename__ = "customers"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +47,7 @@ class Customer(db.Model):
 
 
 class CustomerPhoneLock(db.Model):
+    # 同手机号新建档案的互斥记录；摘要只是并发协调键，不等于身份证明。
     """Coordinate walk-in registration without making a phone a unique identity."""
     __tablename__ = "customer_phone_locks"
 
@@ -51,6 +55,7 @@ class CustomerPhoneLock(db.Model):
 
 
 class RoomType(db.Model):
+    # 公开销售的房型，包括容量、床型和基础价格；一类房型可以对应多间实体房。
     __tablename__ = "room_types"
     __table_args__ = (
         db.CheckConstraint("capacity > 0", name="ck_room_types_capacity"),
@@ -72,6 +77,7 @@ class RoomType(db.Model):
 
 
 class Room(db.Model):
+    # 实体房间及运行、清洁状态；last_allocated_at 用于自动分房轮换。
     __tablename__ = "rooms"
     __table_args__ = (
         db.CheckConstraint(
@@ -96,6 +102,7 @@ class Room(db.Model):
 
 
 class PriceRule(db.Model):
+    # 按日期区间生效的价格规则；修改后只影响重新计算的报价，不改旧订单快照。
     __tablename__ = "price_rules"
     __table_args__ = (
         db.CheckConstraint("end_date > start_date", name="ck_price_rules_range"),
@@ -114,6 +121,7 @@ class PriceRule(db.Model):
 
 
 class RoomBlock(db.Model):
+    # 维修封锁区间；失效时保留记录，已有订单冲突需要另行处理。
     __tablename__ = "room_blocks"
     __table_args__ = (db.CheckConstraint("end_date > start_date", name="ck_room_blocks_range"),)
 
@@ -130,6 +138,7 @@ class RoomBlock(db.Model):
 
 
 class Booking(db.Model):
+    # 订单主记录；操作人加幂等键防止重复创建，取消期限和确认价格是订单约定。
     __tablename__ = "bookings"
     __table_args__ = (
         db.UniqueConstraint("actor_user_id", "idempotency_key", name="uq_booking_actor_key"),
@@ -178,6 +187,7 @@ class Booking(db.Model):
 
 
 class RoomNight(db.Model):
+    # 一间房一晚的占用；(room_id, stay_date) 唯一约束是防止重复占房的最后保障。
     __tablename__ = "room_nights"
     __table_args__ = (db.UniqueConstraint("room_id", "stay_date", name="uq_room_night"),)
 
@@ -188,6 +198,7 @@ class RoomNight(db.Model):
 
 
 class BookingPriceLine(db.Model):
+    # 订单逐晚价格快照；不能用当前房价覆盖已经确认的历史金额。
     __tablename__ = "booking_price_lines"
     __table_args__ = (
         db.UniqueConstraint("booking_id", "stay_date", name="uq_booking_price_night"),
@@ -201,6 +212,7 @@ class BookingPriceLine(db.Model):
 
 
 class AuditLog(db.Model):
+    # 只读操作历史：记录操作人、动作、对象、时间和原因。
     __tablename__ = "audit_logs"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -216,6 +228,7 @@ class AuditLog(db.Model):
 
 
 class BlacklistEntry(db.Model):
+    # 黑名单生效及解除历史；限制新增业务，但不删除客户原有订单。
     __tablename__ = "blacklist_entries"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -228,6 +241,7 @@ class BlacklistEntry(db.Model):
 
 
 class BookingRequest(db.Model):
+    # 客户申请队列；target 保存期望修改值，pending 阶段不改原订单。
     __tablename__ = "booking_requests"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -247,6 +261,7 @@ class BookingRequest(db.Model):
 
 
 class PaymentRecord(db.Model):
+    # 模拟收款与退款流水；实际可退金额由成功收款减去成功退款得到。
     __tablename__ = "payment_records"
     __table_args__ = (
         db.CheckConstraint("kind IN ('payment', 'refund')", name="ck_payment_records_kind"),

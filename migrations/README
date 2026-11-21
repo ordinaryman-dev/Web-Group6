@@ -1,1 +1,8 @@
+数据库迁移说明
+
+模型定义在 app/models.py，迁移链在 versions/。更新数据库使用 flask db upgrade。
+alembic.ini 配置迁移工具和日志，真实数据库连接由 Flask 提供。
+Windows 下工具可能按本地编码读取 ini，因此 ini 保持 ASCII，中文说明集中放在这里。
+script.py.mako 是新迁移的生成模板；历史迁移的 revision 和执行顺序不能随意修改。
+
 Single-database configuration for Flask.

@@ -1,3 +1,4 @@
+# 增加同手机号建档互斥表，并关闭已结束订单遗留的待处理申请。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Coordinate new walk-in registrations for the same contact number."""
 from alembic import op
 import sqlalchemy as sa
@@ -10,6 +11,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.create_table(
         "customer_phone_locks",
         sa.Column("lock_key", sa.String(64), primary_key=True, nullable=False),
@@ -28,4 +30,5 @@ def upgrade():
 
 
 def downgrade():
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.drop_table("customer_phone_locks")

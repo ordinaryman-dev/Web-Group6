@@ -1,0 +1,164 @@
+{# 房间抽屉：显示维修冲突、清洁和线下客户选择；在住订单不能直接换房。 #}    {% set room = selected_room %}
+    {% set cell = selected_cell %}
+    <header class="drawer-head">
+      <div>
+        <p class="eyebrow">ROOM</p>
+        <h2>Room {{ room.number }}</h2>
+        <p class="muted small">{{ selected_room_type.name }} · {{ bed_labels.get(selected_room_type.bed_type, selected_room_type.bed_type) }} bed · sleeps {{ selected_room_type.capacity }}</p>
+        <span class="chip {{ 'chip-late' if room.housekeeping == 'dirty' else 'chip-checked_in' }}">Housekeeping: {{ room.housekeeping }}</span>
+      </div>
+      <a class="drawer-close" href="{{ close_url }}" aria-label="Close drawer">×</a>
+    </header>
+
+    <div class="drawer-body">
+      <section class="drawer-section">
+        <div class="state-banner state-{{ cell.state }}">
+          <b>{{ state_labels[cell.state] }}</b>
+          <span>
+            {% if cell.state == 'dirty' %}Waiting for housekeeping after check-out.
+            {% elif cell.state == 'blocked' %}Out of service. Bookings are never overwritten.
+            {% elif cell.state == 'departing' %}Guest due out today; the room is free tonight after check-out.
+            {% else %}Free for {{ selected_date.strftime('%d %b') }}.{% endif %}
+          </span>
+        </div>
+        <div class="detail-grid compact-grid">
+          <div><span>Date</span><b>{{ selected_date.strftime('%d %b %Y') }}</b></div>
+          <div><span>Room type</span><b>{{ selected_room_type.name }}</b></div>
+          <div><span>Base rate</span><b>¥{{ selected_room_type.base_price|money }}</b></div>
+          <div><span>Capacity</span><b>{{ selected_room_type.capacity }} guest{{ '' if selected_room_type.capacity == 1 else 's' }}</b></div>
+          <div><span>Window</span><b>{{ 'Yes' if selected_room.has_window else 'No · interior room' }}</b></div>
+          <div><span>Floor</span><b>{{ active_floor }}{{ 'F' if active_floor.isdigit() else '' }}</b></div>
+        </div>
+        {% if selected_room.operational_until %}
+        <p class="small muted">Operational until {{ selected_room.operational_until.strftime('%d %b %Y') }}.</p>
+        {% endif %}
+      </section>
+
+      {% if current_block %}
+      <section class="drawer-section block-section">
+        <div class="section-head"><h3>Out of service</h3><span class="chip chip-cancel">{{ current_block.start_date.strftime('%d %b') }}–{{ current_block.end_date.strftime('%d %b') }}</span></div>
+        <p><b>{{ current_block.reason }}</b></p>
+        <p class="small muted">Created by {{ current_block.creator.email if current_block.creator else 'unknown' }}.</p>
+        <form method="post" action="{{ url_for('frontdesk.cancel_block', block_id=current_block.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn ghost wide" type="submit" data-confirm="Release this block and make the room sellable again?">Cancel this block</button>
+        </form>
+
+        {% if block_conflicts %}
+        <p class="eyebrow conflict-label">BOOKINGS THAT NOW CONFLICT</p>
+        {% for booking in block_conflicts %}
+        <div class="conflict-mini">
+          <span><b class="mono">{{ booking.reference }}</b> · {{ booking.customer.name }}<br>
+            <small class="muted">{{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}</small>
+          </span>
+          {% if booking.status == 'confirmed' and booking.check_in >= today %}
+          <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=booking.id) }}" data-guard>
+            {{ csrf_back() }}
+            <input type="hidden" name="re-reason" value="Displaced by maintenance block on room {{ room.number }}">
+            <button class="mini primary" type="submit">Move to same-type room</button>
+          </form>
+          {% else %}
+          <span class="small muted">Manager coordination required; this booking cannot be moved here.</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="hint">No booking overlaps this block.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if room.housekeeping == 'dirty' and not current_block %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Housekeeping</h3><span class="chip chip-late">Dirty</span></div>
+        <p class="hint">A dirty room cannot be sold or checked into until housekeeping finishes.</p>
+        <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit">Mark cleaned</button>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if not current_block %}
+      <section class="drawer-section">
+        <div class="section-head">
+          <h3>Walk-in · offline check-in</h3>
+          <span class="chip chip-confirmed">E03</span>
+        </div>
+        {% if selected_date != today %}
+        <p class="hint">Walk-ins start today. You are viewing {{ selected_date.strftime('%d %b') }}.</p>
+        <a class="btn ghost wide" href="{{ desk_url(date=today.isoformat(), room=room.id) }}">Go to today</a>
+        {% elif walk_allowed %}
+        <p class="hint">Same availability, capacity, price and blacklist rules as the guest portal. The full quote is taken as a simulated payment and the room is checked in immediately.</p>
+
+        <form class="lookup" method="get" action="{{ url_for('frontdesk.index') }}">
+          <input type="hidden" name="view" value="grid">
+          <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+          <input type="hidden" name="floor" value="{{ active_floor }}">
+          <input type="hidden" name="room" value="{{ room.id }}">
+          <input type="search" name="lookup" value="" placeholder="Find an existing guest by phone or name">
+          <button class="mini" type="submit">Find</button>
+        </form>
+        {% if walk_matches %}
+        <ul class="guest-matches">
+          {% for guest in walk_matches %}
+          <li>
+            <span>{{ guest.name }} · <span class="mono">{{ guest.phone or 'no phone' }}</span></span>
+            {% if guest.id in walk_blocked_ids %}
+            <span class="chip chip-cancel">Restricted · no new walk-in</span>
+            {% else %}
+            <a class="mini" href="{{ desk_url(walk_customer=guest.id, lookup=None, room=room.id) }}">Use this guest</a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% elif request.args.get('lookup') %}
+        <p class="empty">No guest matches that search.</p>
+        {% endif %}
+
+        <form class="walk-form" method="post" action="{{ url_for('frontdesk.walk_in') }}" data-guard>
+          {{ walk_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {% if walk_customer %}
+          <div class="chosen-guest">
+            <span>{{ walk_customer.name }} · <span class="mono">{{ walk_customer.phone }}</span></span>
+            <a class="small" href="{{ desk_url(walk_customer=None, room=room.id) }}">change</a>
+          </div>
+          {% else %}
+          <div class="form-grid">
+            <div class="field"><label>Guest name</label>{{ walk_form.name(class_="input") }}</div>
+            <div class="field"><label>Phone</label>{{ walk_form.phone(class_="input") }}</div>
+          </div>
+          {% endif %}
+          <div class="form-grid">
+            <div class="field">
+              <label>Room type · ¥{{ selected_room_type.base_price|money }} base</label>
+              {{ walk_form.room_type_id(class_="input") }}
+            </div>
+            <div class="field"><label>Guests</label>{{ walk_form.guests(class_="input", min=1, max=selected_room_type.capacity) }}</div>
+            <div class="field"><label>Check-in</label>{{ walk_form.check_in(class_="input") }}</div>
+            <div class="field"><label>Check-out</label>{{ walk_form.check_out(class_="input") }}</div>
+          </div>
+          <div class="field"><label>Note (optional)</label>{{ walk_form.note(class_="input", maxlength=100) }}</div>
+          <p class="hint">The final quote is recalculated on submit. No account is created and no real money moves.</p>
+          <button class="btn wide" type="submit">Create order · take payment · check in</button>
+        </form>
+        {% else %}
+        <div class="locked-panel">
+          <b>Walk-in not available</b>
+          <p>{{ walk_reason }}</p>
+          {% if room.housekeeping == 'dirty' %}
+          <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+            {{ csrf_back() }}
+            <button class="mini primary" type="submit">Mark cleaned</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </section>
+
+      {% endif %}
+      {% include 'frontdesk/_maintenance_form.html' %}
+
+      <p class="drawer-foot">Room {{ room.number }} · {{ selected_room_type.name }}. Availability is checked again on every write.</p>
+    </div>

@@ -1,3 +1,4 @@
+# 管理员写入服务：锁定受影响记录、检查业务规则并写审计；成功一并提交，异常一并回滚。
 from contextlib import contextmanager
 from decimal import Decimal
 
@@ -22,6 +23,7 @@ class ManagerRejected(Exception):
 
 @contextmanager
 def manager_transaction(actor_id, *, change_own_password=False):
+    # 事务开始后再次核实管理员身份；普通写操作共享锁定操作人，改本人密码需要排他锁。
     engine = db.engine.execution_options(isolation_level="READ COMMITTED")
     with Session(engine) as session, session.begin():
         actor = session.get(User, actor_id, with_for_update={"read": not change_own_password})
@@ -31,6 +33,7 @@ def manager_transaction(actor_id, *, change_own_password=False):
 
 
 def locked_row(session, model, record_id):
+    # 配置写入前锁定目标记录，避免两名管理员同时改写后互相覆盖。
     row = session.get(model, record_id, options=(lazyload("*"),), with_for_update=True)
     if row is None:
         raise ManagerRejected("This record could not be found.", 404)
@@ -198,6 +201,7 @@ def reset_staff_password(session, actor_id, staff_id, password):
 
 
 def change_password(session, actor_id, current_password, new_password):
+    # 检查当前管理员的旧密码，再保存新哈希；不把明文密码放进审计。
     actor = locked_row(session, User, actor_id)
     if not check_password_hash(actor.password_hash, current_password):
         raise ManagerRejected("The current password is incorrect.", 400)

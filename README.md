@@ -145,3 +145,11 @@ Install requirements-dev.txt and create a separate empty MySQL database. Point
 TEST_DATABASE_URL to it before running python -m pytest. The test suite applies the
 migrations to the empty database and leaves the test data in place. Use another empty
 test database for the next run. Without this variable the MySQL tests are skipped.
+
+## 代码阅读与中文注释
+
+完整阅读路线见 [代码结构与中文注释导读](docs/代码结构与中文注释导读.md)。
+员工端已拆分为请求路由、表单、只读页面数据和模板片段；三个角色共用修改密码表单。
+房态图由 Python 计算布局、Jinja 输出 SVG，并覆盖不规则楼层容量及文本转义测试。
+后端、页面模板、JavaScript、CSS、数据库模型和迁移、测试、依赖及本地启动脚本均附有中文职责说明，关键事务和权限处另有解释。
+这些整理保留现有业务规则、加锁、回滚、重试和价格快照；未增加数据库结构迁移。

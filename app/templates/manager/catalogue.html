@@ -1,4 +1,4 @@
-{% extends "manager/layout.html" %}
+{# 房型和价格规则列表：配置影响后续销售，历史订单价格快照保持原值。 #}{% extends "manager/layout.html" %}
 {% from "manager/_components.html" import status, list_controls, list_count, pagination %}
 {% set title = 'Room types' if section == 'types' else 'Price rules' %}
 {% set endpoint = 'manager.room_types' if section == 'types' else 'manager.prices' %}

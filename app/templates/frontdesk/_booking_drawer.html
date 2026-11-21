@@ -1,0 +1,228 @@
+{# 订单抽屉：显示价格、模拟收退款、入住退房、联系及审批记录。 #}    {% set b = selected %}
+    <header class="drawer-head">
+      <div>
+        <p class="eyebrow">{{ 'CHECK-IN' if b.status == 'confirmed' and b.check_in == today else ('IN HOUSE' if b.status == 'checked_in' else 'BOOKING') }}</p>
+        <h2>Room {{ b.room.number }}</h2>
+        <p class="muted small">{{ b.room_type.name }} · {{ b.guests }} guest{{ '' if b.guests == 1 else 's' }} · {{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</p>
+        <span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span>
+      </div>
+      <a class="drawer-close" href="{{ close_url }}" aria-label="Close drawer">×</a>
+    </header>
+
+    <div class="drawer-body">
+      <section class="drawer-section stay-summary">
+        <div class="detail-grid">
+          <div><span>Guest</span><b>{{ b.customer.name }}</b></div>
+          <div><span>Phone</span><b>{% if b.customer.phone %}<a href="tel:{{ b.customer.phone }}">{{ b.customer.phone }}</a>{% else %}—{% endif %}</b></div>
+          <div><span>Booking</span><b class="mono">{{ b.reference }}</b></div>
+          <div><span>Stay</span><b>{{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }}</b></div>
+          <div><span>Expected</span><b>{{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else 'not set' }}</b></div>
+          <div><span>Total</span><b>¥{{ b.total|money }}</b></div>
+        </div>
+        {% if b.note %}<p class="note-box"><b>Guest note</b>{{ b.note }}</p>{% endif %}
+        {% if b.last_contact_at %}
+        <p class="small muted">Last contact {{ b.last_contact_at|localtime('%d %b %H:%M') }} · {{ b.last_contact_result }}</p>
+        {% endif %}
+        {% if selected_cell is not none and selected_cell.state not in ('arriving', 'in_house') %}
+        <p class="small muted">Room state on {{ selected_date.strftime('%d %b') }}: {{ state_labels[selected_cell.state] }}.</p>
+        {% endif %}
+        {% if current_block %}
+        <div class="state-banner state-blocked">
+          <b>Out of service: {{ current_block.reason }}</b>
+          <span>{{ current_block.start_date.strftime('%d %b') }}–{{ current_block.end_date.strftime('%d %b') }}. Cancel the block or move the guest to another room.</span>
+        </div>
+        {% endif %}
+      </section>
+
+      {% if b.status == 'confirmed' %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Check-in checks</h3><span class="muted small">server-enforced</span></div>
+        <ul class="checks-list">
+          {% for label, ok, detail in checks %}
+          <li class="{{ 'ok' if ok else 'bad' }}">
+            <span class="mark">{{ '✓' if ok else '!' }}</span>
+            <span>{{ label }}<small>{{ detail }}</small></span>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <section class="drawer-section money-section">
+        <div class="section-head">
+          <h3>Money</h3>
+          <span class="sim-badge">SIMULATED</span>
+        </div>
+        <div class="money-grid">
+          <div><span>Total</span><b>¥{{ b.total|money }}</b></div>
+          <div><span>Paid</span><b>¥{{ paid|money }}</b></div>
+          <div><span>Due</span><b class="{{ 'due' if due > 0 }}">¥{{ due|money }}</b></div>
+        </div>
+        {% if can_pay %}
+        <form class="inline-form" method="post" action="{{ url_for('frontdesk.pay', booking_id=b.id) }}" data-guard>
+          {{ payment_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ payment_form.amount(class_="input", inputmode="decimal", placeholder="Amount · ¥" ~ due|money) }}
+          <button class="btn small" type="submit">Take payment</button>
+        </form>
+        <p class="hint">No real money moves. Leave the amount empty to take the full outstanding balance.</p>
+        {% endif %}
+        {% if can_refund %}
+        <form class="inline-form" method="post" action="{{ url_for('frontdesk.refund', booking_id=b.id) }}" data-guard>
+          {{ refund_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ refund_form.amount(class_="input", inputmode="decimal", max=paid, placeholder="Refund up to ¥" ~ paid|money) }}
+          <button class="btn ghost small" type="submit">Record refund</button>
+        </form>
+        <p class="hint">Refunds cannot exceed net payments received (¥{{ paid|money }}).</p>
+        {% endif %}
+        {% if b.status in ('cancelled', 'checked_out') and not can_refund %}
+        <p class="hint">No refundable balance remains: refunds cannot exceed payments received.</p>
+        {% endif %}
+        {% if payments %}
+        <table class="ledger">
+          <thead><tr><th>Type</th><th>Amount</th><th>By</th><th>When</th></tr></thead>
+          <tbody>
+            {% for record, email in payments %}
+            <tr>
+              <td><span class="chip {{ 'chip-refund' if record.kind == 'refund' else 'chip-confirmed' }}">{{ record.kind }}</span></td>
+              <td class="mono">¥{{ record.amount|money }}</td>
+              <td class="small">{{ email.split('@')[0] }}</td>
+              <td class="small muted">{{ record.occurred_at|localtime('%d %b %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </section>
+
+      {% if b.status == 'confirmed' %}
+      <section class="drawer-section">
+        {% if b.check_in < today %}
+        <p class="hint bad">The arrival date has passed and this booking is still confirmed. Contact the guest or mark a no-show.</p>
+        {% elif b.check_in != today %}
+        <p class="hint">Check-in opens on {{ b.check_in.strftime('%d %b') }}. This drawer is read-only for arrival until that day.</p>
+        {% elif check_in_allowed %}
+        <form method="post" action="{{ url_for('frontdesk.check_in', booking_id=b.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit"
+                  data-confirm="Record the actual check-in time now and move {{ b.reference }} to in house?">Check in · record actual time</button>
+        </form>
+        <p class="hint">Now {{ now.strftime('%H:%M:%S') }} · check-in opens at {{ check_in_from }}.</p>
+        {% else %}
+        <div class="disabled-wrap">
+          <button class="btn wide" type="button" disabled>Check in</button>
+          <p class="hint bad">{{ check_in_reason or 'A required check is not satisfied.' }}</p>
+        </div>
+        <p class="hint">All checks above must pass. The same list is enforced on the server.</p>
+        {% endif %}
+      </section>
+      {% elif b.status == 'checked_in' %}
+      <section class="drawer-section">
+        <form method="post" action="{{ url_for('frontdesk.check_out', booking_id=b.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit"
+                  data-confirm="Record the actual check-out time now? The room will be marked dirty.">Check out · record actual time</button>
+        </form>
+        {% if overdue_checkout %}
+        <p class="hint bad">This stay is past its departure date ({{ b.check_out.strftime('%d %b') }}). Check out now; the room is not sellable until the guest leaves.</p>
+        {% elif checkout_late %}
+        <p class="hint bad">Now {{ now.strftime('%H:%M') }} is after {{ check_out_by }}; this will be recorded as a late check-out.</p>
+        {% elif early_checkout %}
+        <p class="hint">This is an early departure. Unused nights will be released; the booked price stays on the record.</p>
+        {% else %}
+        <p class="hint">Standard check-out is before {{ check_out_by }}.</p>
+        {% endif %}
+      </section>
+      {% else %}
+      <section class="drawer-section">
+        <p class="closed-note">
+          This stay is closed as <b>{{ b.status.replace('_', ' ') }}</b>.
+          {% if b.checked_out_at %}Checked out {{ b.checked_out_at|localtime('%d %b %Y, %H:%M') }}.{% endif %}
+          {% if b.no_show_at %}Marked no-show {{ b.no_show_at|localtime('%d %b %Y, %H:%M') }}.{% endif %}
+        </p>
+      </section>
+      {% endif %}
+
+      {% if b.status == 'confirmed' and contact_due %}
+      <section class="drawer-section contact-section">
+        <div class="section-head"><h3>Late arrival · contact log</h3><span class="chip chip-late">E08</span></div>
+        <p class="hint">Expected {{ b.check_in.strftime('%d %b') }} {{ b.expected_arrival.strftime('%H:%M') if b.expected_arrival else 'end of day' }} has passed. Record the time and result before releasing the room.</p>
+        <form method="post" action="{{ url_for('frontdesk.contact', booking_id=b.id) }}" data-guard>
+          {{ contact_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ contact_form.result(class_="input") }}
+          <div class="form-grid">
+            <div class="field"><label>New ETA if late</label>{{ contact_form.new_expected(class_="input") }}</div>
+            <div class="field"><label>Note</label>{{ contact_form.note(class_="input", placeholder="What did the guest say?") }}</div>
+          </div>
+          <button class="btn ghost wide" type="submit">Save contact attempt</button>
+        </form>
+        <form class="no-show-form" method="post" action="{{ url_for('frontdesk.no_show', booking_id=b.id) }}" data-guard>
+          {{ no_show_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ no_show_form.reason(class_="input", placeholder="Reason: not coming / unreachable") }}
+          <button class="btn danger wide" type="submit" {{ 'disabled' if not no_show_allowed }}
+                  data-confirm="Mark {{ b.reference }} as a no-show, release the room and refund the unrefunded balance?">Mark no-show and release</button>
+        </form>
+        {% if no_show_hint %}<p class="hint bad">{{ no_show_hint }}</p>{% endif %}
+      </section>
+      {% endif %}
+
+      {% if b.status == 'checked_out' and selected_room is not none and selected_room.housekeeping == 'dirty' %}
+      <section class="drawer-section">
+        <div class="section-head"><h3>Housekeeping</h3><span class="chip chip-late">Dirty</span></div>
+        <p class="hint">The room is marked dirty after checkout. It cannot be sold again until housekeeping finishes.</p>
+        <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=selected_room.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="btn wide" type="submit">Mark room {{ selected_room.number }} cleaned</button>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if reassign_allowed %}
+      <details class="drawer-section">
+        <summary>Move to another room</summary>
+        <p class="hint">Same room type, whole stay free, price unchanged. Only before arrival.</p>
+        <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=b.id) }}" data-guard>
+          {{ reassign_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ reassign_form.reason(class_="input", placeholder="Reason, e.g. bathroom leak") }}
+          <button class="btn ghost wide" type="submit">Move to a free room</button>
+        </form>
+      </details>
+      {% endif %}
+
+      {% if can_cancel_directly and b.status == 'confirmed' %}
+      <details class="drawer-section danger-zone">
+        <summary>Manager cancellation</summary>
+        <p class="hint">Refunds the net collected amount and writes an audit record. {% if late_cancel %}The 18:00 deadline has passed, so this is a recorded exception.{% endif %}</p>
+        <form method="post" action="{{ url_for('frontdesk.cancel_booking', booking_id=b.id) }}" data-guard>
+          {{ cancel_form.hidden_tag() }}
+          <input type="hidden" name="back" value="{{ request.full_path }}">
+          {{ cancel_form.reason(class_="input", placeholder="Reason for the manager override") }}
+          <button class="btn danger wide" type="submit"
+                  data-confirm="Cancel {{ b.reference }} with manager authority and refund the net paid amount?">Cancel with manager authority</button>
+        </form>
+      </details>
+      {% endif %}
+
+      {% if booking_requests %}
+      <details class="drawer-section">
+        <summary>Request history ({{ booking_requests|length }})</summary>
+        <ul class="history-list">
+          {% for row in booking_requests %}
+          <li>
+            <span class="chip chip-{{ row.kind }}">{{ row.kind.replace('_', ' ') }}</span>
+            <span class="chip chip-{{ row.status }}">{{ row.status }}</span>
+            <span>{{ row.reason or '—' }}</span>
+            <small>{{ row.submitted_at|localtime('%d %b %H:%M') }}</small>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+
+      {% if selected_room %}{% include 'frontdesk/_maintenance_form.html' %}{% endif %}
+      <p class="drawer-foot">No price edits, no account creation and no real payment provider on this page.</p>
+    </div>

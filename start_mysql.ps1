@@ -1,4 +1,5 @@
-﻿# 启动本地 MySQL 8（免安装版，端口 3306）
+# 本机数据库启动辅助：下方路径需要按自己的 MySQL 安装位置调整；先检查端口再启动。
+# 启动本地 MySQL 8（免安装版，端口 3306）
 # 用法：右键“使用 PowerShell 运行”，或在终端执行 .\start_mysql.ps1
 
 $mysqld  = "C:\Users\a7268\mysql\mysql-8.0.29-winx64\bin\mysqld.exe"

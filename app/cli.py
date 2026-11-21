@@ -1,4 +1,5 @@
-﻿import re
+# 命令行维护工具：创建管理员、生成演示数据及维护演示库存；运行前按 README 选择对应命令。
+import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4

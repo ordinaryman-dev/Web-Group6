@@ -1,0 +1,51 @@
+{# 员工侧栏：工作台切换、当班统计、本人资料入口和退出表单。 #}<aside class="desk-side" aria-label="Desk sections">
+  <div class="side-brand">
+    <img class="side-mark" src="{{ url_for('static', filename='images/logo-badge.png') }}" alt="Hero Hotel">
+    <span>
+      <b>FRONT DESK</b>
+      <small>Hero Hotel</small>
+    </span>
+  </div>
+
+  <nav class="side-nav" aria-label="Workbench">
+    <a class="side-link {{ 'is-active' if view == 'grid' }}"
+       href="{{ desk_url(view='grid', room=None, booking=None) }}">
+      <span class="side-icon" aria-hidden="true">▦</span>
+      <span class="side-text"><b>Room board</b><small>E01 · {{ total_rooms }} rooms</small></span>
+      <span class="side-count">{{ floor_numbers }}F</span>
+    </a>
+    <a class="side-link {{ 'is-active' if view == 'orders' }}"
+       href="{{ desk_url(view='orders', tab='arrivals', room=None, booking=None) }}">
+      <span class="side-icon" aria-hidden="true">☰</span>
+      <span class="side-text"><b>Orders</b><small>Arrivals, in house, history</small></span>
+    </a>
+    <a class="side-link {{ 'is-active' if view == 'tasks' }}"
+       href="{{ desk_url(view='tasks', room=None, booking=None) }}">
+      <span class="side-icon" aria-hidden="true">◉</span>
+      <span class="side-text"><b>Tasks</b><small>E05 · E06 · E08</small></span>
+      {% set task_badge = pending|length + late_arrivals|length %}
+      <span class="side-badge" data-notify-badge {% if not task_badge %}hidden{% endif %}>{{ task_badge }}</span>
+    </a>
+  </nav>
+
+  <div class="side-block">
+    <p class="side-title">SHIFT AT A GLANCE</p>
+    <dl class="side-stats">
+      <div><dt>Arrivals</dt><dd>{{ arrivals_today|length }}</dd></div>
+      <div><dt>In house</dt><dd>{{ in_house|length }}</dd></div>
+      <div><dt>Due out</dt><dd>{{ departures_today|length }}</dd></div>
+      <div><dt>Dirty</dt><dd class="{{ 'warn' if dirty_rooms }}">{{ dirty_rooms|length }}</dd></div>
+    </dl>
+    <p class="side-note">Check-in from {{ check_in_from }} · check-out by {{ check_out_by }} · Beijing time.</p>
+  </div>
+
+  <div class="side-identity">
+    <b>{{ current_user.email }}</b>
+    <small>{{ 'Manager' if is_manager else 'Front desk' }} · shift open</small>
+    <a class="side-profile" href="{{ url_for('frontdesk.profile') }}">My profile</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="side-signout" type="submit">Sign out</button>
+    </form>
+  </div>
+</aside>

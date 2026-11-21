@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{# 管理员公共外壳：侧栏、当前账号和样式脚本由子页面复用。 #}{% extends "base.html" %}
 {% block title %}{{ title }} · Hero Hotel{% endblock %}
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='manager.css') }}?v=4">
-<script defer src="{{ url_for('static', filename='manager.js') }}?v=2"></script>
+<script defer src="{{ url_for('static', filename='manager.js') }}?v=3"></script>
 {% endblock %}
 {% block shell %}
 <div class="manager-shell">

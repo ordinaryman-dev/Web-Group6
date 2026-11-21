@@ -1,4 +1,6 @@
+/* 客户交互：房型筛选、原生弹窗、申请变化校验、备注字数和订单状态轮询；业务规则由后端复查。 */
 (function () {
+  // 只负责打开浏览器原生弹窗，不代表申请已经提交或审批。
   function openDialog(id) {
     const dialog = document.getElementById(id);
     if (dialog && typeof dialog.showModal === "function") dialog.showModal();
@@ -9,6 +11,7 @@
   const filterEmpty = document.querySelector(".filter-empty");
   const searchForm = document.querySelector(".search-form");
 
+  // 在已有房型卡片中切换床型展示，并同步搜索参数。
   function applyBedFilter(value) {
     let visible = 0;
     roomCards.forEach(function (card) {
@@ -48,11 +51,11 @@
   applyBedFilter(new URLSearchParams(window.location.search).get("bed_type") || "all");
 
   // Poll for front-desk decisions so an approval shows up without a manual refresh.
-  var statusShell = document.querySelector("[data-status-feed]");
+  const statusShell = document.querySelector("[data-status-feed]");
   if (statusShell) {
-    var statusVersion = statusShell.dataset.statusVersion || "";
-    var hint = document.querySelector("[data-status-hint]");
-    var pollStatus = function () {
+    let statusVersion = statusShell.dataset.statusVersion || "";
+    const hint = document.querySelector("[data-status-hint]");
+    const pollStatus = function () {
       if (document.hidden) {
         return;
       }
@@ -111,6 +114,7 @@
 
   // A change request that changes nothing is refused by the server. Say it in the
   // dialog and disable the button, so the guest sees it before submitting.
+  // 没有实际变化时先阻止申请，避免用户反复提交无效修改。
   function guardRequest(formId, submitId, warningSelector, isUnchanged) {
     const form = document.getElementById(formId);
     const warning = document.querySelector(warningSelector);

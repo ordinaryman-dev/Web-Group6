@@ -1,3 +1,4 @@
+# 增加管理员配置所需结构，保留规则及封锁记录的生效状态。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Add manager console and hotel operations records."""
 import sqlalchemy as sa
 from alembic import op
@@ -10,6 +11,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.add_column("price_rules", sa.Column("active", sa.Boolean(), nullable=False, server_default=sa.true()))
     op.create_index("ix_price_rules_scope", "price_rules", ["room_type_id", "kind", "active", "start_date"])
     op.drop_constraint("uq_price_rules_start", "price_rules", type_="unique")
@@ -53,6 +55,7 @@ def upgrade():
 def downgrade():
     # The older unique key cannot represent revisions of the same price rule.
     # Recreate it first, so a database containing revisions fails before losing data.
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.create_unique_constraint("uq_price_rules_start", "price_rules", ["room_type_id", "kind", "start_date"])
     op.drop_index("ix_price_rules_scope", table_name="price_rules")
     op.drop_column("price_rules", "active")

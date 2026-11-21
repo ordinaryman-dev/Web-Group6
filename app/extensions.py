@@ -1,3 +1,4 @@
+# 共用扩展对象：先创建 db、登录、迁移和 CSRF 工具，再由 create_app 绑定到应用，避免互相导入。
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy

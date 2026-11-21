@@ -1,3 +1,4 @@
+# 保存取消期限快照，增加付款幂等键，防止重复收款或退款。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Snapshot cancellation deadlines and make payment writes idempotent.
 
 Revision ID: 20261121_10
@@ -15,6 +16,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.add_column("bookings", sa.Column("cancel_by", sa.DateTime(), nullable=True))
     # Existing orders keep the deadline that their current arrival date implies.
     # New orders store the deadline at booking time; a later date change can only
@@ -36,6 +38,7 @@ def upgrade():
 
 
 def downgrade():
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.drop_constraint("uq_payment_actor_key", "payment_records", type_="unique")
     op.drop_column("payment_records", "idempotency_key")
     op.drop_column("bookings", "cancel_by")

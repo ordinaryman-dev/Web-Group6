@@ -1,3 +1,4 @@
+# 申请撤回：只有本人待处理申请可以撤回，与审批竞争时结果必须一致。
 """A guest can take back a request the desk has not decided yet.
 
 Withdrawing only moves the request row; the booking never changed while the request

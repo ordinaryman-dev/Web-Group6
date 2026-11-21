@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{# 客户确认页：展示逐晚报价，携带报价签名和幂等键提交预订。 #}{% extends "base.html" %}
 {% block title %}Confirm your stay · Hero Hotel{% endblock %}
 {% block content %}
 <p class="back-link"><a href="{{ url_for('guest.index', check_in=stay.check_in.isoformat(), check_out=stay.check_out.isoformat()) }}">← Back to results</a></p>

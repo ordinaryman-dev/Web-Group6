@@ -1,0 +1,40 @@
+{# 共用 SVG 房态图：读取 Python 计算的几何数据，分别绘制建筑、房间和电梯。 #}{% set g = geometry %}
+<svg class="plan-svg" viewBox="0 0 {{ width }} {{ g.height }}" role="img" aria-label="Floor plan">
+  <defs>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="9" height="9" fill="#f6f9f7"/>
+      <line x1="0" y1="0" x2="0" y2="9" stroke="#e9eeeb" stroke-width="3"/>
+    </pattern>
+  </defs>
+  {% if g.link %}
+  <path d="{{ g.outline }}" class="shell"/>
+  <path d="{{ g.corridor }}" fill="url(#hatch)"/>
+  <path d="{{ g.corridor }}" class="corridor-line"/>
+  {% for x1, y1, x2, y2 in g.centre_lines %}
+  <line x1="{{ x1 }}" y1="{{ y1 }}" x2="{{ x2 }}" y2="{{ y2 }}" class="centre-line"/>
+  {% endfor %}
+  {% else %}
+  {% for x in (g.left_x, g.right_x) %}
+  <rect x="{{ x }}" y="{{ g.top }}" width="{{ leg_w }}" height="{{ g.bottom-g.top }}" class="shell"/>
+  <rect x="{{ x+pad+room_w }}" y="{{ g.top }}" width="{{ corridor_w }}" height="{{ g.bottom-g.top }}" fill="url(#hatch)"/>
+  {% endfor %}
+  {% endif %}
+
+  {% for item in rooms %}
+    {% include 'shared/_plan_room.html' %}
+  {% endfor %}
+
+  {% for core in g.cores %}
+  <rect x="{{ core.x }}" y="{{ core.y }}" width="{{ core.width }}" height="{{ core.height }}" rx="2" class="core"/>
+  {% if core.lift %}
+  <line x1="{{ core.x }}" y1="{{ core.y }}" x2="{{ core.x+core.width }}" y2="{{ core.y+core.height }}" class="shaft"/>
+  <line x1="{{ core.x+core.width }}" y1="{{ core.y }}" x2="{{ core.x }}" y2="{{ core.y+core.height }}" class="shaft"/>
+  {% endif %}
+  <text x="{{ core.x+core.width/2 }}" y="{{ core.y+core.height+13 }}" class="core-label" text-anchor="middle">{{ core.label }}</text>
+  {% endfor %}
+  {% if g.link %}
+  <text x="{{ g.notch_x }}" y="{{ g.top+46 }}" class="outside-label" text-anchor="middle">outside</text>
+  <text x="{{ g.notch_x }}" y="{{ g.bottom-30 }}" class="outside-label" text-anchor="middle">outside</text>
+  {% endif %}
+  <text x="{{ g.left_x }}" y="{{ margin+2 }}" class="cap" text-anchor="start">Floor plan · {{ g.slots }} rooms per outer column</text>
+</svg>

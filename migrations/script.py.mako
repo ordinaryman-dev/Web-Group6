@@ -1,3 +1,4 @@
+# 新迁移的生成模板：revision 指明版本链，upgrade 写升级动作，downgrade 写回退动作。
 """${message}
 
 Revision ID: ${up_revision}

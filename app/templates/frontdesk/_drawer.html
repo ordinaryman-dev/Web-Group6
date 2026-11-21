@@ -1,0 +1,9 @@
+{# 抽屉选择器：订单操作与房间操作各自使用独立模板。 #}  {% if drawer_mode %}
+  <aside class="drawer" data-close-url="{{ close_url }}" aria-label="{{ 'Booking actions' if drawer_mode == 'booking' else 'Room actions' }}">
+    {% if drawer_mode == 'booking' %}
+    {% include 'frontdesk/_booking_drawer.html' %}
+    {% else %}
+    {% include 'frontdesk/_room_drawer.html' %}
+    {% endif %}
+  </aside>
+  {% endif %}

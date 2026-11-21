@@ -1,3 +1,4 @@
+# 统一计价：验证规则优先级、逐晚金额、日期边界及旧价格快照。
 from datetime import date
 from decimal import Decimal
 from uuid import uuid4

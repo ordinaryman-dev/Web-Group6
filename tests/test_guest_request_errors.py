@@ -1,3 +1,4 @@
+# 客户申请失败反馈：错误应保留输入和原因，不能意外修改原订单。
 """A refused guest request must explain itself on the booking page.
 
 Submitting the dates form without changing the dates used to flash a message at the

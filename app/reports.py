@@ -1,3 +1,4 @@
+# 入住率报表：按日期和房型统计实际入住间夜、可售间夜；页面和 CSV 导出使用同一统计结果。
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, timedelta, timezone
@@ -80,6 +81,7 @@ def merged_ranges(ranges):
 
 
 def occupancy_report(session, start, end, today, *, daily=False):
+    # 分子按实际入住间夜计算，分母按对应日期可售房间计算；展示和 CSV 必须用同一结果。
     past_end = min(end, today)
     rooms = {room.id: room for room in session.scalars(select(Room))}
     room_types = session.execute(select(RoomType.id, RoomType.name).order_by(RoomType.name, RoomType.id))

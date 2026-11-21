@@ -1,15 +1,16 @@
+/* 登录背景交互：按钮或方向键手动切图，没有自动轮播；不处理身份认证。 */
 /* Auth background gallery: manual previous/next only, no autoplay. */
 (function () {
   "use strict";
 
-  var slides = Array.prototype.slice.call(document.querySelectorAll(".auth-slide"));
+  const slides = Array.prototype.slice.call(document.querySelectorAll(".auth-slide"));
   if (slides.length < 2) {
     return;
   }
 
-  var index = 0;
-  var prev = document.querySelector(".auth-prev");
-  var next = document.querySelector(".auth-next");
+  let index = 0;
+  const prev = document.querySelector(".auth-prev");
+  const next = document.querySelector(".auth-next");
 
   function render() {
     slides.forEach(function (slide, position) {

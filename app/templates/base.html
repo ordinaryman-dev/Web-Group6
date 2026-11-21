@@ -1,11 +1,11 @@
-<!doctype html>
+{# 登录后页面的公共外壳：导航按角色显示；真正授权仍由后端检查。 #}<!doctype html>
 <html lang="en" translate="no">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="google" content="notranslate">
   <title>{% block title %}Hero Hotel{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=15">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=16">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon-32.png') }}" sizes="32x32" type="image/png">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon-16.png') }}" sizes="16x16" type="image/png">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
@@ -59,6 +59,6 @@
     <span>Hero Hotel · course project</span>
   </footer>
   {% endblock %}
-  <script defer src="{{ url_for('static', filename='guest.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='guest.js') }}?v=1"></script>
 </body>
 </html>

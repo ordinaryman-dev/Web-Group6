@@ -1,3 +1,4 @@
+# 管理员表单：集中定义配置字段和校验；金额使用 Decimal，页面校验不能替代事务中的权限与状态检查。
 from decimal import Decimal
 
 from flask_wtf import FlaskForm
@@ -63,12 +64,6 @@ class StaffForm(FlaskForm):
     )
     password = PasswordField("Initial password", validators=[InputRequired(), Length(min=8, max=128)])
     confirm = PasswordField("Confirm password", validators=[InputRequired(), EqualTo("password")])
-
-
-class PasswordForm(FlaskForm):
-    current_password = PasswordField("Current password", validators=[InputRequired(), Length(max=128)])
-    new_password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
-    confirm = PasswordField("Confirm new password", validators=[InputRequired(), EqualTo("new_password")])
 
 
 class StaffPasswordForm(FlaskForm):

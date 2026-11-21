@@ -1,4 +1,4 @@
-<details class="drawer-section">
+{# 维修共用表单：日期默认预检冲突，保存时服务器会重新检查且不覆盖已有订单。 #}<details class="drawer-section">
   <summary>Set out of service · Room {{ selected_room.number }}</summary>
   <p class="hint">Existing bookings stay and are flagged, never overwritten. Unarrived guests can be moved to a same-type room; in-house conflicts need manager coordination.</p>
   <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard

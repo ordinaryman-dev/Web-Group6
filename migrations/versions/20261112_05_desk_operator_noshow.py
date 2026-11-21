@@ -1,3 +1,4 @@
+# 补充员工联系、未到店及操作人记录，并统一相关业务约束。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Front desk: block operator, no-show handling and contact log
 
 Revision ID: 20261112_05
@@ -15,6 +16,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.add_column("room_blocks", sa.Column("created_by_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_room_blocks_created_by", "room_blocks", "users", ["created_by_id"], ["id"]
@@ -29,6 +31,7 @@ def upgrade():
 
 
 def downgrade():
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.drop_column("bookings", "last_contact_result")
     op.drop_column("bookings", "last_contact_at")
     op.drop_column("bookings", "no_show_reason")

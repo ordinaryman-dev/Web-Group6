@@ -1,3 +1,4 @@
+# 员工通知：验证待办数字、轮询版本及页面展示保持一致。
 """The front-desk bell and the JSON feed behind it.
 
 The bell refreshes by polling ``/frontdesk/notifications.json``. The page and the

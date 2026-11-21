@@ -1,3 +1,4 @@
+# 统一逐晚计价：搜索、预订和员工操作共用这一套价格规则；这里只计算，不自行提交事务。
 """Nightly pricing for one stay.
 
 This module is the single pricing entry point for the whole application.
@@ -54,6 +55,7 @@ class Rate:
 
 
 def rule_precedence(rule):
+    # 日期专属价格优先于季节价格；同类规则按开始日期及 ID 确定唯一结果。
     """Order overlapping rules deterministically.
 
     A ``date`` rule beats a ``season`` rule. Between two rules of the same kind
@@ -85,6 +87,7 @@ def price_for_night(room_type, day, rules):
 
 
 def quote(session, room_type_id, check_in, check_out):
+    # 住宿按左闭右开区间逐晚计算，例如 18 日入住、20 日退房只计算 18、19 两晚。
     """Return one :class:`NightPrice` per night of ``[check_in, check_out)``.
 
     Falls back to ``room_types.base_price`` with ``rule_id=None`` when no rule
@@ -108,6 +111,7 @@ def quote(session, room_type_id, check_in, check_out):
 
 
 def total(prices):
+    # 金额使用 Decimal 汇总到两位小数，不使用浮点数累加房费。
     """Sum nightly amounts as a two-decimal money value."""
 
     return sum((price.amount for price in prices), Decimal("0.00")).quantize(Decimal("0.01"))

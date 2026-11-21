@@ -1,3 +1,4 @@
+# 迁移运行环境：从 Flask 应用取得数据库引擎及模型元数据，供升级、降级和结构差异检查使用。
 import logging
 from logging.config import fileConfig
 

@@ -1,22 +1,8 @@
-"""Architectural floor plan for the manager rooms page.
+# 房态图布局：Python 计算房间、走廊和门窗位置，shared 模板输出 SVG；展示不改变数据库中的房态。
+from flask import render_template
+from markupsafe import Markup
 
-Drawn as a real plan rather than a card grid:
 
-* one closed path for the building outline and one for the corridor, so no wall is
-  drawn twice or crosses another;
-* rooms are plain rectangles with their number and bed type centred inside — the
-  text never runs past a wall;
-* each room has a door gap with a door leaf on the corridor side, and a window line
-  on the facade side; a room without a window simply has no window line, so no
-  label is needed;
-* the lift core is drawn with the usual crossed-shaft symbol.
-
-Each room rectangle links to the room form.
-"""
-
-from markupsafe import Markup, escape
-
-# ---- geometry -------------------------------------------------------------
 ROOM_W = 150
 ROOM_H = 56
 GAP = 7
@@ -35,55 +21,29 @@ WIDTH = LEG_W * 2 + BETWEEN + MARGIN * 2
 DOOR = 20          # door opening on the corridor side
 WINDOW_INSET = 14  # window line inset from the room ends
 
-HATCH = (
-    '<pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" '
-    'patternTransform="rotate(45)">'
-    '<rect width="9" height="9" fill="#f6f9f7"/>'
-    '<line x1="0" y1="0" x2="0" y2="9" stroke="#e9eeeb" stroke-width="3"/>'
-    "</pattern>"
-)
-
-
-def _text(x, y, value, cls, anchor="start"):
-    return f'<text x="{x}" y="{y}" class="{cls}" text-anchor="{anchor}">{escape(value)}</text>'
-
-
-def _inner(body, rooms, x, first, start_slot, side, states, types_by_id, href_for, matched, focused):
-    for index, room in enumerate(rooms):
-        body.append(room_card(room, x, first + (start_slot + index) * PITCH, side,
-                              states, types_by_id, href_for, matched, focused))
-
-
-def render_floor_plan(plan, states, types_by_id, href_for, matched=None, *, focused=None):
-    """Return the SVG markup for one floor, or Markup() when there is nothing to draw."""
-
-    if not plan:
-        return Markup()
+def floor_plan_geometry(plan):
+    # 统一计算走廊和画布尺寸，两个翼楼使用同一个连接带位置。
     west, east = plan["west"], plan["east"]
     slots = plan.get("slots") or max(len(west["outer"]), len(east["outer"]))
     if not slots:
-        return Markup()
+        return None
     link = plan.get("link", slots >= MIN_SLOTS_FOR_LINK)
-
     top = MARGIN + LABEL
     first = top + PAD
     bottom = first + (slots - 1) * PITCH + ROOM_H + PAD
-    height = bottom + MARGIN
-
     left_x = MARGIN
     right_x = MARGIN + LEG_W + BETWEEN
     west_corr = left_x + PAD + ROOM_W
     east_corr = right_x + PAD + ROOM_W
-
-    body = []
-
+    link_slot = max(0, min(slots - LINK_SLOTS, (slots - LINK_SLOTS) // 2)) if link else 0
+    band_top = first + link_slot * PITCH if link else 0
+    band_h = LINK_SLOTS * ROOM_H + (LINK_SLOTS - 1) * GAP
+    band_bottom = band_top + band_h if link else 0
+    band_x1, band_x2 = west_corr, east_corr + CORR
+    outline = corridor = None
+    centre_lines = []
+    cores = []
     if link:
-        link_slot = max(0, min(slots - LINK_SLOTS, (slots - LINK_SLOTS) // 2))
-        band_top = first + link_slot * PITCH
-        band_h = LINK_SLOTS * ROOM_H + (LINK_SLOTS - 1) * GAP
-        band_bottom = band_top + band_h
-        band_x1, band_x2 = west_corr, east_corr + CORR
-
         outline = (
             f"M{left_x},{top} H{left_x + LEG_W} V{band_top} H{right_x} V{top} "
             f"H{right_x + LEG_W} V{bottom} H{right_x} V{band_bottom} "
@@ -94,166 +54,104 @@ def render_floor_plan(plan, states, types_by_id, href_for, matched=None, *, focu
             f"H{east_corr + CORR} V{bottom} H{east_corr} V{band_bottom} "
             f"H{band_x1 + CORR} V{bottom} H{band_x1} Z"
         )
-        body += [f'<path d="{outline}" class="shell"/>',
-                 f'<path d="{corridor}" fill="url(#hatch)"/>',
-                 f'<path d="{corridor}" class="corridor-line"/>']
-        # corridor centre line, the dotted line a real plan uses
-        cx_w = band_x1 + CORR / 2
-        cx_e = east_corr + CORR / 2
-        body.append(f'<line x1="{cx_w}" y1="{top}" x2="{cx_w}" y2="{band_top}" class="centre-line"/>')
-        body.append(f'<line x1="{cx_w}" y1="{band_bottom}" x2="{cx_w}" y2="{bottom}" class="centre-line"/>')
-        body.append(f'<line x1="{cx_e}" y1="{top}" x2="{cx_e}" y2="{band_top}" class="centre-line"/>')
-        body.append(f'<line x1="{cx_e}" y1="{band_bottom}" x2="{cx_e}" y2="{bottom}" class="centre-line"/>')
-        cy = band_top + band_h / 2
-        body.append(f'<line x1="{band_x1}" y1="{cy}" x2="{band_x2}" y2="{cy}" class="centre-line"/>')
-    else:
-        link_slot = 0
-        band_top = band_bottom = 0
-        for x in (left_x, right_x):
-            body.append(f'<rect x="{x}" y="{top}" width="{LEG_W}" height="{bottom - top}" class="shell"/>')
-            body.append(f'<rect x="{x + PAD + ROOM_W}" y="{top}" width="{CORR}" '
-                        f'height="{bottom - top}" fill="url(#hatch)"/>')
-
-    # rooms: doors face the corridor, windows face the facade
-    for x_leg, leg, mirrored in ((left_x, west, False), (right_x, east, True)):
-        if mirrored:
-            outer_x = x_leg + LEG_W - PAD - ROOM_W
-            inner_x = x_leg + PAD
-            outer_door, inner_door = "left", "right"
-        else:
-            outer_x = x_leg + PAD
-            inner_x = x_leg + LEG_W - PAD - ROOM_W
-            outer_door, inner_door = "right", "left"
-        for index, room in enumerate(leg["outer"][:slots]):
-            body.append(room_card(room, outer_x, first + index * PITCH, outer_door,
-                                  states, types_by_id, href_for, matched, focused))
-        if link:
-            _inner(body, leg["inner_up"][:link_slot], inner_x, first, 0, inner_door,
-                   states, types_by_id, href_for, matched, focused)
-            _inner(body, leg["inner_down"][:slots - link_slot - LINK_SLOTS], inner_x, first,
-                   link_slot + LINK_SLOTS, inner_door, states, types_by_id, href_for, matched, focused)
-        else:
-            _inner(body, leg["inner_up"][:slots], inner_x, first, 0, inner_door,
-                   states, types_by_id, href_for, matched, focused)
-
-    if link:
-        core_h = 40
+        for cx in (band_x1 + CORR / 2, east_corr + CORR / 2):
+            centre_lines.extend([(cx, top, cx, band_top), (cx, band_bottom, cx, bottom)])
+        centre_lines.append((band_x1, band_top + band_h / 2, band_x2, band_top + band_h / 2))
+        cell_w, core_h = 84, 40
         core_y = band_top + (band_h - core_h) / 2
-        labels = ("Stairs", "Lift A", "Lift B", "Linen")
-        usable = band_x2 - band_x1 - 2 * CORR
-        cell_w = 84
-        spacing = (usable - 4 * cell_w) / 5
-        for index, label in enumerate(labels):
+        spacing = (band_x2 - band_x1 - 2 * CORR - 4 * cell_w) / 5
+        for index, label in enumerate(("Stairs", "Lift A", "Lift B", "Linen")):
             cx = band_x1 + CORR + spacing * (index + 1) + cell_w * index
-            body.append(f'<rect x="{cx:.1f}" y="{core_y:.1f}" width="{cell_w}" height="{core_h}" '
-                        f'rx="2" class="core"/>')
-            if index in (1, 2):  # lift shafts carry the crossed-shaft symbol
-                body.append(f'<line x1="{cx:.1f}" y1="{core_y:.1f}" '
-                            f'x2="{cx + cell_w:.1f}" y2="{core_y + core_h:.1f}" class="shaft"/>')
-                body.append(f'<line x1="{cx + cell_w:.1f}" y1="{core_y:.1f}" '
-                            f'x2="{cx:.1f}" y2="{core_y + core_h:.1f}" class="shaft"/>')
-            body.append(_text(cx + cell_w / 2, core_y + core_h + 13, label, "core-label", "middle"))
-
-        notch_x = left_x + LEG_W + BETWEEN / 2
-        body.append(_text(notch_x, top + 46, "outside", "outside-label", "middle"))
-        body.append(_text(notch_x, bottom - 30, "outside", "outside-label", "middle"))
-
-    body.append(_text(left_x, MARGIN + 2, f"Floor plan · {slots} rooms per outer column", "cap"))
-
-    return Markup(
-        f'<svg class="plan-svg" viewBox="0 0 {WIDTH} {height}" role="img" aria-label="Floor plan">'
-        f"<defs>{HATCH}</defs>{''.join(body)}</svg>"
-    )
+            cores.append({"x": round(cx, 1), "y": round(core_y, 1), "width": cell_w,
+                          "height": core_h, "lift": index in (1, 2), "label": label})
+    return {
+        "slots": slots, "link": link, "top": top, "first": first, "bottom": bottom,
+        "height": bottom + MARGIN, "left_x": left_x, "right_x": right_x,
+        "link_slot": link_slot, "outline": outline, "corridor": corridor,
+        "centre_lines": centre_lines, "cores": cores,
+        "notch_x": left_x + LEG_W + BETWEEN / 2,
+    }
 
 
-def room_card(room, x, y, door_side, states, types_by_id, href_for, matched=None, focused=None):
-    state = states.get(room.id, "available")
-    room_type = types_by_id[room.room_type_id]
-    dim = " dim" if matched is not None and room.id not in matched else ""
-    highlight = " is-match" if room.id == focused else ""
-    current = ' aria-current="true"' if highlight else ""
-    label = escape(f"{room.number} · {room_type.name} · {state.replace('_', ' ')}")
-    parts = [
-        f'<a href="{escape(href_for(room))}" class="sv-room{dim}{highlight}"{current}>',
-        f"<title>{label}</title>",
-        f'<rect x="{x}" y="{y}" width="{ROOM_W}" height="{ROOM_H}" class="room {state}"/>',
-    ]
-    blocked = state in ("out_of_service", "maintenance", "maintenance_conflict")
-    if blocked:
-        # Struck through and labelled, so a closed room reads as closed from a distance.
-        parts.append(
-            f'<line x1="{x + 6}" y1="{y + ROOM_H - 6}" x2="{x + ROOM_W - 6}" y2="{y + 6}" class="out-slash"/>'
-        )
-    parts.append(_text(x + ROOM_W / 2, y + 25, room.number, "num", "middle"))
-    parts.append(_text(x + ROOM_W / 2, y + 41, room_type.bed_type.capitalize(), "bed", "middle"))
-    if blocked:
-        # Status sits in the corner so the room type stays readable.
-        parts.append(_text(x + ROOM_W - 8, y + 14, "OUT", "out-badge", "end"))
-    # window: a thin double line on the facade side, absent for interior rooms
-    if room.has_window:
-        wy1, wy2 = y + WINDOW_INSET, y + ROOM_H - WINDOW_INSET
-        if door_side == "left":  # facade is the other side
-            fx = x + ROOM_W
-            parts.append(f'<line x1="{fx - 1}" y1="{wy1}" x2="{fx - 1}" y2="{wy2}" class="window"/>')
-            parts.append(f'<line x1="{fx - 4}" y1="{wy1}" x2="{fx - 4}" y2="{wy2}" class="window"/>')
+def placed_rooms(plan, geometry):
+    # 把每一间房映射到唯一坐标；只安排显示位置，不选择客户实际入住的房间。
+    positions = []
+    slots, link_slot = geometry["slots"], geometry["link_slot"]
+    for x_leg, leg, mirrored in ((geometry["left_x"], plan["west"], False),
+                                 (geometry["right_x"], plan["east"], True)):
+        outer_x = x_leg + LEG_W - PAD - ROOM_W if mirrored else x_leg + PAD
+        inner_x = x_leg + PAD if mirrored else x_leg + LEG_W - PAD - ROOM_W
+        outer_door, inner_door = ("left", "right") if mirrored else ("right", "left")
+        columns = [(leg["outer"][:slots], outer_x, 0, outer_door)]
+        if geometry["link"]:
+            columns.extend([
+                (leg["inner_up"][:link_slot], inner_x, 0, inner_door),
+                (leg["inner_down"][:slots-link_slot-LINK_SLOTS], inner_x, link_slot+LINK_SLOTS, inner_door),
+            ])
         else:
-            fx = x
-            parts.append(f'<line x1="{fx + 1}" y1="{wy1}" x2="{fx + 1}" y2="{wy2}" class="window"/>')
-            parts.append(f'<line x1="{fx + 4}" y1="{wy1}" x2="{fx + 4}" y2="{wy2}" class="window"/>')
-    # door: erase part of the corridor-side wall and add the leaf swing
-    mid = y + ROOM_H / 2
-    half = DOOR / 2
-    if door_side == "right":
-        ex = x + ROOM_W
-        parts.append(f'<rect x="{ex - 2}" y="{mid - half}" width="4" height="{DOOR}" class="door-gap"/>')
-        parts.append(f'<path d="M{ex - 1},{mid - half} L{ex - 1 - DOOR},{mid - half}" class="door-leaf"/>')
-        parts.append(f'<path d="M{ex - 1 - DOOR},{mid - half} A{DOOR},{DOOR} 0 0 0 {ex - 1},{mid + half}" '
-                     f'class="door-arc"/>')
-    else:
-        ex = x
-        parts.append(f'<rect x="{ex - 2}" y="{mid - half}" width="4" height="{DOOR}" class="door-gap"/>')
-        parts.append(f'<path d="M{ex + 1},{mid - half} L{ex + 1 + DOOR},{mid - half}" class="door-leaf"/>')
-        parts.append(f'<path d="M{ex + 1 + DOOR},{mid - half} A{DOOR},{DOOR} 0 0 0 {ex + 1},{mid + half}" '
-                     f'class="door-arc"/>')
-    parts.append("</a>")
-    return "".join(parts)
+            columns.append((leg["inner_up"][:slots], inner_x, 0, inner_door))
+        for rooms, x, start_slot, door_side in columns:
+            for index, room in enumerate(rooms):
+                positions.append({"room": room, "x": x,
+                                  "y": geometry["first"] + (start_slot + index) * PITCH,
+                                  "door_side": door_side})
+    return positions
+
+
+def render_floor_plan(plan, states, types_by_id, href_for, matched=None, *, focused=None):
+    # 用户可变文本交给 HTML 模板自动转义；仅最终渲染结果标记为可信 HTML。
+    if not plan:
+        return Markup()
+    geometry = floor_plan_geometry(plan)
+    if geometry is None:
+        return Markup()
+    rooms = []
+    for position in placed_rooms(plan, geometry):
+        room = position["room"]
+        room_type = types_by_id[room.room_type_id]
+        state = states.get(room.id, "available")
+        rooms.append({
+            **position, "state": state, "href": href_for(room),
+            "label": f"{room.number} · {room_type.name} · {state.replace('_', ' ')}",
+            "bed": room_type.bed_type.capitalize(),
+            "dim": matched is not None and room.id not in matched,
+            "focused": room.id == focused,
+            "blocked": state in ("out_of_service", "maintenance", "maintenance_conflict"),
+        })
+    return Markup(render_template(
+        "shared/_floorplan.html", geometry=geometry, rooms=rooms,
+        room_w=ROOM_W, room_h=ROOM_H, leg_w=LEG_W, corridor_w=CORR,
+        pad=PAD, margin=MARGIN, width=WIDTH, door=DOOR, window_inset=WINDOW_INSET,
+    ))
 
 
 def build_floor_plan(rooms):
-    """Split one floor into the two legs of an H plan.
-
-    Each leg keeps a full-height outer column and an inner column that stops above
-    and below the central link. For a 24-room floor each leg holds 12 rooms: 7 on
-    the outer column and 5 on the inner one, because the link takes two room slots.
-    """
-
+    # 先确定两侧外列和内列，再统一预留走廊占用的两行，防止奇数或较大楼层漏画房间。
+    """Use one shared corridor position so uneven columns never clip rooms."""
     rooms = list(rooms)
     if not rooms:
         return None
     half = (len(rooms) + 1) // 2
+    halves = (rooms[:half], rooms[half:])
     legs = []
-    for index, leg in enumerate((rooms[:half], rooms[half:])):
-        slots = len(leg) // 2 + 1
-        if slots < 4:
-            # A small floor has no room for a waist: two plain columns, no lift core.
-            outer = leg[::2]
-            inner = leg[1::2]
-            legs.append({"outer": outer, "inner_up": inner, "inner_down": [],
-                         "link": False, "slots": max(1, len(outer))})
-            continue
-        # Keep room numbers increasing left to right: the west leg fills its outer
-        # column first, the east leg its inner column first.
+    link = min(map(len, halves)) >= 6
+    if not link:
+        for leg in halves:
+            legs.append({"outer": leg[::2], "inner_up": leg[1::2], "inner_down": [], "link": False})
+        slots = max(len(leg["outer"]) for leg in legs)
+        return {"west": legs[0], "east": legs[1], "slots": slots, "link": False}
+
+    for index, leg in enumerate(halves):
+        outer_count = len(leg) // 2 + 1
         if index == 0:
-            outer, rest = leg[:slots], leg[slots:]
+            outer, inner = leg[:outer_count], leg[outer_count:]
         else:
-            outer, rest = leg[len(leg) - slots:], leg[:len(leg) - slots]
-        link_slot = max(0, (slots - 2) // 2)
-        up = rest[:min(len(rest), link_slot)]
-        down = rest[len(up):]
-        # A short floor must still show every room: grow the grid instead of
-        # clipping the inner column.
-        slots = max(slots, link_slot + 2 + len(down), len(up), len(outer))
-        legs.append({"outer": outer, "inner_up": up, "inner_down": down, "link": True})
-    slots = max(leg.get("slots") or len(leg["outer"]) for leg in legs)
-    return {"west": legs[0], "east": legs[1], "slots": slots,
-            "link": legs[0]["link"] and legs[1]["link"]}
+            outer, inner = leg[-outer_count:], leg[:-outer_count]
+        legs.append({"outer": outer, "inner": inner, "link": True})
+    slots = max(max(len(leg["outer"]), len(leg["inner"]) + LINK_SLOTS)
+                for leg in legs)
+    link_slot = (slots - LINK_SLOTS) // 2
+    for leg in legs:
+        inner = leg.pop("inner")
+        leg["inner_up"], leg["inner_down"] = inner[:link_slot], inner[link_slot:]
+    return {"west": legs[0], "east": legs[1], "slots": slots, "link": True}

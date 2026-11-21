@@ -1,3 +1,4 @@
+# 管理员功能与授权：配置、账号、黑名单、订单、审计及修改密码。
 import csv
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -215,6 +216,9 @@ def test_catalogue_price_rule_precedence_and_reconfirmation(app):
 def test_staff_disable_and_password_change_preserve_history(app):
     manager_id, manager_email = new_user(app, MANAGER)
     manager, _ = sign_in(app, manager_email)
+    profile = manager.get("/manage/profile")
+    password_form = re.search(r'<form[^>]+class="manager-form".*?</form>', profile.text, re.S).group(0)
+    assert len(re.findall(r'(?:<button|<input)[^>]+type="submit"', password_form)) == 1
     email = "console-staff@example.test"
     fields = {"email": email, "password": PASSWORD, "confirm": PASSWORD}
     assert post(manager, "/manage/accounts/new", fields).status_code == 302

@@ -1,10 +1,11 @@
+/* 公共与客户页面样式：基础色值、导航、表单、房型卡片、订单、弹窗及响应式布局。后面的同名规则会覆盖前面。 */
 :root {
   --ink: #17201c;
   --body: #3f4a44;
   --muted: #748078;
   --line: #dfe6e1;
   --paper: #ffffff;
-  --canvas: #f3f6f4;
+  --canvas: #f7f8fa;
   --pine: #1c3b33;
   --pine-2: #2a5348;
   --pine-soft: #e7efea;
@@ -1115,7 +1116,6 @@ img { max-width: 100%; }
 .cancel-note { padding: 9px 11px; }
 
 /* ================= client v2: global frame ================= */
-:root { --canvas: #f7f8fa; }
 body { background: var(--canvas); }
 .site-header { box-shadow: 0 1px 0 rgba(23, 32, 28, .04); }
 .header-inner { height: 64px; max-width: 1200px; padding: 0 28px; }

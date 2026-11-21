@@ -1,3 +1,4 @@
+# 自动分房与并发：验证负载排序、轮换、悲观锁、重试和失败回滚。
 """Real-MySQL checks for workload rotation and transactional allocation retries."""
 import re
 from concurrent.futures import ThreadPoolExecutor

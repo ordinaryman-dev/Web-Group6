@@ -1,3 +1,4 @@
+# 员工业务服务：入住退房、线下开单、联系客户、维修和申请审批；函数使用调用者提供的同一事务。
 """Front-desk operations: arrivals, check-in, check-out, payments, blocks, requests.
 
 Every write runs in the caller's transaction, so a rule failure leaves the
@@ -74,6 +75,7 @@ class ExistingCustomerRequired(DeskError):
 
 
 def change_own_password(session, actor_id, current_password, new_password):
+    # 只允许修改当前操作人的密码，先检查旧密码；审计只记动作，不记密码内容。
     actor = session.get(User, actor_id, with_for_update=True, populate_existing=True)
     if actor is None or not actor.active or actor.role not in (STAFF, MANAGER):
         raise DeskError("An active front-desk account is required.")
@@ -118,6 +120,7 @@ def paid_totals(session, booking_ids):
 
 
 def _locked_booking(session, booking_id):
+    # 读取订单时请求数据库排他锁，后续判断和写入必须使用这个锁保护的最新状态。
     booking = session.get(
         Booking, booking_id, options=(lazyload("*"),),
         with_for_update=True, populate_existing=True,
@@ -148,6 +151,7 @@ def _existing_payment(session, actor_id, key):
 def record_payment(session, booking, actor_id, amount=None, idempotency_key=None):
     # Lock the booking before reading the balance. Two receptionists submitting at
     # the same time then serialise instead of both seeing the old paid total.
+    # 先锁订单，再检查幂等键和剩余应付金额，防止重复点击或多收款。
     booking = _locked_booking(session, booking.id)
     key = _request_key(idempotency_key)
     if key:
@@ -182,6 +186,7 @@ def record_payment(session, booking, actor_id, amount=None, idempotency_key=None
 
 
 def record_refund(session, booking, actor_id, amount=None, idempotency_key=None):
+    # 退款不能超过尚未退回金额；金额和审计记录仍与订单放在同一事务。
     """Return simulated money to the guest, never more than was collected."""
     booking = _locked_booking(session, booking.id)
     key = _request_key(idempotency_key)
@@ -220,6 +225,7 @@ def record_refund(session, booking, actor_id, amount=None, idempotency_key=None)
 
 
 def check_in_issues(session, booking, now):
+    # 集中列出入住前检查项；页面用于解释，真正办理时还会再次检查。
     """The checks the panel shows, as (label, ok, detail)."""
     paid = paid_total(session, booking.id)
     blocked = session.scalar(
@@ -271,6 +277,7 @@ def check_in(session, booking_id, actor_id, now):
 
 
 def check_out(session, booking_id, actor_id, now):
+    # 记录实际离店时间、释放未用房晚并标记脏房，同时关闭未完成申请。
     booking = session.get(
         Booking, booking_id, options=(lazyload("*"),), with_for_update=True
     )
@@ -407,6 +414,7 @@ def pending_requests(session):
 
 
 def maintenance_conflicts(session, room_id, start, end):
+    # 除了日期重叠的订单，也要把已经逾期但尚未退房的住客视为冲突。
     overdue = (Booking.status == CHECKED_IN) & (Booking.check_out <= hotel_now().date())
     return session.scalars(select(Booking).where(
         Booking.room_id == room_id,
@@ -417,6 +425,7 @@ def maintenance_conflicts(session, room_id, start, end):
 
 
 def create_block(session, room_id, start, end, reason, actor_id):
+    # 维修不能覆盖或删除已有订单，只登记封锁并返回冲突，交由员工或主管协调。
     if end <= start:
         raise DeskError("The block must end after it starts.")
     reason = (reason or "").strip()
@@ -463,14 +472,6 @@ def mark_room_clean(session, room_id, actor_id):
     record_audit(session, actor_id, "mark_room_clean", "room", room.id,
                  details={"room": room.number})
     return room
-
-
-def free_rooms(session, room_type_id, stay, clean_only=False):
-    return [
-        candidate.room_id for candidate in allocation.ranked_candidates(
-            session, room_type_id, stay, hotel_now().date(), clean_only=clean_only,
-        )
-    ]
 
 
 def allocation_room_type(session, room_type_id, guests, *, original_type_id=None):
@@ -632,6 +633,7 @@ def _rehouse(session, booking, stay, room_type_id, today=None):
 
 def locked_request(session, request_id):
     # Use one lock order with checkout, no-show, cancellation and guest withdrawal.
+    # 统一先锁 Booking、再锁 BookingRequest；拿到锁后再次检查申请是否仍待处理。
     booking_id = session.scalar(select(BookingRequest.booking_id).where(BookingRequest.id == request_id))
     if booking_id is None:
         raise DeskError("This request could not be found.")
@@ -646,6 +648,7 @@ def locked_request(session, request_id):
 
 def approve_request(session, request_id, actor_id, comment=None, actor_role=None,
                     today=None, now=None):
+    # 审批时重新检查日期、容量、房态、权限和差价，任何一步失败都会回滚原订单。
     row, booking = locked_request(session, request_id)
     if booking.status in (CANCELLED, CHECKED_OUT):
         raise DeskError("The booking is no longer active.")
@@ -826,6 +829,7 @@ def normalized_customer_phone():
 
 
 def new_walkin_customer(session, name, phone):
+    # 用规范化手机号的摘要作为事务互斥键；等待后重新查已有客户，联系电话本身不设全局唯一。
     name, phone = (name or "").strip(), (phone or "").strip()
     if not name:
         raise DeskError("Enter the guest's name.")
@@ -853,6 +857,7 @@ def new_walkin_customer(session, name, phone):
 
 def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
                   name=None, phone=None, note=None, pay_now=True, room_id=None):
+    # 优先关联明确选中的客户，再查黑名单；新客户、订单、房晚和模拟付款必须一起成功。
     """Open a room for a guest at the desk: occupy the nights, take payment, check in.
 
     Reuses the same availability, capacity and price rules as the guest portal and
@@ -964,6 +969,7 @@ def no_show_ready(booking, now):
 
 
 def mark_no_show(session, booking_id, actor_id, reason, now):
+    # 员工先联系并记录结果，确认未到店后才释放房间并关闭申请。
     """Release the room for a guest who confirmed they are not coming (or is unreachable)."""
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
     if booking is None:

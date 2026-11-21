@@ -1,3 +1,4 @@
+# 历史问题回归：特别检查整段可用性，避免把不同房间的零散空晚拼成一间房。
 """Regressions for front-desk chores that had no automated cover.
 
 * check-out turns the room dirty and it cannot be sold until housekeeping is done;

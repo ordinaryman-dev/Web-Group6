@@ -1,0 +1,32 @@
+{# 单间房的 SVG：所有可变文字和链接由 Jinja 自动转义；门窗和状态只是展示。 #}{% set x, y, room = item.x, item.y, item.room %}
+<a href="{{ item.href }}" class="sv-room{{ ' dim' if item.dim }}{{ ' is-match' if item.focused }}"{% if item.focused %} aria-current="true"{% endif %}>
+  <title>{{ item.label }}</title>
+  <rect x="{{ x }}" y="{{ y }}" width="{{ room_w }}" height="{{ room_h }}" class="room {{ item.state }}"/>
+  {% if item.blocked %}
+  <line x1="{{ x+6 }}" y1="{{ y+room_h-6 }}" x2="{{ x+room_w-6 }}" y2="{{ y+6 }}" class="out-slash"/>
+  {% endif %}
+  <text x="{{ x+room_w/2 }}" y="{{ y+25 }}" class="num" text-anchor="middle">{{ room.number }}</text>
+  <text x="{{ x+room_w/2 }}" y="{{ y+41 }}" class="bed" text-anchor="middle">{{ item.bed }}</text>
+  {% if item.blocked %}
+  <text x="{{ x+room_w-8 }}" y="{{ y+14 }}" class="out-badge" text-anchor="end">OUT</text>
+  {% endif %}
+  {% if room.has_window %}
+    {% set fx = x+room_w if item.door_side == 'left' else x %}
+    {% set direction = -1 if item.door_side == 'left' else 1 %}
+    {% for inset in (1, 4) %}
+  <line x1="{{ fx+direction*inset }}" y1="{{ y+window_inset }}" x2="{{ fx+direction*inset }}" y2="{{ y+room_h-window_inset }}" class="window"/>
+    {% endfor %}
+  {% endif %}
+  {% set mid, half = y+room_h/2, door/2 %}
+  {% if item.door_side == 'right' %}
+    {% set ex = x+room_w %}
+  <rect x="{{ ex-2 }}" y="{{ mid-half }}" width="4" height="{{ door }}" class="door-gap"/>
+  <path d="M{{ ex-1 }},{{ mid-half }} L{{ ex-1-door }},{{ mid-half }}" class="door-leaf"/>
+  <path d="M{{ ex-1-door }},{{ mid-half }} A{{ door }},{{ door }} 0 0 0 {{ ex-1 }},{{ mid+half }}" class="door-arc"/>
+  {% else %}
+    {% set ex = x %}
+  <rect x="{{ ex-2 }}" y="{{ mid-half }}" width="4" height="{{ door }}" class="door-gap"/>
+  <path d="M{{ ex+1 }},{{ mid-half }} L{{ ex+1+door }},{{ mid-half }}" class="door-leaf"/>
+  <path d="M{{ ex+1+door }},{{ mid-half }} A{{ door }},{{ door }} 0 0 0 {{ ex+1 }},{{ mid+half }}" class="door-arc"/>
+  {% endif %}
+</a>

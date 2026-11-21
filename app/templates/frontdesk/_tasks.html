@@ -1,0 +1,154 @@
+{# 任务视图：申请与逾期到店分别分页；审批只有成功提交后才改变订单。 #}<div class="view-head">
+  <div>
+    <p class="eyebrow">TASKS &amp; APPROVALS</p>
+    <h1>Tasks</h1>
+    <p class="muted view-sub">Guest changes, late arrivals and housekeeping. Approvals apply to the booking only after they succeed.</p>
+  </div>
+  <div class="kpi-strip">
+    <div class="kpi-pill"><b data-notify-count="requests">{{ pending|length }}</b><span>Requests</span></div>
+    <div class="kpi-pill"><b data-notify-count="late">{{ late_arrivals|length }}</b><span>Late</span></div>
+    <div class="kpi-pill"><b data-notify-count="dirty">{{ dirty_rooms|length }}</b><span>Dirty</span></div>
+  </div>
+</div>
+
+<div class="task-layout">
+  <section class="panel task-column">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">E05 · E06</p>
+        <h2>Guest requests</h2>
+      </div>
+      <span class="muted small">{{ task_rows|length }} pending</span>
+    </div>
+    {% if task_pages > 1 %}
+    <nav class="pager task-pager" aria-label="Guest request pages">
+      {% if task_page > 1 %}
+      <a class="mini" href="{{ desk_url(view='tasks', request_page=task_page - 1, tab=None, booking=None, room=None) }}">Previous</a>
+      {% endif %}
+      <span class="muted small">{{ task_page }} / {{ task_pages }} · {{ task_rows|length }} pending</span>
+      {% if task_page < task_pages %}
+      <a class="mini" href="{{ desk_url(view='tasks', request_page=task_page + 1, tab=None, booking=None, room=None) }}">Next</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    {% for task in task_page_items %}
+    {% set b = task.booking %}
+    <article class="task-card" data-request-id="{{ task.request.id }}">
+      <header class="task-head">
+        <span class="chip chip-{{ task.request.kind }}">{{ task.request.kind.replace('_', ' ') }}</span>
+        <b class="mono">{{ b.reference }}</b>
+        {% if task.late_cancel %}<span class="chip chip-cancel">Manager required</span>{% endif %}
+      </header>
+
+      <div class="task-compare">
+        <div class="task-side">
+          <p class="eyebrow">CURRENT ORDER</p>
+          <p><b>{{ b.customer.name }}</b></p>
+          <p class="small muted">{{ b.room_type.name }} · Room {{ b.room.number }}</p>
+          <p class="small">{{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }} · {{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</p>
+          <p class="small">Total ¥{{ b.total|money }} · <span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span></p>
+          {% if b.note %}<p class="small muted">Guest note: “{{ b.note }}”</p>{% endif %}
+        </div>
+        <div class="task-arrow" aria-hidden="true">→</div>
+        <div class="task-side requested">
+          <p class="eyebrow">REQUESTED</p>
+          <p><b>{{ task.target }}</b></p>
+          {% if task.request.reason %}<p class="small muted">“{{ task.request.reason }}”</p>{% endif %}
+          <p class="small muted">Submitted {{ task.submitted.strftime('%d %b %H:%M') if task.submitted else '—' }}</p>
+        </div>
+      </div>
+
+      <div class="task-actions">
+        <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=task.request.id) }}"
+              data-guard data-request-check="{{ task.request.id }}">
+          {{ csrf_back() }}
+          <input class="input tiny" type="text" name="req-comment" maxlength="240"
+                 placeholder="{{ 'Manager reason (required)' if task.manager_required and is_manager else 'Decision note (optional)' }}"
+                 {{ 'required' if task.manager_required and is_manager }}>
+          <button class="mini primary" type="submit" {{ 'disabled' if not task.can_approve }}>Approve</button>
+        </form>
+        <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=task.request.id) }}"
+              data-guard data-request-check="{{ task.request.id }}">
+          {{ csrf_back() }}
+          <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Reason for rejection (required)" required>
+          <button class="mini" type="submit">Reject</button>
+        </form>
+      </div>
+
+      {% if task.manager_required and not is_manager %}
+      <p class="hint bad">This cancellation arrived after the 18:00 deadline. Only a manager can approve it.</p>
+      {% elif task.manager_required %}
+      <p class="hint">Manager authority: approving records the exception, refunds the net paid amount and releases the nights.</p>
+      {% endif %}
+    </article>
+    {% else %}
+    <p class="empty">No pending requests. The queue is clear.</p>
+    {% endfor %}
+  </section>
+
+  <div class="task-side-column">
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">E08</p>
+          <h2>Late arrivals</h2>
+        </div>
+        <span class="chip {{ 'chip-late' if late_arrivals else 'chip-checked_out' }}">{{ late_arrivals|length }}</span>
+      </div>
+      {% if late_pages > 1 %}
+      <nav class="pager task-pager late-pager" aria-label="Late arrival pages">
+        {% if late_page > 1 %}
+        <a class="mini" href="{{ desk_url(view='tasks', late_page=late_page - 1, tab=None, booking=None, room=None) }}">Previous</a>
+        {% endif %}
+        <span class="muted small">{{ late_page }} / {{ late_pages }} · {{ late_arrivals|length }} late</span>
+        {% if late_page < late_pages %}
+        <a class="mini" href="{{ desk_url(view='tasks', late_page=late_page + 1, tab=None, booking=None, room=None) }}">Next</a>
+        {% endif %}
+      </nav>
+      {% endif %}
+      {% for item in late_page_items %}
+      <article class="task-card compact" data-late-arrival="{{ item.booking.id }}">
+        <header class="task-head">
+          <b class="mono">{{ item.booking.reference }}</b>
+          <span class="chip chip-late">Past ETA</span>
+        </header>
+        <p><b>{{ item.booking.customer.name }}</b> · Room {{ item.booking.room.number }}</p>
+        <p class="small muted">{{ item.booking.check_in.strftime('%d %b') }} · expected {{ item.deadline.strftime('%H:%M') }} · {{ item.booking.customer.phone or 'no phone' }}</p>
+        <p class="small muted">Last contact:
+          {% if item.booking.last_contact_at %}
+            {{ item.booking.last_contact_at|localtime('%d %b %H:%M') }} · {{ item.booking.last_contact_result }}
+          {% else %}not recorded{% endif %}
+        </p>
+        <a class="mini primary" href="{{ desk_url(view='tasks', booking=item.booking.id, room=None) }}">Open contact log</a>
+      </article>
+      {% else %}
+      <p class="empty">No late arrivals right now.</p>
+      {% endfor %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">HOUSEKEEPING</p>
+          <h2>Dirty rooms</h2>
+        </div>
+        <span class="chip {{ 'chip-late' if dirty_rooms else 'chip-checked_out' }}">{{ dirty_rooms|length }}</span>
+      </div>
+      {% for room in dirty_rooms %}
+      <article class="task-card compact room-task">
+        <div>
+          <b>Room {{ room.number }}</b>
+          <p class="small muted">Marked dirty at check-out. It cannot be sold or checked into until cleaned.</p>
+        </div>
+        <form method="post" action="{{ url_for('frontdesk.mark_clean', room_id=room.id) }}" data-guard>
+          {{ csrf_back() }}
+          <button class="mini primary" type="submit">Mark cleaned</button>
+        </form>
+      </article>
+      {% else %}
+      <p class="empty">No rooms waiting for housekeeping.</p>
+      {% endfor %}
+    </section>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-{% extends "manager/layout.html" %}
+{# 只读审计列表：可按人、动作和对象检索，不提供历史记录编辑入口。 #}{% extends "manager/layout.html" %}
 {% from "manager/_components.html" import audit_table, list_controls, list_count, pagination %}
 {% set title = "Audit log" %}
 {% block content %}

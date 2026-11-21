@@ -1,4 +1,4 @@
-{% extends "manager/layout.html" %}
+{# 管理员订单详情：展示完整记录；例外取消需原因并按规则模拟退款。 #}{% extends "manager/layout.html" %}
 {% from "manager/_components.html" import status, fields %}
 {% set title = booking.reference %}
 {% block content %}

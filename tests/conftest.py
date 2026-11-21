@@ -1,3 +1,4 @@
+# 测试公共环境：只允许专用空 MySQL 数据库，先升级迁移；固定业务时钟便于重复验证。
 import os
 import secrets
 from datetime import datetime

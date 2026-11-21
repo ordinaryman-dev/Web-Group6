@@ -1,3 +1,4 @@
+# 公共登录与注册：验证账号密码，按客户、员工、管理员角色进入工作台；注册只能创建客户账号。
 from functools import wraps
 from posixpath import normpath
 from urllib.parse import unquote, urlsplit
@@ -67,6 +68,7 @@ def load_user(user_id):
 
 
 def role_required(*roles):
+    # 登录验证和角色授权是两步；隐藏按钮不等于后端已经限制权限。
     def decorate(view):
         @wraps(view)
         @login_required
@@ -106,6 +108,7 @@ def index():
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+    # 验证哈希并检查账号是否启用，成功后按实际角色跳转。
     if current_user.is_authenticated:
         return redirect(url_for(destination(current_user)))
 
@@ -123,6 +126,7 @@ def login():
 
 @auth.route("/register", methods=["GET", "POST"])
 def register():
+    # 只创建客户身份，客户端提交的额外角色字段不能授予管理员权限。
     if current_user.is_authenticated:
         return redirect(url_for(destination(current_user)))
 

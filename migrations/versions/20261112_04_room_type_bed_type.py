@@ -1,3 +1,4 @@
+# 为房型增加床型，支持客户和员工按床型筛选。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Add room type bed type for guest filters
 
 Revision ID: 20261112_04
@@ -15,6 +16,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.add_column(
         "room_types",
         sa.Column("bed_type", sa.String(length=20), nullable=False, server_default="double"),
@@ -33,6 +35,7 @@ def upgrade():
 
 
 def downgrade():
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.drop_constraint("ck_room_types_bed_type", "room_types", type_="check")
     op.drop_index("ix_room_types_bed_type", table_name="room_types")
     op.drop_column("room_types", "bed_type")

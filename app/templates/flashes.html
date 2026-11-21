@@ -1,3 +1,3 @@
-{% for category, message in get_flashed_messages(with_categories=true) %}
+{# 一次性反馈：显示后端提交成功或拒绝原因；这里不决定业务是否成功。 #}{% for category, message in get_flashed_messages(with_categories=true) %}
   <p class="flash {{ category }}" role="status" aria-live="polite">{{ message }}</p>
 {% endfor %}

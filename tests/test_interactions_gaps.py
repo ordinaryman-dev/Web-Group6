@@ -1,3 +1,4 @@
+# 页面交互回归：覆盖房态图、表单状态及不同入口衔接中的易漏场景。
 """Cross-end gaps that belong to this task: a blacklisted guest cannot extend a
 stay, and the front desk can read the floor plan without opening each room.
 """

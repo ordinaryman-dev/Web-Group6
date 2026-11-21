@@ -1,0 +1,61 @@
+{# 员工顶部：搜索、日期时间轴和轮询通知；跳转保留当前筛选参数。 #}<header class="topbar{{ ' no-timeline' if view != 'grid' }}">
+  <form class="global-search" method="get" action="{{ url_for('frontdesk.index') }}" role="search">
+    <input type="hidden" name="view" value="{{ view }}">
+    {% if view == 'grid' %}
+    <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+    <input type="hidden" name="floor" value="{{ active_floor }}">
+    {% elif view == 'orders' %}
+    <input type="hidden" name="tab" value="all">
+    {% endif %}
+    <span class="search-glyph" aria-hidden="true">⌕</span>
+    <input type="search" name="q" value="{{ query }}"
+           placeholder="Name, phone, room or BK-…"
+           aria-label="Search guest, phone, room or booking">
+    <button type="submit">Find</button>
+  </form>
+
+  {% if view == 'grid' %}
+  <nav class="timeline" aria-label="Timeline: today and the next 14 days">
+    {% for day in timeline %}
+    <a class="day {{ 'is-active' if day.date == selected_date }} {{ 'is-today' if day.date == today }}"
+       href="{{ desk_url(view='grid', date=day.date.isoformat(), room=None, booking=None) }}"
+       title="{{ day.date.strftime('%d %b %Y') }} · {{ day.free }} free · {{ day.arrivals }} arriving">
+      <span class="day-num">{{ day.date.strftime('%d') }}</span>
+      <span class="day-dow">{{ 'Today' if day.date == today else day.date.strftime('%a') }}</span>
+      <span class="day-free">{{ day.free }} free</span>
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  <div class="topbar-meta">
+    <div class="clock">
+      <time id="desk-clock" data-epoch="{{ epoch_ms }}">{{ now.strftime('%H:%M:%S') }}</time>
+      <span>BEIJING</span>
+    </div>
+    <div class="operator">
+      <b>{{ current_user.email.split('@')[0] }}</b>
+      <span>{{ 'Manager' if is_manager else 'Front desk' }}</span>
+    </div>
+    <details class="bell">
+      <summary aria-label="System notifications">
+        <span aria-hidden="true">◔</span>
+        <span class="bell-count" data-notify-total {% if not notification_total %}hidden{% endif %}>{{ notification_total }}</span>
+      </summary>
+      <div class="bell-panel">
+        <p class="eyebrow">SYSTEM NOTIFICATIONS</p>
+        <div data-notify-items>
+        {% for item in notifications %}
+        <a class="bell-row tone-{{ item.tone }}"
+           href="{{ desk_url(view=('grid' if item.kind == 'conflict' else 'tasks'), room=None, booking=None) }}">
+          <b>{{ item.title }}</b>
+          <small>{{ item.text }}</small>
+        </a>
+        {% else %}
+        <p class="bell-empty">All clear. Nothing needs attention.</p>
+        {% endfor %}
+        </div>
+      </div>
+    </details>
+  </div>
+</header>

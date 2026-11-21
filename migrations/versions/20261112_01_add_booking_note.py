@@ -1,3 +1,4 @@
+# 为订单增加最多 100 字的客户备注字段。这是历史迁移，已有数据库按 revision 链顺序执行。
 """Add booking note and created_at
 
 Revision ID: 20261112_01
@@ -15,6 +16,7 @@ depends_on = None
 
 
 def upgrade():
+    # 升级只执行这一版需要的变更；日常更新通过 flask db upgrade 运行。
     op.add_column("bookings", sa.Column("note", sa.String(length=100), nullable=True))
     op.add_column(
         "bookings",
@@ -28,5 +30,6 @@ def upgrade():
 
 
 def downgrade():
+    # 按此版本定义恢复上一版结构；数据修复不一定能够自动逆转。
     op.drop_column("bookings", "created_at")
     op.drop_column("bookings", "note")

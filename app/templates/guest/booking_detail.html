@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{# 本人订单详情：备注和申请使用独立表单，已结束订单按规则只读。 #}{% extends "base.html" %}
 {% block title %}{{ booking.reference }} · Hero Hotel{% endblock %}
 {% block content %}
 <p class="back-link"><a href="{{ url_for('guest.bookings') }}">← My bookings</a></p>

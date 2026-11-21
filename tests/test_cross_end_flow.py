@@ -1,3 +1,4 @@
+# 客户、员工和管理员端到端流程：确认三个页面读写同一份订单、房晚与付款记录。
 """One guest request, seen by the front desk, decided, and read back by the guest.
 
 This is the whole point of the cross-end work: the same row has to appear in the

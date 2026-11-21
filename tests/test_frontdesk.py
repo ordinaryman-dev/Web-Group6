@@ -1,3 +1,4 @@
+# 员工常用流程：付款、入住退房、线下开单、维修、审批及分页。
 import re
 from uuid import uuid4
 from datetime import date, datetime, time, timedelta
@@ -522,7 +523,7 @@ def test_orders_search_covers_all_orders_and_only_room_board_has_the_timeline(ap
 
 
 def test_late_arrival_pager_slices_and_clamps():
-    from app.frontdesk import _paginate
+    from app.frontdesk_views import _paginate
 
     items = list(range(9))
     assert _paginate(items, 1, 4) == (items[:4], 1, 3)

@@ -1,3 +1,4 @@
+# 应用入口：读取配置、初始化数据库与登录保护、注册各角色路由，以及页面共用的图片和金额格式。
 import os
 from datetime import timezone
 from decimal import Decimal
@@ -19,6 +20,7 @@ ROOM_IMAGE_FILES = {
 
 
 def create_app(config=None):
+    # 按照配置创建应用；测试会传入独立数据库配置，日常启动则读取环境变量。
     app = Flask(__name__)
     app.config.from_mapping(
         SECRET_KEY=os.getenv("SECRET_KEY"),

@@ -1,6 +1,6 @@
-{% macro fields(form) %}
+{# 管理员共用组件：字段、状态和分页统一渲染；提交按钮由外层表单提供。 #}{% macro fields(form) %}
   {{ form.hidden_tag() }}
-  {% for field in form if field.type not in ('CSRFTokenField', 'HiddenField') %}
+  {% for field in form if field.type not in ('CSRFTokenField', 'HiddenField', 'SubmitField') %}
     <div class="manager-field">
       {% if field.type == 'BooleanField' %}
         <label class="manager-checkbox">{{ field() }} {{ field.label.text }}</label>

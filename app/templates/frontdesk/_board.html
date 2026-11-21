@@ -1,0 +1,138 @@
+{# 房态视图：楼层与房型筛选共用同一份房态，点房间打开操作抽屉。 #}<div class="view-head">
+  <div>
+    <p class="eyebrow">FRONT DESK · {{ now.strftime('%A %d %B %Y') }}</p>
+    <h1>Today's desk</h1>
+    <p class="muted view-sub">Room status for {{ selected_date.strftime('%A %d %B') }}. Check-in {{ check_in_from }} · check-out {{ check_out_by }}.</p>
+  </div>
+  <div class="kpi-strip">
+    <div class="kpi-pill"><b>{{ arrivals_today|length }}</b><span>Arrivals today</span></div>
+    <div class="kpi-pill"><b>{{ in_house|length }}</b><span>In house now</span></div>
+    <div class="kpi-pill"><b>{{ departures_today|length }}</b><span>Due out / overdue</span></div>
+    <div class="kpi-pill"><b>{{ occupied_today }}/{{ total_rooms }}</b><span>Occupancy now</span></div>
+  </div>
+</div>
+
+{% if conflicts %}
+<section class="conflict-banner" role="alert">
+  <div class="conflict-head">
+    <div>
+      <p class="eyebrow">MAINTENANCE</p>
+      <h2>Maintenance conflicts</h2>
+    </div>
+    <span class="chip chip-cancel">{{ conflicts|length }} pair{{ '' if conflicts|length == 1 else 's' }}</span>
+  </div>
+  <p class="muted small">A block never overwrites a booking. Move the guest to another room of the same type; the price stays unchanged.</p>
+  {% for item in conflicts %}
+  <div class="conflict-row">
+    <span>
+      <b>Room {{ item.block.room.number }}</b> blocked
+      {{ item.block.start_date.strftime('%d %b') }}–{{ item.block.end_date.strftime('%d %b') }}
+      · affects <b class="mono">{{ item.booking.reference }}</b> ({{ item.booking.customer.name }})
+    </span>
+    <span class="conflict-actions">
+      <a class="mini" href="{{ desk_url(view='grid', room=item.block.room_id, booking=None) }}">Open room</a>
+      {% if item.booking.status == 'confirmed' and item.booking.check_in >= today %}
+      <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=item.booking.id) }}" data-guard>
+        {{ csrf_back() }}
+        <input type="hidden" name="re-reason" value="Displaced by maintenance block on room {{ item.block.room.number }}">
+        <button class="mini primary" type="submit">Move to a free room</button>
+      </form>
+      {% endif %}
+    </span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="panel board-panel" id="board">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">ROOM BOARD</p>
+      <h2>Room board</h2>
+    </div>
+    <div class="legend" aria-label="Room state colours">
+      <span><i class="dot dot-free"></i>Free</span>
+      <span><i class="dot dot-arriving"></i>Arriving / reserved</span>
+      <span><i class="dot dot-in_house"></i>In house / departing</span>
+      <span><i class="dot dot-dirty"></i>Dirty</span>
+      <span><i class="dot dot-blocked"></i>Out of service</span>
+    </div>
+  </div>
+
+  <nav class="floor-tabs" aria-label="Floors">
+    {% for floor in floor_tabs %}
+    <a class="{{ 'is-active' if floor.key == active_floor }}"
+       href="{{ desk_url(view='grid', floor=floor.key, room=None, booking=None) }}">
+      <b>{{ floor.label }}</b>
+      <span>{{ floor.free }} free</span>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <div class="state-chips" aria-label="State filter">
+    <a class="state-chip {{ 'is-active' if state_filter == 'all' }}"
+       href="{{ desk_url(state=None, room=None, booking=None) }}">
+      All <b>{{ floor_counts.get(active_floor, {}).get('total', 0) }}</b>
+    </a>
+    {% for key, label in state_labels.items() %}
+    <a class="state-chip {{ 'is-active' if state_filter == key }}"
+       href="{{ desk_url(state=key, room=None, booking=None) }}">
+      {{ label }} <b>{{ state_counts.get(key, 0) }}</b>
+    </a>
+    {% endfor %}
+  </div>
+
+  <form class="filter-bar" method="get" action="{{ url_for('frontdesk.index') }}">
+    <input type="hidden" name="view" value="grid">
+    <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+    <input type="hidden" name="floor" value="{{ active_floor }}">
+    <input type="hidden" name="state" value="{{ state_filter }}">
+    <label>Bed
+      <select name="bed">
+        <option value="">All beds</option>
+        {% for key, label in bed_labels.items() %}
+        <option value="{{ key }}" {{ 'selected' if bed_filter == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Window
+      <select name="window">
+        <option value="">Any window</option>
+        <option value="with" {{ 'selected' if window_filter == 'with' }}>With window</option>
+        <option value="without" {{ 'selected' if window_filter == 'without' }}>No window</option>
+      </select>
+    </label>
+    <label>Room type
+      <select name="type">
+        <option value="">All types</option>
+        {% for room_type in room_types if room_type.listed %}
+        <option value="{{ room_type.id }}" {{ 'selected' if type_filter == room_type.id }}>{{ room_type.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="stay" value="1" {{ 'checked' if stay_on }}>
+      Whole stay free
+    </label>
+    <label>Nights
+      <input type="number" name="nights" value="{{ stay_nights }}" min="1"
+             max="{{ max_stay_days }}" inputmode="numeric">
+    </label>
+    <button class="mini primary" type="submit">Apply</button>
+    <a class="mini" href="{{ desk_url(view='grid', state=None, bed=None, window=None, type=None, stay=None, nights=None, room=None, booking=None) }}">Reset</a>
+  </form>
+
+  {% if spotlight %}
+  <p class="spotlight-note">
+    Spotlight on. Matching rooms stay bright; the rest are dimmed but still openable.
+    {% if stay_on %}Only rooms free from {{ selected_date.strftime('%d %b') }} to {{ stay_end.strftime('%d %b') }} stay bright.{% endif %}
+  </p>
+  {% endif %}
+
+  {% if plan_html %}
+  <div class="plan-wrap">{{ plan_html }}</div>
+  <p class="muted small">Click a room to open its drawer. Colour = {{ selected_date.strftime('%d %b') }} room state.</p>
+  {% else %}
+  <p class="empty">No rooms on this floor with the current filters.</p>
+  {% endif %}
+</section>

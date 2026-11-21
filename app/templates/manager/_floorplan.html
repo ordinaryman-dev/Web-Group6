@@ -1,4 +1,4 @@
-{% if plan_rooms %}
+{# 管理员房态图容器：图例、缩放和搜索命中提示；实际 SVG 与员工端共用。 #}{% if plan_rooms %}
 {% set floor_name = floors|selectattr('0', 'equalto', plan_floor)|map(attribute=1)|first %}
 <div class="manager-plan-heading">
   <h2>{{ floor_name }} · {{ plan_rooms|length }} rooms</h2>

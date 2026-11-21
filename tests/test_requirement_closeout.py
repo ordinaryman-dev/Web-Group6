@@ -1,3 +1,4 @@
+# 需求收尾：覆盖客户关联与黑名单、并发建档、本人改密、维修冲突和申请自动关闭。
 """Regression checks for walk-in identity, staff profile and terminal requests."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, time, timedelta

@@ -1,3 +1,4 @@
+# 共享自动分房：先按房晚负载排序，再按最久未分配轮换；数据库锁和复查保证并发安全。
 """Shared automatic room selection. The caller owns the transaction and retries."""
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -28,6 +29,7 @@ class RoomCandidate:
 
 
 def free_room_conditions(stay, today, *, ignore_booking_id=None):
+    # 按完整住宿区间排除占用、维修、停运及逾期在住房间；当日入住还要求房间已清洁。
     booked = select(RoomNight.id).where(
         RoomNight.room_id == Room.id,
         RoomNight.stay_date >= stay.check_in,
@@ -57,6 +59,7 @@ def free_room_conditions(stay, today, *, ignore_booking_id=None):
 
 
 def ranked_candidates(session, room_type_id, stay, today, *, ignore_booking_id=None, exclude_room_ids=(), clean_only=False):
+    # 负载＝近 30 天已实际入住的房晚＋今天及以后的有效预订房晚；两段不重叠，最后以房间 ID 稳定排序。
     """Count retained nights, excluding unfulfilled history and inactive bookings.
 
     Past nights use [today - 30, today) and actual Beijing check-in/out dates.
@@ -106,6 +109,7 @@ def ranked_candidates(session, room_type_id, stay, today, *, ignore_booking_id=N
 
 def select_room(session, room_type_id, stay, today, *, ignore_booking_id=None, exclude_room_ids=(),
                 clean_only=False, original_room_id=None, requested_room_id=None):
+    # 先选候选房，再由 InnoDB 加行锁并复查；候选变化就抛异常，让外层回滚并用新 Session 重试。
     """Lock only the chosen target, plus an original room during reassignment.
 
     A stale or newly lower-ranked candidate aborts this whole attempt. The caller
@@ -156,4 +160,5 @@ def select_room(session, room_type_id, stay, today, *, ignore_booking_id=None, e
 def record_assignment(room):
     # Microseconds distinguish successive successful assignments within one second.
     # This UPDATE is committed or rolled back with the booking and its RoomNight rows.
+    # 轮换时间与订单一起提交或回滚，不能把失败分房计入成功使用记录。
     room.last_allocated_at = datetime.now(timezone.utc).replace(tzinfo=None)

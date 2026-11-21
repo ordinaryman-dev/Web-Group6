@@ -1,3 +1,4 @@
+# 跨模块一致性：校验停用、维修、库存及状态规则不会被另一个入口绕过。
 """A room that is still dirty cannot be sold for tonight.
 
 This is the guest-side half of housekeeping: the desk marks a room dirty, the guest
