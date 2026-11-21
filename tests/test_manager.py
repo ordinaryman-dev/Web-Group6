@@ -167,7 +167,8 @@ def test_catalogue_price_rule_precedence_and_reconfirmation(app):
     assert post(manager, "/manage/room-types/new", type_fields).status_code == 302
     with app.app_context():
         type_id = db.session.scalar(select(RoomType.id).where(RoomType.code == "manager-suite"))
-    room = {"number": "manager-101", "room_type_id": type_id, "operational_from": str(TODAY)}
+    room = {"number": "manager-101", "room_type_id": type_id, "operational_from": str(TODAY),
+            "has_window": "y"}
     assert post(manager, "/manage/rooms/new", room).status_code == 302
 
     arrival = TODAY + timedelta(days=2)
@@ -420,3 +421,56 @@ def test_last_room_contention_and_idempotency_after_quote_changes(app):
     assert requests[loser][0].get(detail).status_code == 404
     with app.app_context():
         assert db.session.query(Booking).filter_by(room_type_id=room_type_id).count() == 1
+
+
+def test_manager_can_toggle_the_room_window_flag(app):
+    _, manager_email = new_user(app, MANAGER)
+    manager, _ = sign_in(app, manager_email)
+    type_id, room_id = create_room(app, "window-edit")
+    data = {
+        "number": "window-edit", "room_type_id": type_id,
+        "operational_from": str(TODAY), "operational_until": "",
+    }
+    assert post(manager, f"/manage/rooms/{room_id}", {**data, "has_window": ""}).status_code == 302
+    with app.app_context():
+        assert db.session.get(Room, room_id).has_window is False
+    assert post(manager, f"/manage/rooms/{room_id}", {**data, "has_window": "y"}).status_code == 302
+    with app.app_context():
+        assert db.session.get(Room, room_id).has_window is True
+
+
+def test_manager_can_reenable_and_reset_a_staff_account(app):
+    _, manager_email = new_user(app, MANAGER)
+    manager, _ = sign_in(app, manager_email)
+    staff_id, staff_email = new_user(app, STAFF)
+
+    assert post(manager, f"/manage/accounts/{staff_id}/disable", {},
+                form_path="/manage/accounts").status_code == 302
+    with app.app_context():
+        assert db.session.get(User, staff_id).active is False
+    anonymous = app.test_client()
+    login_page = anonymous.get("/login")
+    refused = anonymous.post("/login", data={
+        "email": staff_email, "password": PASSWORD, "csrf_token": token(login_page),
+    })
+    assert refused.status_code in (200, 401)
+
+    assert post(manager, f"/manage/accounts/{staff_id}/enable", {},
+                form_path="/manage/accounts").status_code == 302
+    with app.app_context():
+        assert db.session.get(User, staff_id).active is True
+    _, target = sign_in(app, staff_email)
+    assert target == "/frontdesk"
+
+    reset = post(manager, f"/manage/accounts/{staff_id}/password", {
+        "password": "NewPass2026!", "confirm": "NewPass2026!",
+    })
+    assert reset.status_code == 302
+    anonymous = app.test_client()
+    login_page = anonymous.get("/login")
+    old = anonymous.post("/login", data={
+        "email": staff_email, "password": PASSWORD, "csrf_token": token(login_page),
+    })
+    assert old.status_code in (200, 401)
+    _, target = sign_in(app, staff_email, "NewPass2026!")
+    assert target == "/frontdesk"

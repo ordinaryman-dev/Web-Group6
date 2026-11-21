@@ -10,11 +10,12 @@ from decimal import Decimal
 from functools import wraps
 from time import sleep
 from urllib.parse import parse_qsl, urlsplit
+from uuid import uuid4
 
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from wtforms import (
@@ -88,11 +89,13 @@ ORDER_TABS = {
 
 class PaymentForm(FlaskForm):
     amount = DecimalField("Amount", validators=[Optional(), NumberRange(min=Decimal("0.01"))])
+    idempotency_key = HiddenField()
     submit = SubmitField("Record payment")
 
 
 class RefundForm(FlaskForm):
     amount = DecimalField("Refund", validators=[Optional(), NumberRange(min=Decimal("0.01"))])
+    idempotency_key = HiddenField()
     submit = SubmitField("Record refund")
 
 
@@ -328,7 +331,7 @@ def _task_rows(session, pending, now):
     return rows
 
 
-def _order_rows(session, tab, status, query, now):
+def _order_rows(session, tab, status, query, now, page=1, per_page=50):
     today = now.date()
     statement = select(Booking)
     statement = _booking_filter(query, statement)
@@ -348,7 +351,9 @@ def _order_rows(session, tab, status, query, now):
         if status:
             statement = statement.where(Booking.status == status)
         statement = statement.order_by(Booking.check_in.desc(), Booking.id.desc())
-    bookings = session.scalars(statement.limit(120)).all()
+    total = session.scalar(select(func.count()).select_from(statement.order_by(None).subquery())) or 0
+    page = max(page, 1)
+    bookings = session.scalars(statement.limit(per_page).offset((page - 1) * per_page)).all()
     paid = desk.paid_totals(session, [booking.id for booking in bookings])
     rows = []
     for booking in bookings:
@@ -365,7 +370,7 @@ def _order_rows(session, tab, status, query, now):
             "late": late,
             "overdue": booking.status == desk.CHECKED_IN and booking.check_out < today,
         })
-    return rows
+    return rows, total
 
 
 def desk_snapshot(session, now=None):
@@ -556,12 +561,12 @@ def index():
         window_filter = ""
     type_filter = request.args.get("type", type=int)
     stay_on = request.args.get("stay") == "1"
-    stay_end = _parse_date(request.args.get("check_out"), selected_date + timedelta(days=1))
-    stay_end = _clamp(
-        stay_end,
-        selected_date + timedelta(days=1),
-        today + timedelta(days=MAX_STAY_DAYS),
+    stay_nights = _clamp(
+        request.args.get("nights", type=int) or 1,
+        1,
+        MAX_STAY_DAYS,
     )
+    stay_end = selected_date + timedelta(days=stay_nights)
 
     # One board covers the timeline and any whole-stay filter; the grid itself renders
     # only the active floor, so 300 rooms never turn into 300 rows of HTML.
@@ -885,14 +890,29 @@ def index():
         return url_for("frontdesk.index", **args)
 
     close_url = _desk_url(room=None, booking=None)
-    order_tab = request.args.get("tab") or "arrivals"
+    order_tab = request.args.get("tab") or ("all" if query else "arrivals")
     if order_tab not in ORDER_TABS:
-        order_tab = "arrivals"
-    order_rows = (
-        _order_rows(db.session, order_tab, request.args.get("status") or None, query, now)
-        if view == "orders" else []
-    )
+        order_tab = "all" if query else "arrivals"
+    order_page = max(request.args.get("page", type=int) or 1, 1)
+    if view == "orders":
+        order_rows, order_total = _order_rows(
+            db.session, order_tab, request.args.get("status") or None, query, now,
+            page=order_page,
+        )
+    else:
+        order_rows, order_total = [], 0
+    order_pages = max((order_total + 49) // 50, 1)
+    if order_page > order_pages and view == "orders":
+        order_page = order_pages
+        order_rows, order_total = _order_rows(
+            db.session, order_tab, request.args.get("status") or None, query, now,
+            page=order_page,
+        )
     task_rows = _task_rows(db.session, pending, now) if view == "tasks" else []
+    payment_form = PaymentForm(prefix="pay")
+    payment_form.idempotency_key.data = uuid4().hex
+    refund_form = RefundForm(prefix="ref")
+    refund_form.idempotency_key.data = uuid4().hex
 
     return render_template(
         "frontdesk/index.html",
@@ -914,9 +934,9 @@ def index():
         window_filter=window_filter,
         type_filter=type_filter,
         stay_on=stay_on,
+        stay_nights=stay_nights,
         stay_end=stay_end,
-        stay_min=selected_date + timedelta(days=1),
-        stay_max=today + timedelta(days=MAX_STAY_DAYS),
+        max_stay_days=MAX_STAY_DAYS,
         spotlight=spotlight,
         floor_counts=floor_counts,
         room_types=room_types,
@@ -971,8 +991,8 @@ def index():
         walk_customer=walk_customer,
         walk_matches=walk_matches,
         block_form=block_form,
-        payment_form=PaymentForm(prefix="pay"),
-        refund_form=RefundForm(prefix="ref"),
+        payment_form=payment_form,
+        refund_form=refund_form,
         reassign_form=ReassignForm(prefix="re"),
         decision_form=DecisionForm(prefix="req"),
         contact_form=ContactForm(prefix="con"),
@@ -982,6 +1002,9 @@ def index():
         order_tabs=ORDER_TABS,
         status_filter=request.args.get("status") or "",
         order_rows=order_rows,
+        order_total=order_total,
+        order_page=order_page,
+        order_pages=order_pages,
         task_rows=task_rows,
         desk_url=_desk_url,
         check_in_from=desk.CHECK_IN_FROM.strftime("%H:%M"),
@@ -994,10 +1017,15 @@ def index():
 def pay(booking_id):
     booking = _booking_or_404(booking_id)
     form = PaymentForm(prefix="pay")
-    amount = form.amount.data if form.validate_on_submit() else None
+    if not form.validate_on_submit():
+        flash("Check the payment amount and try again.", "error")
+        return _back(booking=booking_id)
+    key = form.idempotency_key.data or str(uuid4())
+    amount = form.amount.data
 
     def action(session):
-        desk.record_payment(session, session.get(Booking, booking_id), current_user.id, amount)
+        desk.record_payment(session, session.get(Booking, booking_id), current_user.id, amount,
+                            idempotency_key=key)
 
     _run(action, f"Payment recorded for {booking.reference}.")
     return _back(booking=booking_id)
@@ -1008,10 +1036,15 @@ def pay(booking_id):
 def refund(booking_id):
     booking = _booking_or_404(booking_id)
     form = RefundForm(prefix="ref")
-    amount = form.amount.data if form.validate_on_submit() else None
+    if not form.validate_on_submit():
+        flash("Check the refund amount and try again.", "error")
+        return _back(booking=booking_id)
+    key = form.idempotency_key.data or str(uuid4())
+    amount = form.amount.data
 
     def action(session):
-        desk.record_refund(session, session.get(Booking, booking_id), current_user.id, amount)
+        desk.record_refund(session, session.get(Booking, booking_id), current_user.id, amount,
+                           idempotency_key=key)
 
     _run(action, f"Refund recorded for {booking.reference}.")
     return _back(booking=booking_id)
@@ -1156,6 +1189,35 @@ def walk_in():
     return _back(booking=booking_id.get("id") if succeeded else None, room=None)
 
 
+@frontdesk.get("/frontdesk/blocks/preview")
+@desk_required
+def block_preview():
+    """Live conflict count for the block form, before the desk submits it."""
+    room_id = request.args.get("room_id", type=int)
+    start = _parse_date(request.args.get("start_date"), None)
+    end = _parse_date(request.args.get("end_date"), None)
+    if not room_id or start is None or end is None or end <= start:
+        return jsonify({"error": "Choose a valid date range."}), 400
+    conflicts = db.session.scalars(
+        select(Booking).where(
+            Booking.room_id == room_id,
+            Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
+            Booking.check_in < end,
+            Booking.check_out > start,
+        ).order_by(Booking.check_in, Booking.id)
+    ).all()
+    return jsonify({
+        "count": len(conflicts),
+        "bookings": [
+            {"reference": booking.reference,
+             "guest": booking.customer.name,
+             "check_in": booking.check_in.isoformat(),
+             "check_out": booking.check_out.isoformat()}
+            for booking in conflicts
+        ],
+    })
+
+
 @frontdesk.post("/frontdesk/blocks")
 @desk_required
 def create_block():
@@ -1225,10 +1287,11 @@ def approve_request(request_id):
         abort(404)
     form = DecisionForm(prefix="req")
     comment = form.comment.data if form.validate_on_submit() else None
+    now = hotel_now()
 
     def action(session):
         desk.approve_request(session, request_id, current_user.id, comment,
-                             actor_role=current_user.role, today=hotel_now().date())
+                             actor_role=current_user.role, today=now.date(), now=now)
 
     _run(action, "Request approved and applied.")
     return _back(booking=row.booking_id)

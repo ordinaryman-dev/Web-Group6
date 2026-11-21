@@ -25,15 +25,22 @@ The manager command prompts for a password. Run it once for the initial manager.
 Sign in at http://127.0.0.1:5000/login. Guests can create accounts at /register.
 Managers can create front-desk accounts from Staff accounts.
 
+The inventory is 293 rooms: 12 floors × 24 rooms plus the five-room demo wing. An
+older database that still carries a Family Suite numbered x25 on every floor can be
+converged with `python -m flask --app app retire-legacy-rooms --apply`. The command
+moves active stays to a free room of the same type and keeps the old booking history.
+
 ## Schema
 
 Migrations are applied with `python -m flask --app app db upgrade`. The current head is
-`20261120_09`. Besides the original catalogue and booking tables, the migrations add
+`20261121_10`. Besides the original catalogue and booking tables, the migrations add
 booking notes/timestamps, manager request/payment records and actual-stay fields, the
 front-desk expected-arrival field, `room_types.bed_type` (`single`, `double`, `twin`,
 `king`, `studio`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
-`rooms.has_window` used by the front-desk ventilation filter, and microsecond-precision
-`rooms.last_allocated_at` used for allocation rotation. After pulling this change, run
+`rooms.has_window` used by the front-desk ventilation filter, microsecond-precision
+`rooms.last_allocated_at` used for allocation rotation, the snapped
+`bookings.cancel_by` cancellation deadline, and `payment_records.idempotency_key`
+with its per-actor unique constraint. After pulling this change, run
 `python -m flask --app app db upgrade` before starting the site. The rotation migration
 initialises existing rooms from the latest known booking creation time; rooms without
 orders remain unassigned. Subsequent successful assignments record their own timestamps.
@@ -42,15 +49,18 @@ orders remain unassigned. Subsequent successful assignments record their own tim
 
 - /guest/ — hero search with bed-type filters, three-column room grid, a separate
   confirmation page, status tabs on My bookings, a 70/30 order detail page with note editing
-  and room-type/date/extension/cancellation request modals, and an account dashboard. Quotes
+  and room-type/date/extension/cancellation request modals, and an account dashboard for
+  contact details and password changes. Quotes
   are recalculated on submission. A changed price requires a fresh confirmation. A confirmed
   reservation stores an amount for each night.
 - /manage — operations overview, room types and room inventory, seasonal and
   date-specific prices, staff accounts, customer blacklist, bookings, exception
   cancellation, audit, occupancy reports and CSV export. Manager writes are transactional.
-  Staff accounts are disabled without removing their historical references.
+  Room records include the window flag used by the desk filter; staff accounts can be
+  disabled, re-enabled and given a new password without removing their history.
 - /frontdesk — front-desk workbench. A narrow section menu opens three views: the room
-  board (12 floors of 25 rooms plus the demo wing), the order list and the task queue. The
+  board (12 floors of 24 rooms plus the five-room demo wing, 293 rooms), the order list and the task queue. The
+  order list is paged; maintenance dates preview their booking conflicts before saving. The
   top bar keeps global search (name, phone, room or `BK-` reference), a 15-day timeline and
   a live Beijing clock. Clicking a room or order opens a 400px action drawer for check-in,
   checkout, walk-in, simulated payment/refund, maintenance blocks and request decisions.

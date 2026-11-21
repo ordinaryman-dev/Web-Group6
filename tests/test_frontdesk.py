@@ -1,6 +1,6 @@
 import re
 from uuid import uuid4
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -277,6 +277,67 @@ def test_request_approval_is_atomic_and_rejection_keeps_the_booking(app):
     assert booking_state(app, booking_id) == before
 
 
+def test_booking_stores_the_cancellation_deadline_snapshot(app):
+    _, guest_email = new_user(app, GUEST)
+    type_id, _ = make_room(app, "desk-snapshot")
+    guest = sign_in(app, guest_email)
+    arrival = TODAY + timedelta(days=1)
+    booking_id = reserve(guest, type_id, arrival)
+    with app.app_context():
+        booking = db.session.get(Booking, booking_id)
+        assert booking.cancel_by == datetime.combine(TODAY, time(18))
+
+
+def test_block_preview_lists_conflicting_bookings_before_submit(app):
+    _, staff_email = new_user(app, STAFF)
+    _, guest_email = new_user(app, GUEST)
+    type_id, room_id = make_room(app, "block-preview")
+    guest = sign_in(app, guest_email)
+    arrival = TODAY + timedelta(days=2)
+    booking_id = reserve(guest, type_id, arrival, nights=2)
+    staff = sign_in(app, staff_email)
+
+    preview = staff.get("/frontdesk/blocks/preview", query_string={
+        "room_id": room_id, "start_date": str(arrival), "end_date": str(arrival + timedelta(days=1)),
+    })
+    assert preview.status_code == 200
+    data = preview.get_json()
+    assert data["count"] == 1
+    assert data["bookings"][0]["reference"] == f"BK-{booking_id:06d}"
+
+    clear = staff.get("/frontdesk/blocks/preview", query_string={
+        "room_id": room_id, "start_date": str(arrival + timedelta(days=5)),
+        "end_date": str(arrival + timedelta(days=6)),
+    })
+    assert clear.get_json()["count"] == 0
+
+
+def test_guest_can_update_the_contact_details_used_by_the_desk(app):
+    _, guest_email = new_user(app, GUEST)
+    type_id, _ = make_room(app, "guest-profile")
+    guest = sign_in(app, guest_email)
+    booking_id = reserve(guest, type_id, TODAY + timedelta(days=1))
+
+    saved = post(guest, "/guest/account/profile",
+                 {"name": "Updated Guest", "phone": "13912345678"},
+                 form_path="/guest/account")
+    assert saved.status_code == 302
+    with app.app_context():
+        booking = db.session.get(Booking, booking_id)
+        customer = db.session.get(Customer, booking.customer_id)
+        assert customer.name == "Updated Guest" and customer.phone == "13912345678"
+        customer_id = customer.id
+    account = guest.get("/guest/account")
+    assert "Updated Guest" in account.text and "13912345678" in account.text
+
+    refused = post(guest, "/guest/account/profile",
+                   {"name": "Updated Guest", "phone": "not a phone"},
+                   form_path="/guest/account")
+    assert refused.status_code == 302
+    with app.app_context():
+        assert db.session.get(Customer, customer_id).phone == "13912345678"
+
+
 def test_cancellation_after_the_deadline_waits_for_the_manager(app):
     _, staff_email = new_user(app, STAFF)
     _, guest_email = new_user(app, GUEST)
@@ -394,3 +455,67 @@ def test_block_can_be_cancelled_and_the_room_returns(app):
         board = desk_service.room_board(db.session, arrival, 1)
         assert next(r for r in board if r["room"].id == room_id)["cells"][0]["state"] == "arriving"
         assert db.session.query(AuditLog).filter_by(action="cancel_block").count() == 1
+
+
+def test_room_board_skips_retired_rooms(app):
+    with app.app_context():
+        room_type = RoomType(
+            code=f"retired-{uuid4().hex[:12]}", name="Retired test type", description="Retired test",
+            capacity=2, base_price=Decimal("200.00"),
+        )
+        db.session.add(room_type)
+        db.session.flush()
+        active = Room(number=f"R{uuid4().hex[:5]}", room_type_id=room_type.id,
+                      operational_from=date(2020, 1, 1))
+        retired = Room(number=f"R{uuid4().hex[:5]}", room_type_id=room_type.id,
+                       operational_from=date(2020, 1, 1), operational_until=TODAY)
+        db.session.add_all([active, retired])
+        db.session.commit()
+        active_number, retired_number = active.number, retired.number
+
+    with app.app_context():
+        board = desk_service.room_board(db.session, TODAY, 1)
+        numbers = {row["room"].number for row in board}
+        assert active_number in numbers
+        assert retired_number not in numbers
+
+
+def test_orders_search_covers_all_orders_and_only_room_board_has_the_timeline(app):
+    staff_id, staff_email = new_user(app, STAFF)
+    with app.app_context():
+        room_type = RoomType(
+            code=f"search-{uuid4().hex[:12]}", name="Search test type", description="Search test",
+            capacity=2, base_price=Decimal("200.00"),
+        )
+        db.session.add(room_type)
+        db.session.flush()
+        room = Room(number=f"S{uuid4().hex[:5]}", room_type_id=room_type.id,
+                    operational_from=date(2020, 1, 1))
+        db.session.add(room)
+        db.session.flush()
+        for index in range(4):
+            customer = Customer(name=f"Searchcase Guest {index}", phone=f"139000000{index:02d}")
+            db.session.add(customer)
+            db.session.flush()
+            db.session.add(Booking(
+                customer_id=customer.id, room_id=room.id, room_type_id=room_type.id,
+                actor_user_id=staff_id, idempotency_key=str(uuid4()),
+                request_digest="searchcase",
+                check_in=TODAY + timedelta(days=5 + index * 2),
+                check_out=TODAY + timedelta(days=6 + index * 2),
+                guests=1, status="confirmed", total=Decimal("200.00"),
+            ))
+        db.session.commit()
+
+    staff = sign_in(app, staff_email)
+    page = staff.get("/frontdesk?view=orders&q=Searchcase")
+    assert page.status_code == 200
+    # The search box itself must ask for all orders, not the Arrivals tab.
+    assert 'name="tab" value="all"' in page.text
+    assert "4 orders · page 1 of 1" in page.text
+    assert 'aria-label="Timeline: today and the next 14 days"' not in page.text
+
+    board = staff.get("/frontdesk")
+    assert 'aria-label="Timeline: today and the next 14 days"' in board.text
+    tasks = staff.get("/frontdesk?view=tasks")
+    assert 'aria-label="Timeline: today and the next 14 days"' not in tasks.text

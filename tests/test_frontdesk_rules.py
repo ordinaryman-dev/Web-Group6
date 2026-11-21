@@ -252,6 +252,42 @@ def test_e04_in_house_guests_are_not_reassigned(app):
     assert booking_row(app, booking_id)["room"] == rooms[0]
 
 
+def test_e04_maintenance_move_cannot_change_the_room_type(app):
+    type_a, rooms_a = make_type_and_rooms(app, "e04-type-a", count=1)
+    type_b, _ = make_type_and_rooms(app, "e04-type-b", count=1)
+    booking_id = make_booking(app, type_a, rooms_a, check_in=TODAY + timedelta(days=2))
+    actor = staff_id(app)
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.reassign(db.session, booking_id, actor, "Lift repair",
+                                  room_type_id=type_b)
+        assert "same room type" in str(error.value).lower()
+        assert db.session.get(Booking, booking_id).room_id == rooms_a[0]
+
+
+def test_e05_task_card_shows_the_guest_note(app):
+    from tests.test_frontdesk import sign_in
+
+    type_id, rooms = make_type_and_rooms(app, "e05-note")
+    staff_email = f"staff-{uuid4()}@example.test"
+    with app.app_context():
+        db.session.add(User(email=staff_email,
+                            password_hash=generate_password_hash(PASSWORD), role=STAFF))
+        db.session.commit()
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2))
+    with app.app_context():
+        db.session.get(Booking, booking_id).note = "Please call me before arrival"
+        db.session.commit()
+    _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=3)),
+        "check_out": str(TODAY + timedelta(days=5)),
+    })
+    staff = sign_in(app, staff_email)
+    page = staff.get("/frontdesk?view=tasks")
+    assert page.status_code == 200
+    assert "Please call me before arrival" in page.text
+
+
 def test_e05_the_same_request_can_only_be_decided_once(app):
     type_id, rooms = make_type_and_rooms(app, "e05-once")
     booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2))
@@ -275,7 +311,7 @@ def test_e05_the_same_request_can_only_be_decided_once(app):
         barrier.wait(timeout=10)
         try:
             with Session(engine) as session, session.begin():
-                desk_service.approve_request(session, request_id, actor, "ok")
+                desk_service.approve_request(session, request_id, actor, "ok", now=NOW)
             return "approved"
         except desk_service.DeskError:
             return "rejected"
@@ -362,14 +398,28 @@ def test_e08_contact_then_no_show_after_the_expected_time(app):
     assert row["nights"] == 0
     assert row["no_show_reason"] == "unreachable"
     with app.app_context():
-        assert db.session.query(PaymentRecord).filter_by(
-            booking_id=booking_id, kind="refund").count() == 0
+        refunds = db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, kind="refund").all()
+        assert len(refunds) == 1 and refunds[0].amount == Decimal("400.00")
         assert db.session.query(AuditLog).filter_by(
             action="mark_no_show", object_type="booking", object_id=booking_id
         ).count() == 1
 
 
-def test_e08_no_show_refund_follows_the_manager_cancellation_rule(app):
+def test_e08_no_show_requires_a_recorded_contact_attempt(app):
+    type_id, rooms = make_type_and_rooms(app, "e08-contact")
+    booking_id = make_booking(app, type_id, rooms, nights=1, expected=time(18, 0),
+                              paid=Decimal("200.00"))
+    actor = staff_id(app)
+    late = datetime(2030, 6, 18, 21, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.mark_no_show(db.session, booking_id, actor, "unreachable", late)
+        assert "contact attempt" in str(error.value).lower()
+        assert db.session.get(Booking, booking_id).status == "confirmed"
+
+
+def test_e08_no_show_refunds_immediately_and_manager_cannot_double_refund(app):
     from app.booking import cancel_confirmed_booking
 
     type_id, rooms = make_type_and_rooms(app, "e08-refund")
@@ -384,13 +434,16 @@ def test_e08_no_show_refund_follows_the_manager_cancellation_rule(app):
     with app.app_context():
         desk_service.mark_no_show(db.session, booking_id, actor, "unreachable", late)
         db.session.commit()
+        refunds = db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, kind="refund").all()
+        assert len(refunds) == 1 and refunds[0].amount == Decimal("200.00")
 
     manager_id = new_user(app, "manager")
     with app.app_context():
         refund = cancel_confirmed_booking(db.session, manager_id, booking_id, "hotel",
                                           "No-show goodwill refund", NOW)
         db.session.commit()
-        assert refund == Decimal("200.00")
+        assert refund == Decimal("0.00")
     row = booking_row(app, booking_id)
     assert row["status"] == "cancelled"
     with app.app_context():
@@ -398,4 +451,380 @@ def test_e08_no_show_refund_follows_the_manager_cancellation_rule(app):
             booking_id=booking_id, kind="refund").all()
         payments = db.session.query(PaymentRecord).filter_by(
             booking_id=booking_id, kind="payment").all()
-        assert sum(r.amount for r in refunds) <= sum(p.amount for p in payments)
+        assert sum(r.amount for r in refunds) == sum(p.amount for p in payments) == Decimal("200.00")
+
+
+def _add_request(app, booking_id, kind, target, *, submitted_by=None, reason="test"):
+    with app.app_context():
+        row = BookingRequest(
+            booking_id=booking_id, kind=kind, target=target, reason=reason,
+            submitted_by=submitted_by or staff_id(app), status="pending",
+        )
+        db.session.add(row)
+        db.session.commit()
+        return row.id
+
+
+def test_c07_date_change_keeps_the_earlier_cancellation_snapshot(app):
+    from app.booking import deadline_for
+
+    type_id, rooms = make_type_and_rooms(app, "c07-snapshot")
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=5),
+                              paid=Decimal("400.00"))
+    original_deadline = deadline_for(TODAY + timedelta(days=5))
+    actor = staff_id(app)
+    with app.app_context():
+        db.session.get(Booking, booking_id).cancel_by = original_deadline
+        db.session.commit()
+
+    later = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=6)),
+        "check_out": str(TODAY + timedelta(days=8)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, later, actor, "ok")
+        db.session.commit()
+        assert db.session.get(Booking, booking_id).cancel_by == original_deadline
+
+    earlier = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=2)),
+        "check_out": str(TODAY + timedelta(days=4)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, earlier, actor, "ok")
+        db.session.commit()
+        assert db.session.get(Booking, booking_id).cancel_by == deadline_for(TODAY + timedelta(days=2))
+
+
+def test_c07_date_change_keeps_confirmed_prices_for_overlapping_nights(app):
+    type_id, rooms = make_type_and_rooms(app, "c07-reprice")
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2),
+                              nights=2, paid=Decimal("400.00"))
+    actor = staff_id(app)
+    with app.app_context():
+        db.session.get(RoomType, type_id).base_price = Decimal("300.00")
+        db.session.commit()
+
+    request_id = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=3)),
+        "check_out": str(TODAY + timedelta(days=5)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok")
+        db.session.commit()
+        booking = db.session.get(Booking, booking_id)
+        assert booking.total == Decimal("500.00")
+        lines = dict(db.session.execute(
+            select(BookingPriceLine.stay_date, BookingPriceLine.amount)
+            .where(BookingPriceLine.booking_id == booking_id)
+        ).all())
+        assert lines == {
+            TODAY + timedelta(days=3): Decimal("200.00"),
+            TODAY + timedelta(days=4): Decimal("300.00"),
+        }
+        adjustments = db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, request_id=request_id, kind="payment").all()
+        assert len(adjustments) == 1 and adjustments[0].amount == Decimal("100.00")
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("500.00")
+
+
+def test_c04_unpaid_date_change_only_adjusts_the_amount_due(app):
+    type_id, rooms = make_type_and_rooms(app, "c04-unpaid")
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2),
+                              nights=2)
+    actor = staff_id(app)
+    with app.app_context():
+        db.session.get(RoomType, type_id).base_price = Decimal("300.00")
+        db.session.commit()
+    request_id = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=3)),
+        "check_out": str(TODAY + timedelta(days=5)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok")
+        db.session.commit()
+        booking = db.session.get(Booking, booking_id)
+        assert booking.total == Decimal("500.00")
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("0.00")
+        assert db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id).count() == 0
+
+
+def test_c07_same_day_date_change_uses_the_submission_time_for_the_2200_rule(app):
+    type_id, rooms = make_type_and_rooms(app, "c07-cutoff")
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2),
+                              expected=time(23, 30))
+    request_id = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY),
+        "check_out": str(TODAY + timedelta(days=1)),
+    })
+    with app.app_context():
+        # 21:00 Beijing; the desk approves at 22:30, so the current-time check
+        # must not turn a timely request into a late one.
+        db.session.get(BookingRequest, request_id).submitted_at = datetime(2030, 6, 18, 13, 0)
+        db.session.commit()
+    late = datetime(2030, 6, 18, 22, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
+    actor = staff_id(app)
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok",
+                                     today=late.date(), now=late)
+        db.session.commit()
+        booking = db.session.get(Booking, booking_id)
+        assert booking.check_in == TODAY
+        assert booking.check_out == TODAY + timedelta(days=1)
+
+
+def test_c07_date_approval_rechecks_the_arrival_window_and_eta(app):
+    type_id, rooms = make_type_and_rooms(app, "c07-window")
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2),
+                              expected=time(14, 0))
+    actor = staff_id(app)
+    before = booking_row(app, booking_id)
+
+    past = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY - timedelta(days=1)),
+        "check_out": str(TODAY + timedelta(days=1)),
+    })
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.approve_request(db.session, past, actor, "ok")
+        assert "check-in date" in str(error.value).lower()
+        assert booking_row(app, booking_id) == before
+        db.session.get(BookingRequest, past).status = "rejected"
+        db.session.commit()
+
+    same_day = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY),
+        "check_out": str(TODAY + timedelta(days=2)),
+    })
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.approve_request(db.session, same_day, actor, "ok")
+        assert "no earlier than now" in str(error.value).lower()
+        assert booking_row(app, booking_id) == before
+
+
+def test_c07_date_change_prefers_the_original_room(app):
+    type_id, rooms = make_type_and_rooms(app, "c07-room", count=2)
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY + timedelta(days=2),
+                              nights=2)
+    actor = staff_id(app)
+    with app.app_context():
+        customer = Customer(name="Other stay", phone="13800000001")
+        db.session.add(customer)
+        db.session.flush()
+        load = Booking(
+            customer_id=customer.id, room_id=rooms[0], room_type_id=type_id,
+            actor_user_id=actor, idempotency_key=f"load-{uuid4()}",
+            request_digest="load", check_in=TODAY + timedelta(days=10),
+            check_out=TODAY + timedelta(days=12), guests=2, status="confirmed",
+            total=Decimal("400.00"),
+        )
+        db.session.add(load)
+        db.session.flush()
+        for day in (10, 11):
+            db.session.add(RoomNight(room_id=rooms[0], stay_date=TODAY + timedelta(days=day),
+                                     booking_id=load.id))
+        db.session.commit()
+
+    request_id = _add_request(app, booking_id, "dates", {
+        "check_in": str(TODAY + timedelta(days=3)),
+        "check_out": str(TODAY + timedelta(days=5)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok")
+        db.session.commit()
+        # The other room has the lower load, but the original room is still free.
+        assert db.session.get(Booking, booking_id).room_id == rooms[0]
+
+
+def test_c05_room_type_change_refunds_the_price_difference(app):
+    type_a, rooms_a = make_type_and_rooms(app, "c05-old", price="200.00")
+    type_b, rooms_b = make_type_and_rooms(app, "c05-new", price="100.00")
+    booking_id = make_booking(app, type_a, rooms_a, nights=2, paid=Decimal("400.00"))
+    actor = staff_id(app)
+    request_id = _add_request(app, booking_id, "room_type", {"room_type_id": type_b})
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok")
+        db.session.commit()
+        booking = db.session.get(Booking, booking_id)
+        assert booking.room_type_id == type_b and booking.total == Decimal("200.00")
+        refunds = db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, request_id=request_id, kind="refund").all()
+        assert len(refunds) == 1 and refunds[0].amount == Decimal("200.00")
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("200.00")
+
+
+def test_e07_extension_approval_records_the_added_payment(app):
+    type_id, rooms = make_type_and_rooms(app, "e07-extend")
+    booking_id = make_booking(app, type_id, rooms, nights=2, status="checked_in",
+                              paid=Decimal("400.00"))
+    actor = staff_id(app)
+    request_id = _add_request(app, booking_id, "extend", {
+        "check_out": str(TODAY + timedelta(days=4)),
+    })
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, actor, "ok")
+        db.session.commit()
+        booking = db.session.get(Booking, booking_id)
+        assert booking.check_out == TODAY + timedelta(days=4)
+        assert booking.total == Decimal("800.00")
+        added = db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, request_id=request_id, kind="payment").all()
+        assert len(added) == 1 and added[0].amount == Decimal("400.00")
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("800.00")
+
+
+def test_e07_payment_and_refund_are_idempotent(app):
+    type_id, rooms = make_type_and_rooms(app, "e07-idem")
+    booking_id = make_booking(app, type_id, rooms, nights=1)
+    actor = staff_id(app)
+    key = str(uuid4())
+    with app.app_context():
+        first = desk_service.record_payment(
+            db.session, db.session.get(Booking, booking_id), actor, Decimal("100.00"),
+            idempotency_key=key,
+        )
+        second = desk_service.record_payment(
+            db.session, db.session.get(Booking, booking_id), actor, Decimal("100.00"),
+            idempotency_key=key,
+        )
+        db.session.commit()
+        assert first.id == second.id
+        assert db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, kind="payment").count() == 1
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("100.00")
+        with pytest.raises(desk_service.DeskError):
+            desk_service.record_payment(
+                db.session, db.session.get(Booking, booking_id), actor, Decimal("150.00"),
+                idempotency_key=str(uuid4()),
+            )
+
+    cancelled_id = make_booking(app, type_id, [rooms[1]], nights=1, status="cancelled",
+                                paid=Decimal("200.00"))
+    refund_key = str(uuid4())
+    with app.app_context():
+        first = desk_service.record_refund(
+            db.session, db.session.get(Booking, cancelled_id), actor, Decimal("50.00"),
+            idempotency_key=refund_key,
+        )
+        second = desk_service.record_refund(
+            db.session, db.session.get(Booking, cancelled_id), actor, Decimal("50.00"),
+            idempotency_key=refund_key,
+        )
+        db.session.commit()
+        assert first.id == second.id
+        assert db.session.query(PaymentRecord).filter_by(
+            booking_id=cancelled_id, kind="refund").count() == 1
+        assert desk_service.paid_total(db.session, cancelled_id) == Decimal("150.00")
+
+
+def test_e07_two_receptionists_cannot_overpay_the_same_booking(app):
+    type_id, rooms = make_type_and_rooms(app, "e07-race")
+    booking_id = make_booking(app, type_id, rooms, nights=1)
+    actor = staff_id(app)
+    barrier = Barrier(2)
+    with app.app_context():
+        engine = db.engine.execution_options(isolation_level="READ COMMITTED")
+
+    def pay(_):
+        barrier.wait(timeout=10)
+        try:
+            with Session(engine) as session, session.begin():
+                desk_service.record_payment(
+                    session, session.get(Booking, booking_id), actor, Decimal("150.00"),
+                    idempotency_key=str(uuid4()),
+                )
+            return "paid"
+        except desk_service.DeskError:
+            return "refused"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(pay, range(2)))
+    assert sorted(outcomes) == ["paid", "refused"]
+    with app.app_context():
+        assert desk_service.paid_total(db.session, booking_id) == Decimal("150.00")
+        assert db.session.query(PaymentRecord).filter_by(
+            booking_id=booking_id, kind="payment").count() == 1
+
+
+def test_e05_late_cancellation_is_queued_for_a_manager(app):
+    from app.booking import create_guest_request, deadline_for
+
+    type_id, rooms = make_type_and_rooms(app, "e05-late")
+    guest_id = new_user(app, GUEST)
+    booking_id = make_booking(app, type_id, rooms, check_in=TODAY, nights=1)
+    with app.app_context():
+        booking = db.session.get(Booking, booking_id)
+        booking.customer.user_id = guest_id
+        booking.cancel_by = deadline_for(booking.check_in)
+        db.session.commit()
+
+    with app.app_context():
+        request_id = create_guest_request(guest_id, booking_id, "cancel", {}, "Plans changed")
+        row = db.session.get(BookingRequest, request_id)
+        row.submitted_at = datetime(2030, 6, 18, 9, 0)
+        db.session.commit()
+
+    staff = staff_id(app)
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.approve_request(db.session, request_id, staff, "ok", actor_role="staff")
+        assert "manager" in str(error.value).lower()
+        assert db.session.get(Booking, booking_id).status == "confirmed"
+
+    manager = new_user(app, "manager")
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.approve_request(db.session, request_id, manager, None,
+                                         actor_role="manager")
+        assert "reason" in str(error.value).lower()
+        assert db.session.get(Booking, booking_id).status == "confirmed"
+    with app.app_context():
+        desk_service.approve_request(db.session, request_id, manager, "Manager exception: medical",
+                                     actor_role="manager")
+        db.session.commit()
+        assert db.session.get(Booking, booking_id).status == "cancelled"
+        audit = db.session.query(AuditLog).filter_by(
+            action="late_cancellation_exception", object_id=booking_id).one()
+        assert audit.reason == "Manager exception: medical"
+
+
+def test_blacklist_blocks_extension_submission_and_approval(app):
+    from app.booking import BookingRejected, create_guest_request
+
+    type_id, rooms = make_type_and_rooms(app, "e05-blacklist", count=2)
+    guest_a = new_user(app, GUEST)
+    guest_b = new_user(app, GUEST)
+    blocked_booking = make_booking(app, type_id, [rooms[0]], check_in=TODAY, nights=2)
+    pending_booking = make_booking(app, type_id, [rooms[1]], check_in=TODAY + timedelta(days=5),
+                                   nights=2)
+    with app.app_context():
+        first = db.session.get(Booking, blocked_booking)
+        second = db.session.get(Booking, pending_booking)
+        first.customer.user_id = guest_a
+        second.customer.user_id = guest_b
+        db.session.commit()
+        second_request = create_guest_request(
+            guest_b, pending_booking, "extend",
+            {"check_out": str(TODAY + timedelta(days=8))}, "Staying longer",
+        )
+        db.session.add(BlacklistEntry(customer_id=first.customer_id,
+                                      actor_user_id=staff_id(app), reason="Payment risk"))
+        db.session.add(BlacklistEntry(customer_id=second.customer_id,
+                                      actor_user_id=staff_id(app), reason="Payment risk"))
+        db.session.commit()
+
+    with app.app_context():
+        with pytest.raises(BookingRejected) as error:
+            create_guest_request(
+                guest_a, blocked_booking, "extend",
+                {"check_out": str(TODAY + timedelta(days=3))}, "Staying longer",
+            )
+        assert "blacklisted" in str(error.value).lower()
+
+    with app.app_context():
+        with pytest.raises(desk_service.DeskError) as error:
+            desk_service.approve_request(db.session, second_request, staff_id(app), "ok")
+        assert "blacklisted" in str(error.value).lower()
+        assert db.session.get(Booking, pending_booking).check_out == TODAY + timedelta(days=7)

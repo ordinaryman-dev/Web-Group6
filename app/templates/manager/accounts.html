@@ -25,7 +25,8 @@
       <thead><tr><th>Email</th><th>Role</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>{% for user in page.items %}<tr>
         <td><strong>{{ user.email }}</strong></td><td>Front desk</td><td>{{ status('active' if user.active else 'inactive') }}</td>
-        <td>{% if user.active %}
+        <td><div class="manager-row-actions">
+          {% if user.active %}
           <details class="manager-row-menu">
             <summary>Disable…</summary>
             <form method="post" action="{{ list_url('manager.disable_staff', staff_id=user.id) }}">
@@ -34,7 +35,14 @@
               <button type="submit" class="manager-button danger">Confirm disable</button>
             </form>
           </details>
-        {% endif %}</td>
+          {% else %}
+          <form method="post" action="{{ list_url('manager.enable_staff', staff_id=user.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="manager-button secondary">Enable</button>
+          </form>
+          {% endif %}
+          <a class="manager-button secondary" href="{{ list_url('manager.reset_staff_password', staff_id=user.id) }}">Reset password</a>
+        </div></td>
       </tr>{% endfor %}</tbody>
     </table></div>{% else %}<p class="manager-empty">No staff accounts match the selected filters.</p>{% endif %}
   </details>

@@ -8,7 +8,7 @@
 {%- endmacro %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=2">
+<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=5">
 <link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
 <div class="desk{% if drawer_mode %} has-drawer{% endif %}"
      data-notify-feed="{{ url_for('frontdesk.notifications_feed') }}"
@@ -68,11 +68,15 @@
 
   <div class="desk-main">
 
-    <header class="topbar">
+    <header class="topbar{{ ' no-timeline' if view != 'grid' }}">
       <form class="global-search" method="get" action="{{ url_for('frontdesk.index') }}" role="search">
         <input type="hidden" name="view" value="{{ view }}">
+        {% if view == 'grid' %}
         <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
         <input type="hidden" name="floor" value="{{ active_floor }}">
+        {% elif view == 'orders' %}
+        <input type="hidden" name="tab" value="all">
+        {% endif %}
         <span class="search-glyph" aria-hidden="true">⌕</span>
         <input type="search" name="q" value="{{ query }}"
                placeholder="Name, phone, room or BK-…"
@@ -80,6 +84,7 @@
         <button type="submit">Find</button>
       </form>
 
+      {% if view == 'grid' %}
       <nav class="timeline" aria-label="Timeline: today and the next 14 days">
         {% for day in timeline %}
         <a class="day {{ 'is-active' if day.date == selected_date }} {{ 'is-today' if day.date == today }}"
@@ -91,6 +96,7 @@
         </a>
         {% endfor %}
       </nav>
+      {% endif %}
 
       <div class="topbar-meta">
         <div class="clock">
@@ -262,12 +268,12 @@
           <input type="checkbox" name="stay" value="1" {{ 'checked' if stay_on }}>
           Whole stay free
         </label>
-        <label>Check-out
-          <input type="date" name="check_out" value="{{ stay_end.isoformat() }}"
-                 min="{{ stay_min.isoformat() }}" max="{{ stay_max.isoformat() }}">
+        <label>Nights
+          <input type="number" name="nights" value="{{ stay_nights }}" min="1"
+                 max="{{ max_stay_days }}" inputmode="numeric">
         </label>
         <button class="mini primary" type="submit">Apply</button>
-        <a class="mini" href="{{ desk_url(view='grid', state=None, bed=None, window=None, type=None, stay=None, check_out=None, room=None, booking=None) }}">Reset</a>
+        <a class="mini" href="{{ desk_url(view='grid', state=None, bed=None, window=None, type=None, stay=None, nights=None, room=None, booking=None) }}">Reset</a>
       </form>
 
       {% if spotlight %}
@@ -305,7 +311,7 @@
           <p class="eyebrow">BOOKINGS</p>
           <h2>Order list</h2>
         </div>
-        <span class="muted small">{{ order_rows|length }} shown · newest first</span>
+        <span class="muted small">{{ order_total }} order{{ '' if order_total == 1 else 's' }} · page {{ order_page }} of {{ order_pages }}</span>
       </div>
 
       <nav class="segmented" aria-label="Order tabs">
@@ -373,6 +379,17 @@
           </tbody>
         </table>
       </div>
+      {% if order_pages > 1 %}
+      <nav class="pager" aria-label="Order pages">
+        {% if order_page > 1 %}
+        <a class="mini" href="{{ desk_url(view='orders', tab=order_tab, status=status_filter or None, page=order_page - 1, room=None, booking=None) }}">Previous</a>
+        {% endif %}
+        <span class="muted small">Page {{ order_page }} of {{ order_pages }}</span>
+        {% if order_page < order_pages %}
+        <a class="mini" href="{{ desk_url(view='orders', tab=order_tab, status=status_filter or None, page=order_page + 1, room=None, booking=None) }}">Next</a>
+        {% endif %}
+      </nav>
+      {% endif %}
       {% else %}
       <p class="empty">No orders in this tab.</p>
       {% endif %}
@@ -418,6 +435,7 @@
               <p class="small muted">{{ b.room_type.name }} · Room {{ b.room.number }}</p>
               <p class="small">{{ b.check_in.strftime('%d %b') }} → {{ b.check_out.strftime('%d %b') }} · {{ b.nights }} night{{ '' if b.nights == 1 else 's' }}</p>
               <p class="small">Total ¥{{ b.total|money }} · <span class="chip chip-{{ b.status }}">{{ b.status.replace('_', ' ') }}</span></p>
+              {% if b.note %}<p class="small muted">Guest note: “{{ b.note }}”</p>{% endif %}
             </div>
             <div class="task-arrow" aria-hidden="true">→</div>
             <div class="task-side requested">
@@ -429,12 +447,16 @@
           </div>
 
           <div class="task-actions">
-            <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=task.request.id) }}" data-guard>
+            <form method="post" action="{{ url_for('frontdesk.approve_request', request_id=task.request.id) }}"
+                  data-guard data-request-check="{{ task.request.id }}">
               {{ csrf_back() }}
-              <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Decision note (optional)">
+              <input class="input tiny" type="text" name="req-comment" maxlength="240"
+                     placeholder="{{ 'Manager reason (required)' if task.manager_required and is_manager else 'Decision note (optional)' }}"
+                     {{ 'required' if task.manager_required and is_manager }}>
               <button class="mini primary" type="submit" {{ 'disabled' if not task.can_approve }}>Approve</button>
             </form>
-            <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=task.request.id) }}" data-guard>
+            <form method="post" action="{{ url_for('frontdesk.reject_request', request_id=task.request.id) }}"
+                  data-guard data-request-check="{{ task.request.id }}">
               {{ csrf_back() }}
               <input class="input tiny" type="text" name="req-comment" maxlength="240" placeholder="Reason for rejection (required)" required>
               <button class="mini" type="submit">Reject</button>
@@ -678,7 +700,7 @@
           <input type="hidden" name="back" value="{{ request.full_path }}">
           {{ no_show_form.reason(class_="input", placeholder="Reason: not coming / unreachable") }}
           <button class="btn danger wide" type="submit" {{ 'disabled' if not no_show_allowed }}
-                  data-confirm="Mark {{ b.reference }} as a no-show, release the room and keep the payment record?">Mark no-show and release</button>
+                  data-confirm="Mark {{ b.reference }} as a no-show, release the room and refund the unrefunded balance?">Mark no-show and release</button>
         </form>
         {% if no_show_hint %}<p class="hint bad">{{ no_show_hint }}</p>{% endif %}
       </section>
@@ -901,13 +923,16 @@
       <details class="drawer-section">
         <summary>Set out of service</summary>
         <p class="hint">Existing bookings in this period stay and are flagged, never overwritten. You will be offered a same-type move for each one.</p>
-        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard>
+        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard
+              data-block-preview="{{ url_for('frontdesk.block_preview') }}"
+              data-block-room="{{ selected_room.id }}">
           {{ block_form.hidden_tag() }}
           <input type="hidden" name="back" value="{{ request.full_path }}">
           <div class="form-grid">
             <div class="field"><label>From</label>{{ block_form.start_date(class_="input") }}</div>
             <div class="field"><label>To</label>{{ block_form.end_date(class_="input") }}</div>
           </div>
+          <p class="hint block-preview" data-block-preview-out>Choose a date range to check for bookings.</p>
           <div class="field"><label>Reason</label>{{ block_form.reason(class_="input", placeholder="Bathroom leak, repainting…") }}</div>
           <button class="btn danger wide" type="submit">Set out of service</button>
         </form>
@@ -922,5 +947,5 @@
   {% endif %}
 
 </div>
-<script defer src="{{ url_for('static', filename='frontdesk.js') }}"></script>
+<script defer src="{{ url_for('static', filename='frontdesk.js') }}?v=2"></script>
 {% endblock %}

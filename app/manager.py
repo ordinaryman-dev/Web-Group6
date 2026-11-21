@@ -15,7 +15,7 @@ from .auth import role_required
 from .booking import BookingRejected, HOTEL_ZONE, cancel_confirmed_booking, cancellation_deadline, hotel_now, refundable_amount
 from .extensions import db
 from .floorplan import build_floor_plan, render_floor_plan
-from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm
+from .manager_forms import BlacklistForm, CancelForm, PasswordForm, PriceForm, ReasonForm, RoomForm, RoomTypeForm, StaffForm, StaffPasswordForm
 from .models import (
     AuditLog, BlacklistEntry, Booking, BookingRequest, Customer, MANAGER, PaymentRecord, PriceRule,
     Room, RoomBlock, RoomNight, RoomType, STAFF, User,
@@ -229,8 +229,11 @@ def rooms():
     status = request.args.get("status", "")
     requested_view = request.args.get("view")
 
+    # Retired rooms keep their history but are no longer part of the sellable
+    # inventory, so they do not appear in the floor tabs or the room list.
+    in_inventory = or_(Room.operational_until.is_(None), Room.operational_until > day)
     floor_rooms = {}
-    for room_id, number in db.session.execute(select(Room.id, Room.number)):
+    for room_id, number in db.session.execute(select(Room.id, Room.number).where(in_inventory)):
         floor_rooms.setdefault(floor_key(number), []).append(room_id)
     if floor not in floor_rooms:
         floor = ""
@@ -276,7 +279,7 @@ def rooms():
         ("status", "Night status A–Z", room_status, *number_order),
         ("opening", "Operating date: newest first", Room.operational_from.desc(), *number_order),
     ), "number")
-    statement = select(Room).join(RoomType)
+    statement = select(Room).join(RoomType).where(in_inventory)
     if query:
         statement = statement.where(contains_any(query, Room.number, RoomType.name, RoomType.code))
     if type_id in types_by_id:
@@ -327,7 +330,7 @@ def rooms():
         # Open on the floor where something is actually happening tonight, so the
         # manager sees arrivals and maintenance instead of a wall of green rooms.
         busy = {}
-        for number, state in db.session.execute(select(Room.number, room_status)):
+        for number, state in db.session.execute(select(Room.number, room_status).where(in_inventory)):
             key = floor_key(number)
             busy.setdefault(key, 0)
             if state != "available":
@@ -513,6 +516,23 @@ def staff_form():
 @manager.post("/accounts/<int:staff_id>/disable")
 def disable_staff(staff_id):
     return row_action(services.disable_staff, "Staff account is inactive.", "manager.accounts", staff_id)
+
+
+@manager.post("/accounts/<int:staff_id>/enable")
+def enable_staff(staff_id):
+    return row_action(services.enable_staff, "Staff account is active again.", "manager.accounts", staff_id)
+
+
+@manager.route("/accounts/<int:staff_id>/password", methods=["GET", "POST"])
+def reset_staff_password(staff_id):
+    staff = db.get_or_404(User, staff_id)
+    if staff.role != STAFF:
+        abort(404)
+    form = StaffPasswordForm()
+    return edit_form(
+        form, f"Reset password for {staff.email}", "manager.accounts",
+        "Staff password reset.", services.reset_staff_password, staff_id, form.password.data,
+    )
 
 
 @manager.route("/profile", methods=["GET", "POST"])

@@ -45,6 +45,7 @@ class RoomForm(FlaskForm):
     room_type_id = SelectField("Room type", coerce=int, validators=[InputRequired()])
     operational_from = DateField("First operating date", validators=[InputRequired()])
     operational_until = DateField("First unavailable date (optional)", validators=[Optional()])
+    has_window = BooleanField("Has window", default=True)
 
 
 class PriceForm(FlaskForm):
@@ -68,6 +69,11 @@ class PasswordForm(FlaskForm):
     current_password = PasswordField("Current password", validators=[InputRequired(), Length(max=128)])
     new_password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
     confirm = PasswordField("Confirm new password", validators=[InputRequired(), EqualTo("new_password")])
+
+
+class StaffPasswordForm(FlaskForm):
+    password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
+    confirm = PasswordField("Confirm new password", validators=[InputRequired(), EqualTo("password")])
 
 
 class BlacklistForm(FlaskForm):

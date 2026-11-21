@@ -58,7 +58,7 @@
 
       <div class="cancel-note {% if deadline_passed %}warn{% endif %}">
         {% if deadline_passed %}
-          The online cancellation deadline has passed. After booking, only a manager can cancel with a reason.
+          The free cancellation deadline has passed. A late cancellation request can still be sent after booking, but a manager must approve it.
         {% else %}
           Free cancellation request until {{ cancellation_deadline.strftime('%a, %d %b at %H:%M') }} Beijing time.
         {% endif %}

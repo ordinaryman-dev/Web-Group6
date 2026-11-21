@@ -42,7 +42,7 @@ def create_app(config=None):
     csrf.init_app(app)
 
     from .auth import auth
-    from .cli import create_manager, seed_demo, seed_desk, seed_rooms
+    from .cli import create_manager, retire_legacy_rooms, seed_demo, seed_desk, seed_rooms
     from .frontdesk import frontdesk
     from .guest import guest
     from .manager import manager
@@ -54,6 +54,7 @@ def create_app(config=None):
     app.register_blueprint(manager)
     app.register_blueprint(api)
     app.cli.add_command(create_manager)
+    app.cli.add_command(retire_legacy_rooms)
     app.cli.add_command(seed_demo)
     app.cli.add_command(seed_desk)
     app.cli.add_command(seed_rooms)

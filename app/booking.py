@@ -75,14 +75,18 @@ def hotel_now():
     return clock().astimezone(HOTEL_ZONE) if clock else datetime.now(HOTEL_ZONE)
 
 
-def stay_error(stay, now):
+def stay_error(stay, now, same_day_submitted_at=None):
     today = now.date()
     if not today <= stay.check_in <= today + timedelta(days=14):
         return "Choose a check-in date from today through 14 days ahead."
     if stay.check_out <= stay.check_in:
         return "Check-out must be after check-in."
-    if stay.check_in == today and now.time() >= time(22):
-        return "Same-day bookings close at 22:00 Beijing time."
+    if stay.check_in == today:
+        # A date-change request is judged by when the guest submitted it, not by
+        # how late the desk approves it. New bookings pass no separate timestamp.
+        submitted = same_day_submitted_at or now
+        if submitted.date() == today and submitted.time() >= time(22):
+            return "Same-day bookings close at 22:00 Beijing time."
     if stay.guests < 1:
         return "Enter at least one guest."
     return None
@@ -246,6 +250,7 @@ def allocate_once(session, actor_id, room_type_id, stay, key, digest, note, expe
         request_digest=digest,
         note=note,
         expected_arrival=expected_arrival,
+        cancel_by=deadline_for(stay.check_in),
     )
     session.add(booking)
     session.flush()
@@ -361,7 +366,6 @@ def create_guest_request(actor_id, booking_id, kind, target, reason):
         raise BookingRejected("INVALID_REQUEST", "Enter a reason of 240 characters or fewer.")
 
     now = hotel_now()
-    now_naive = now.replace(tzinfo=None)
     with Session(db.engine) as session, session.begin():
         booking = session.scalar(
             db.select(Booking)
@@ -388,11 +392,8 @@ def create_guest_request(actor_id, booking_id, kind, target, reason):
         elif kind == "cancel":
             if booking.status != "confirmed" or booking.checked_in_at is not None:
                 raise BookingRejected("STATE_CONFLICT", "A checked-in booking cannot be cancelled online.")
-            if now_naive > cancellation_deadline(booking):
-                raise BookingRejected(
-                    "STATE_CONFLICT",
-                    "The online cancellation deadline has passed; only a manager can cancel.",
-                )
+            # A request submitted after the deadline is still recorded. The desk sees
+            # it as a late cancellation and only a manager can approve it.
         elif kind == "extend":
             if booking.status not in ("confirmed", "checked_in"):
                 raise BookingRejected("STATE_CONFLICT", "This booking can no longer be extended.")
@@ -522,8 +523,15 @@ def refundable_amount(session, booking_id):
     return max(balance or Decimal("0.00"), Decimal("0.00"))
 
 
+def deadline_for(check_in):
+    """The free-cancellation deadline that a stay starting on ``check_in`` gets."""
+    return datetime.combine(check_in - timedelta(days=1), time(18))
+
+
 def cancellation_deadline(booking):
-    return datetime.combine(booking.check_in - timedelta(days=1), time(18))
+    # The snapshot is the contract. Only the fallback keeps bookings created
+    # before the snapshot column usable.
+    return booking.cancel_by or deadline_for(booking.check_in)
 
 
 def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now):
