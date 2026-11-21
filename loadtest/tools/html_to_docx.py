@@ -34,11 +34,16 @@ PALE_GOLD = RGBColor(0xCD, 0xBF, 0x9A)
 MUTED_WHITE = RGBColor(0xCF, 0xDC, 0xD4)
 FONT = "Microsoft YaHei"
 MONO = "Consolas"
-
+LANG = "zh"
 CONTENT_WIDTH = Cm(17.8)
 
 
-def set_run_font(run, size=None, bold=None, color=None, name=FONT, italic=None):
+def tr(chinese, english):
+    return english if LANG == "en" else chinese
+
+
+def set_run_font(run, size=None, bold=None, color=None, name=None, italic=None):
+    name = name or FONT
     run.font.name = name
     run._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), name)
     if size is not None:
@@ -381,7 +386,11 @@ def build_cover(doc, soup):
     if title:
         lines = [line.strip() for line in title.get_text("\n", strip=True).split("\n") if line.strip()]
         for index, line in enumerate(lines):
-            cover_paragraph(line, 31 if index == 0 else 24, WHITE, bold=True, space_after=2)
+            if LANG == "en":
+                size = 30
+            else:
+                size = 31 if index == 0 else 24
+            cover_paragraph(line, size, WHITE, bold=True, space_after=2)
 
     subtitle = cover.find("div", class_="subtitle")
     if subtitle:
@@ -401,7 +410,7 @@ def build_cover(doc, soup):
         text = line.get_text(" ", strip=True)
         label_text = label.get_text(strip=True) if label else ""
         value = text[len(label_text):].strip() if label_text and text.startswith(label_text) else text
-        run = paragraph.add_run(value)
+        run = paragraph.add_run((" " + value) if value else "")
         set_run_font(run, size=9.2, color=RGBColor(0xE6, 0xE0, 0xD0))
 
     kpis = cover.find("div", class_="cover-kpis")
@@ -443,13 +452,16 @@ def add_header_footer(section):
     section.footer.is_linked_to_previous = False
     header = section.header.paragraphs[0]
     header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = header.add_run("Hero Hotel · HTTP 并发与压力测试报告 · 2026-11-21")
+    run = header.add_run(tr(
+        "Hero Hotel · HTTP 并发与压力测试报告 · 2026-11-21",
+        "Hero Hotel · HTTP Concurrency and Stress Test Report · 2026-11-21",
+    ))
     set_run_font(run, size=7.6, color=GRAY)
     paragraph_border(header, "bottom", "DFE6E1", 4, 2)
 
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = footer.add_run("第 ")
+    run = footer.add_run(tr("第 ", "Page "))
     set_run_font(run, size=8, color=GRAY)
     field_begin = OxmlElement("w:fldChar")
     field_begin.set(qn("w:fldCharType"), "begin")
@@ -461,7 +473,7 @@ def add_header_footer(section):
     run._r.append(field_begin)
     run._r.append(instruction)
     run._r.append(field_end)
-    run = footer.add_run(" 页")
+    run = footer.add_run(tr(" 页", ""))
     set_run_font(run, size=8, color=GRAY)
 
 
@@ -499,7 +511,7 @@ def build_toc(doc, soup):
     heading = doc.add_paragraph()
     heading.paragraph_format.space_before = Pt(0)
     heading.paragraph_format.space_after = Pt(14)
-    run = heading.add_run("目录")
+    run = heading.add_run(tr("目录", "Contents"))
     set_run_font(run, size=18, bold=True, color=GREEN)
     paragraph_border(heading, "bottom", "DFE6E1", 6, 4)
 
@@ -548,7 +560,7 @@ def build_body(doc, soup, html_dir):
             continue
         if node.name == "h2":
             text = node.get_text(" ", strip=True)
-            if text == "目录":
+            if text in ("目录", "Contents"):
                 continue
             heading = doc.add_heading(text, level=1)
             if first_section:
@@ -608,11 +620,16 @@ def setup_styles(doc):
 
 
 def main():
+    global FONT, LANG
     parser = argparse.ArgumentParser()
     parser.add_argument("--html", required=True)
     parser.add_argument("--output", required=True, help="output .docx path")
+    parser.add_argument("--font", default="Microsoft YaHei")
+    parser.add_argument("--lang", choices=("zh", "en"), default="zh")
     parser.add_argument("--no-pdf", action="store_true")
     args = parser.parse_args()
+    FONT = args.font
+    LANG = args.lang
 
     html_path = Path(args.html).resolve()
     soup = BeautifulSoup(html_path.read_text(encoding="utf-8"), "html.parser")

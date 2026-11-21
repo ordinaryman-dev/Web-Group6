@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hero Hotel Booking System — HTTP Concurrency, Stress and Data-Consistency Test Report</title>
+<style>
+  :root {
+    --green: #1f4d3a;
+    --green-soft: #e8f0eb;
+    --gold: #b8860b;
+    --red: #a33a2a;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #dfe6e1;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Calibri", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    font-size: 10.2pt;
+    line-height: 1.65;
+  }
+  @page { size: A4; margin: 16mm 14mm 15mm; }
+  h1, h2, h3, h4 { color: var(--green); line-height: 1.3; }
+  h1 { font-size: 25pt; margin: 0 0 8pt; }
+  h2 {
+    font-size: 16.5pt;
+    margin: 0 0 10pt;
+    padding: 0 0 6pt 10pt;
+    border-left: 6px solid var(--green);
+    border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 12pt; margin: 15pt 0 6pt; }
+  h4 { font-size: 10.8pt; margin: 12pt 0 4pt; color: #2f5d4a; }
+  p { margin: 5pt 0; text-align: justify; }
+  ul, ol { margin: 5pt 0 5pt 18pt; padding: 0; }
+  li { margin: 2.5pt 0; }
+  a { color: var(--green); text-decoration: none; }
+  code {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 8.8pt;
+    background: #f2f6f3;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  pre {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 8.4pt;
+    line-height: 1.5;
+    background: #f7faf8;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--green);
+    padding: 8pt 10pt;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 7pt 0 9pt;
+    font-size: 8.6pt;
+    page-break-inside: avoid;
+  }
+  th {
+    background: var(--green-soft);
+    color: var(--green);
+    font-weight: 600;
+    text-align: left;
+    padding: 5pt 6pt;
+    border: 1px solid var(--line);
+    vertical-align: bottom;
+  }
+  td {
+    padding: 4.5pt 6pt;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td { background: #fbfcfb; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.center, th.center { text-align: center; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .cover {
+    background: var(--green);
+    color: #f5f2e9;
+    padding: 34mm 18mm 20mm;
+    margin: -16mm -14mm 0;
+    min-height: 261mm;
+    position: relative;
+  }
+  .cover .eyebrow {
+    letter-spacing: 2.2pt;
+    font-size: 9pt;
+    color: #cdbf9a;
+    text-transform: uppercase;
+    margin-bottom: 22mm;
+  }
+  .cover h1 { color: #ffffff; font-size: 34pt; margin-bottom: 4mm; }
+  .cover .subtitle {
+    font-size: 17pt;
+    color: #e9e1cd;
+    font-weight: 300;
+    margin-bottom: 28mm;
+  }
+  .cover .rule { width: 38mm; height: 2px; background: #cdbf9a; margin: 0 0 10mm; }
+  .cover .meta { font-size: 9.6pt; color: #e6e0d0; line-height: 1.9; }
+  .cover .meta b { color: #ffffff; font-weight: 600; }
+  .cover .foot {
+    position: absolute;
+    left: 18mm; right: 18mm; bottom: 16mm;
+    font-size: 8.4pt;
+    color: #b9c9bf;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    padding-top: 5mm;
+  }
+  .cover-kpis { display: flex; gap: 4mm; margin-top: 20mm; }
+  .cover-kpis div {
+    flex: 1;
+    border: 1px solid rgba(255,255,255,0.28);
+    padding: 5mm 4mm;
+    border-radius: 2mm;
+  }
+  .cover-kpis b { display: block; font-size: 20pt; color: #ffffff; line-height: 1.2; }
+  .cover-kpis span { font-size: 8.2pt; color: #cfdcd4; }
+  .page-break { page-break-before: always; }
+  .toc { margin-top: 6mm; }
+  .toc ol { margin-left: 20pt; }
+  .toc li { margin: 4pt 0; font-size: 10.4pt; }
+  .toc .sub { margin-left: 16pt; font-size: 9.2pt; color: var(--muted); }
+  .kpi-grid { display: flex; gap: 3mm; margin: 8pt 0 12pt; }
+  .kpi {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--green);
+    padding: 7pt 8pt 6pt;
+    background: #fbfdfb;
+  }
+  .kpi b { display: block; font-size: 17pt; color: var(--green); line-height: 1.25; }
+  .kpi span { font-size: 8.2pt; color: var(--muted); }
+  .callout {
+    border-left: 4px solid var(--green);
+    background: var(--green-soft);
+    padding: 7pt 10pt;
+    margin: 9pt 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .callout.warn { border-left-color: var(--gold); background: #fbf5e4; }
+  .callout.bad { border-left-color: var(--red); background: #fbeeeb; }
+  .pass { color: #1f6b47; font-weight: 600; }
+  .fail { color: var(--red); font-weight: 600; }
+  .warn-text { color: #8a6508; font-weight: 600; }
+  figure {
+    margin: 10pt 0 12pt;
+    page-break-inside: avoid;
+    text-align: center;
+  }
+  figure img {
+    max-width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  figcaption {
+    margin-top: 4pt;
+    font-size: 8.4pt;
+    color: var(--muted);
+    text-align: center;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 7.8pt;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--green-soft);
+    color: var(--green);
+    margin-right: 4px;
+  }
+  .tag.red { background: #fbeeeb; color: var(--red); }
+  .tag.gold { background: #fbf5e4; color: #8a6508; }
+  .note { font-size: 8.6pt; color: var(--muted); }
+  .sig { margin-top: 18pt; font-size: 9pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<div class="cover">
+  <div class="eyebrow">COMP3019J Group 6 · Milestone 2 · Test Report</div>
+  <h1>Hero Hotel<br>Booking System</h1>
+  <div class="subtitle">HTTP Concurrency, Stress and Data-Consistency Test Report</div>
+  <div class="rule"></div>
+  <div class="meta">
+    <div><b>Version tested:</b> main @ 17a21e4 + seed-desk fix (commits d86b130 / efdf756)</div>
+    <div><b>Changes:</b> page-structure refactor; demo-seed consistency fix (F1)</div>
+    <div><b>Test date:</b> 2026-11-21</div>
+    <div><b>Method:</b> black-box HTTP (requests + ThreadPoolExecutor), real login and CSRF</div>
+    <div><b>Environment:</b> Windows 10.0.26300 · Python 3.13.5 · MySQL 8.0.29 InnoDB</div>
+  </div>
+  <div class="cover-kpis">
+    <div><b>130</b><span>automated tests passed</span></div>
+    <div><b>7 / 7</b><span>contention rounds, one booking each</span></div>
+    <div><b>28,807</b><span>HTTP requests</span></div>
+    <div><b>0</b><span>5xx responses</span></div>
+    <div><b>15 / 15</b><span>consistency invariants</span></div>
+  </div>
+  <div class="foot">Hero Hotel · 293 rooms · Hangzhou　|　Test code: <code style="background:rgba(255,255,255,.12);color:#f5f2e9">loadtest/</code>　|　Report: <code style="background:rgba(255,255,255,.12);color:#f5f2e9">docs/test-report-2026-11-21/</code></div>
+</div>
+
+<!-- ============================ CONTENTS ============================ -->
+<h2 style="margin-top:0">Contents</h2>
+<div class="toc">
+  <ol>
+    <li>Overview
+      <div class="sub">1.1 Version and changes　1.2 Objectives　1.3 Environment　1.4 Data and tooling</div>
+    </li>
+    <li>Test strategy
+      <div class="sub">2.1 Layer coverage　2.2 Conflict design　2.3 Stress scenarios　2.4 Invariants　2.5 Exit criteria</div>
+    </li>
+    <li>Automated regression results</li>
+    <li>Concurrency and conflict results
+      <div class="sub">4.1 Same-room contention　4.2 Idempotency　4.3 False sold-out probe　4.4 Database evidence</div>
+    </li>
+    <li>Stress-test results
+      <div class="sub">5.1 Three scenarios　5.2 Ramp and saturation　5.3 Outcomes and stability　5.4 Saturation analysis</div>
+    </li>
+    <li>Data-consistency checks</li>
+    <li>UI and end-to-end evidence</li>
+    <li>Defect and risks</li>
+    <li>Conclusion and exit-criteria review</li>
+    <li>Reproduction steps and test-code inventory</li>
+  </ol>
+</div>
+
+<!-- ============================ ABSTRACT ============================ -->
+<h2 class="page-break">Abstract</h2>
+<p>
+  This report covers the refactor at <b>main @ 17a21e4</b> and the F1 demo-seed fix
+  made during testing. The refactor split the front-desk workbench into views, forms
+  and template fragments, and added project-wide comments; it did not add a database
+  migration. The test programme has three layers: first, all <b>130 MySQL integration
+  tests</b> were re-run; second, a black-box HTTP harness exercised concurrent booking
+  of the same physical room; third, virtual users drove browse, booking and mixed
+  workloads at several concurrency levels. After every run, <b>15 consistency SQL
+  invariants</b> and <b>9 seed-data checks</b> were executed.
+</p>
+<div class="kpi-grid">
+  <div class="kpi"><b>0</b><span>overbookings / overlapping stays / orphan nights</span></div>
+  <div class="kpi"><b>1</b><span>successful booking per contention round</span></div>
+  <div class="kpi"><b>10 → 1</b><span>same-key parallel submissions create one booking</span></div>
+  <div class="kpi"><b>0</b><span>5xx responses and slow queries</span></div>
+</div>
+<div class="callout">
+  <b>Conclusion.</b> With the agreed design — row-level pessimistic locking, a unique
+  constraint and request idempotency — 2 and 20 concurrent clients competing for the
+  same room produced exactly one booking each time. A sold-out date did not make other
+  dates look sold out. All 15 invariants and all 9 seed checks passed. The write path
+  saturates at about <b>33 req/s</b>; the read path reaches about <b>154 req/s</b> at
+  40 virtual users. No 5xx response was observed. The F1 demo-seed defect found in the
+  previous test pass is now fixed and covered by regression checks.
+</div>
+
+<!-- ============================ 1 ============================ -->
+<h2 class="page-break">1　Overview</h2>
+
+<h3>1.1 Version and changes</h3>
+<table>
+  <tr><th style="width:24%">Item</th><th>Detail</th></tr>
+  <tr><td>Repository</td><td><code>hotel_booking_website</code>, branch <code>main</code></td></tr>
+  <tr><td>Base commit</td><td><code>17a21e4</code> — “Refactor page structure and add project-wide Chinese comments”</td></tr>
+  <tr><td>Fix commit</td><td><code>d86b130</code> — test harness, F1 fix and M2 report; merged as <code>efdf756</code></td></tr>
+  <tr><td>Application change</td><td><code>seed-desk</code> now reuses the physical room type, repairs legacy demo bookings and removes unused duplicate room types.</td></tr>
+  <tr><td>Refactor scope</td><td>Front desk split into <code>frontdesk_views.py</code>, <code>frontdesk_forms.py</code> and Jinja fragments; floor plan, scripts and styles tidied; comments added; no schema migration.</td></tr>
+  <tr><td>Database head</td><td>Alembic <code>20261121_11</code></td></tr>
+  <tr><td>Inventory</td><td>293 rooms: 12 floors × 24 rooms (288) plus a five-room demo wing</td></tr>
+</table>
+
+<h3>1.2 Objectives</h3>
+<ul>
+  <li><b>No functional regression:</b> all 130 existing integration tests must pass after the refactor.</li>
+  <li><b>Concurrency correctness:</b> when several clients book the same room, exactly one booking may claim the room-nights; losers must receive a clear business refusal, not a 5xx or a partial write.</li>
+  <li><b>Idempotency:</b> parallel submissions with the same key must create one booking; a changed body with the same key must be rejected.</li>
+  <li><b>Stability and capacity:</b> measure throughput, percentile latency, error rate and lock contention at 15–40 virtual users, and identify the saturation point.</li>
+  <li><b>Data consistency:</b> query MySQL directly after each run for overbooking, missing room-nights, price mismatch, blocked-room sales and duplicate idempotency records.</li>
+  <li><b>Seed-data repair:</b> after fixing F1, demo booking room type, amount, guest count and payment must agree with the physical room and price rules; re-running <code>seed-desk</code> must be idempotent and must repair legacy rows.</li>
+  <li><b>Reproducible evidence:</b> test scripts, raw results, charts and screenshots are delivered with the report.</li>
+</ul>
+
+<h3>1.3 Environment</h3>
+<table>
+  <tr><th style="width:24%">Item</th><th>Configuration</th></tr>
+  <tr><td>Operating system</td><td>Windows 10.0.26300 x64</td></tr>
+  <tr><td>Python</td><td>3.13.5 (project virtual environment <code>.venv</code>)</td></tr>
+  <tr><td>Web stack</td><td>Flask 3.1.3, Flask-SQLAlchemy 3.1.1, SQLAlchemy 2.0.57</td></tr>
+  <tr><td>Database</td><td>MySQL 8.0.29, InnoDB, utf8mb4, local 127.0.0.1:3306</td></tr>
+  <tr><td>Application server</td><td>Werkzeug development server, <code>threaded=True</code>, 127.0.0.1:5001; SQLAlchemy pool 20 + 40 overflow (enlarged only by the test launcher)</td></tr>
+  <tr><td>Test database</td><td><code>hero_test_20261116</code>, isolated from the development database <code>hero</code></td></tr>
+  <tr><td>Client</td><td>requests 2.34.2; <code>ThreadPoolExecutor</code> virtual users; no Locust/JMeter</td></tr>
+  <tr><td>Charts</td><td>matplotlib 3.11.2; English chart labels generated with <code>--lang en</code></td></tr>
+</table>
+
+<h3>1.4 Data and tooling</h3>
+<p>
+  The test database was migrated with <code>flask db upgrade</code> and seeded in the
+  documented order: <code>seed-demo</code>, <code>seed-rooms</code>, <code>seed-desk</code>.
+  This yields 293 rooms, <b>6 room types</b> and 7 demo bookings (arrivals, in-house and
+  due-out). Test accounts are created by <code>loadtest/lib/seed.py</code>:
+  <code>vu001@load.test</code> … <code>vu040@load.test</code>, idempotency account
+  <code>idem001@load.test</code>, and manager <code>manager@load.test</code>. Every
+  virtual user logs in independently; every booking request uses the idempotency key
+  generated by its confirmation page. Only the idempotency test reuses a key on purpose.
+</p>
+<p>
+  The contention suite uses a dedicated one-room fixture: room type
+  <code>lt-conflict</code> containing only room <code>LT901</code>. Twenty clients then
+  compete for one <code>rooms</code> row instead of being spread across 293 rooms. The
+  fixture is removed after the suite so the demo UI returns to 293 rooms.
+</p>
+
+<!-- ============================ 2 ============================ -->
+<h2 class="page-break">2　Test strategy</h2>
+
+<h3>2.1 Layer coverage</h3>
+<table>
+  <tr><th style="width:9%">Layer</th><th style="width:34%">Scope</th><th style="width:35%">Artifact</th><th>Result</th></tr>
+  <tr><td><b>L1</b></td><td>Pricing, search JSON, date and capacity validation</td><td><code>test_pricing.py</code>, <code>test_search_api.py</code></td><td class="pass">Pass</td></tr>
+  <tr><td><b>L2</b></td><td>Allocation, row locks, deadlock retry, rollback</td><td><code>test_allocation.py</code> (real MySQL 1213 deadlock)</td><td class="pass">Pass</td></tr>
+  <tr><td><b>L3</b></td><td>HTTP: guest, front desk, manager</td><td><code>test_frontdesk*.py</code>, <code>test_manager*.py</code>, <code>test_guest*.py</code></td><td class="pass">Pass</td></tr>
+  <tr><td><b>L4</b></td><td>Cross-end flow and status feed</td><td><code>test_cross_end_flow.py</code>, <code>test_frontdesk_notifications.py</code></td><td class="pass">Pass</td></tr>
+  <tr><td><b>L5</b></td><td>Regression and requirement close-out</td><td><code>test_regressions.py</code>, <code>test_requirement_closeout.py</code></td><td class="pass">Pass</td></tr>
+  <tr><td><b>L6</b></td><td><b>HTTP concurrency and conflict</b></td><td><code>loadtest/run_conflict.py</code> (new)</td><td class="pass">Pass</td></tr>
+  <tr><td><b>L7</b></td><td><b>HTTP stress and ramp</b></td><td><code>loadtest/run_stress.py</code>, <code>run_ramp.py</code> (new)</td><td class="pass">Pass</td></tr>
+</table>
+
+<h3>2.2 Concurrency and conflict design</h3>
+<p>
+  The conflict suite does not call service functions directly. Each client performs the
+  same five browser steps: GET the login page, submit the CSRF-protected login form,
+  search, GET the confirmation page and extract its hidden fields (including
+  <code>quote</code> and <code>idempotency_key</code>), then POST the booking. All
+  clients wait on a <code>threading.Barrier</code>; after every confirmation page is
+  ready, the POSTs are released at the same instant. This isolates database concurrency
+  from client-side ordering.
+</p>
+<ul>
+  <li><b>Two clients:</b> four rounds on different dates; exactly one success expected.</li>
+  <li><b>Twenty clients:</b> three two-night rounds on the one-room fixture; exactly one success and nineteen explicit refusals expected.</li>
+  <li><b>Idempotent replay:</b> one account, one key, ten independent sessions; all should resolve to the same booking and the database must contain one row.</li>
+  <li><b>Idempotency conflict:</b> the same key with a different body must return <code>IDEMPOTENCY_MISMATCH</code> and create nothing.</li>
+  <li><b>False sold-out probe:</b> the sold-out date must return zero availability, while another free date must still return one room.</li>
+</ul>
+
+<h3>2.3 Stress scenarios</h3>
+<table>
+  <tr><th style="width:15%">Scenario</th><th style="width:12%">Virtual users</th><th>Behaviour</th><th style="width:22%">Main metric</th></tr>
+  <tr><td><b>S-browse</b></td><td>20 (ramp 1–40)</td><td>Anonymous: 70% JSON search <code>/api/search</code>, 30% HTML search; random stay 1–12 days ahead, 1–3 nights.</td><td>Read throughput, P95, 5xx.</td></tr>
+  <tr><td><b>S-book</b></td><td>15 (ramp 1–30)</td><td>Logged-in guest: search → confirmation page → booking POST; fresh idempotency key per confirmation; think time 0.8–1.6 s.</td><td>Real booking success, write throughput, busy/sold-out rate.</td></tr>
+  <tr><td><b>S-mixed</b></td><td>20</td><td>55% JSON search, 15% HTML search, 25% booking, 5% “My bookings”.</td><td>Stability and fairness of mixed traffic.</td></tr>
+</table>
+<p>
+  The ramp runs the same scenario at increasing user counts (browse 1/5/10/20/40,
+  book 1/5/10/20/30), 20–30 seconds per level, and records throughput and P95. Load
+  bookings are cleared between levels so inventory is not consumed by the previous
+  level.
+</p>
+
+<h3>2.4 Invariants and consistency SQL</h3>
+<p>
+  Checks run through a separate PyMySQL connection after each suite. Every check expects
+  zero; any non-zero result is a failure. Full SQL is in
+  <code>loadtest/lib/dbcheck.py</code>.
+</p>
+<table>
+  <tr><th style="width:8%">ID</th><th>Invariant</th><th style="width:31%">Method</th></tr>
+  <tr><td>I1</td><td>No room may have two room-nights for the same date</td><td>Group <code>room_nights(room_id, stay_date)</code></td></tr>
+  <tr><td>I2</td><td>No two active bookings may overlap on the same room</td><td>Bookings self-join with status and date overlap</td></tr>
+  <tr><td>I3</td><td>Active bookings must have one room-night per night</td><td><code>COUNT(room_nights)</code> vs <code>DATEDIFF</code></td></tr>
+  <tr><td>I4</td><td>Room-nights must lie inside the booking stay</td><td>Compare <code>stay_date</code> with check-in/out</td></tr>
+  <tr><td>I5</td><td>Cancelled/no-show bookings must not hold room-nights</td><td>Room-nights joined to inactive bookings</td></tr>
+  <tr><td>I6</td><td>Nightly price lines must sum to the booking total</td><td>Sum <code>booking_price_lines</code> vs <code>bookings.total</code></td></tr>
+  <tr><td>I7</td><td>Load-test bookings must not fall inside a maintenance block</td><td>Room-nights × active <code>room_blocks</code> (load accounts only)</td></tr>
+  <tr><td>I8</td><td>One actor/key pair must map to one booking</td><td>Group by actor and idempotency key</td></tr>
+  <tr><td>I9</td><td>One actor/key pair must map to one payment/refund</td><td><code>payment_records</code> grouping</td></tr>
+  <tr><td>I10</td><td>Refunds must not exceed successful payments per booking</td><td>Aggregate by booking and kind</td></tr>
+  <tr><td>I11</td><td>Booking totals and nightly amounts must not be negative</td><td>Two COUNT queries</td></tr>
+  <tr><td>I12</td><td>Booking room type must match the physical room (whole database)</td><td>bookings × rooms × room_types</td></tr>
+  <tr><td>I13</td><td>Room-nights must not fall in a retired period</td><td><code>operational_from/until</code></td></tr>
+  <tr><td>I14</td><td>No orphan room-nights</td><td>LEFT JOIN bookings/rooms</td></tr>
+  <tr><td>I15</td><td>No duplicate room-type display names</td><td>Group <code>room_types.name</code></td></tr>
+</table>
+<p class="note">
+  I7 is deliberately scoped to load-test accounts: the product allows a maintenance
+  block to be registered after an existing reservation, and that reservation must remain
+  intact. I12 now covers the whole database, guarding the F1 fix; I15 prevents duplicate
+  room types from returning.
+</p>
+
+<h3>2.5 Exit criteria</h3>
+<table>
+  <tr><th style="width:9%">ID</th><th>Criterion</th><th style="width:24%">Decision rule</th></tr>
+  <tr><td>E1</td><td>No overbooking or overlapping active stays</td><td>I1 and I2 are zero</td></tr>
+  <tr><td>E2</td><td>All room-night, amount, maintenance, idempotency and refund invariants pass</td><td>I1–I15 are zero</td></tr>
+  <tr><td>E3</td><td>Exactly one successful booking per contention round</td><td>7/7 rounds</td></tr>
+  <tr><td>E4</td><td>No false sold-out</td><td>Sold-out date 0; free date 1</td></tr>
+  <tr><td>E5</td><td>No 5xx responses</td><td>Zero across all scenarios</td></tr>
+  <tr><td>E6</td><td>P95 ≤ 1 s at design load</td><td>S-browse 20 VU, S-book 15 VU, S-mixed 20 VU</td></tr>
+  <tr><td>E7</td><td>Business-refusal rate &lt; 1% at design load</td><td>S-book 15 VU</td></tr>
+</table>
+
+<!-- ============================ 3 ============================ -->
+<h2 class="page-break">3　Automated regression results</h2>
+<p>
+  A fresh empty database was upgraded to <code>20261112_01</code>, populated with legacy
+  data, then upgraded to head to cover migration compatibility. Command and output:
+</p>
+<pre>TEST_DATABASE_URL="mysql+pymysql://hero_app:***@127.0.0.1:3306/hero_test_20261121b?charset=utf8mb4" \
+  python -m pytest -q
+
+........................................................................ [ 55%]
+..........................................................               [100%]
+130 passed in 35.85s</pre>
+<p>
+  The 119 test functions expand to 130 parameterised cases. All pass; there are no skips
+  or xfails.
+</p>
+<table>
+  <tr><th style="width:42%">Test module</th><th class="num" style="width:12%">Functions</th><th style="width:46%">Focus</th></tr>
+  <tr><td><code>test_frontdesk_rules.py</code></td><td class="num">27</td><td>Check-in/out, date and room-type changes, extension, cancellation, no-show, payment/refund idempotency, blacklist</td></tr>
+  <tr><td><code>test_frontdesk.py</code></td><td class="num">19</td><td>Workbench, search, order drawer, maintenance, tasks, cross-tab validation</td></tr>
+  <tr><td><code>test_allocation.py</code></td><td class="num">12</td><td>Load-balanced allocation, row locks, real 1213 retry, rollback, concurrent candidates</td></tr>
+  <tr><td><code>test_manager.py</code> / <code>test_manager_lists.py</code></td><td class="num">14</td><td>Room types, rooms, prices, staff, blacklist, reports, CSV, audit</td></tr>
+  <tr><td><code>test_requirement_closeout.py</code></td><td class="num">12</td><td>Cancellation snapshot, unchanged-night pricing, extension payment, late cancellation request</td></tr>
+  <tr><td><code>test_pricing.py</code> / <code>test_search_api.py</code></td><td class="num">13</td><td>Nightly prices, rule priority, search JSON and page agreement</td></tr>
+  <tr><td><code>test_cross_end_flow.py</code> / <code>test_frontdesk_notifications.py</code></td><td class="num">6</td><td>Guest request → desk decision → status feed</td></tr>
+  <tr><td><code>test_guest_request_*.py</code> / <code>test_interactions_gaps.py</code></td><td class="num">11</td><td>Request errors, withdrawal, interaction gaps</td></tr>
+  <tr><td><code>test_regressions.py</code> / <code>test_consistency_rules.py</code></td><td class="num">3</td><td>Dirty room after checkout, overdue occupancy, dirty same-day room</td></tr>
+  <tr><td><code>test_floorplan.py</code></td><td class="num">2</td><td>Irregular floors, SVG escaping</td></tr>
+</table>
+<div class="callout">
+  <b>Regression conclusion.</b> The refactor preserved existing business rules,
+  permissions, transaction rollback, locking and retry logic. L1–L5 pass, so the HTTP
+  concurrency and stress layers can be tested on a stable functional base.
+</div>
+
+<!-- ============================ 4 ============================ -->
+<h2 class="page-break">4　Concurrency and conflict results</h2>
+
+<h3>4.1 Same-room contention</h3>
+<p>
+  Every round uses the same physical room. Clients prepare their confirmation pages and
+  then POST together.
+</p>
+<table>
+  <tr>
+    <th class="center" style="width:8%">Round</th><th class="center" style="width:8%">Clients</th><th style="width:18%">Stay</th>
+    <th class="num" style="width:8%">Success</th><th class="num" style="width:8%">Sold out</th>
+    <th class="num" style="width:26%">POST latency min / median / max (ms)</th>
+    <th class="num" style="width:12%">DB bookings</th><th class="num" style="width:12%">DB nights</th>
+  </tr>
+  <tr><td class="center">1</td><td class="center">2</td><td>11-27 → 11-28</td><td class="num">1</td><td class="num">1</td><td class="num">248 / 291 / 291</td><td class="num">1</td><td class="num">1</td></tr>
+  <tr><td class="center">2</td><td class="center">2</td><td>11-28 → 11-29</td><td class="num">1</td><td class="num">1</td><td class="num">97 / 131 / 131</td><td class="num">1</td><td class="num">1</td></tr>
+  <tr><td class="center">3</td><td class="center">2</td><td>11-29 → 11-30</td><td class="num">1</td><td class="num">1</td><td class="num">90 / 91 / 91</td><td class="num">1</td><td class="num">1</td></tr>
+  <tr><td class="center">4</td><td class="center">2</td><td>11-30 → 12-01</td><td class="num">1</td><td class="num">1</td><td class="num">71 / 113 / 113</td><td class="num">1</td><td class="num">1</td></tr>
+  <tr><td class="center">5</td><td class="center"><b>20</b></td><td>12-01 → 12-03</td><td class="num">1</td><td class="num">19</td><td class="num">1308 / 1456 / 1514</td><td class="num">1</td><td class="num">2</td></tr>
+  <tr><td class="center">6</td><td class="center"><b>20</b></td><td>12-03 → 12-05</td><td class="num">1</td><td class="num">19</td><td class="num">942 / 1070 / 1162</td><td class="num">1</td><td class="num">2</td></tr>
+  <tr><td class="center">7</td><td class="center"><b>20</b></td><td>12-05 → 12-07</td><td class="num">1</td><td class="num">19</td><td class="num">776 / 1054 / 1092</td><td class="num">1</td><td class="num">2</td></tr>
+</table>
+<div class="callout">
+  <b>Key result.</b> All 7/7 rounds wrote exactly one booking, and every booking had the
+  expected number of room-nights (1 for a one-night stay, 2 for two nights). With 20
+  clients, all 19 losers received a clear “sold out / no single room” refusal. There
+  were no 5xx responses and no partial writes.
+</div>
+<figure>
+  <img src="assets/charts/chart_conflict_outcomes.png" alt="Contention outcomes">
+  <figcaption>Figure 1　Success/rejection per round. The bar height equals the number of clients; the green segment is always exactly one booking.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_conflict_latency.png" alt="Contention latency">
+  <figcaption>Figure 2　POST latency for the same room: 2 clients finish in 0.07–0.29 s; 20 clients queue on the Room row lock with a median of 1.05–1.46 s.</figcaption>
+</figure>
+
+<h3>4.2 Idempotent replay and conflict</h3>
+<table>
+  <tr><th style="width:38%">Test</th><th>Result</th></tr>
+  <tr><td>Same account, same key, 10 independent sessions in parallel</td><td>All 10 responses succeeded and resolved to booking ID <b>15</b>; the database contains exactly <b>1</b> booking for that key.</td></tr>
+  <tr><td>Same key with a different body (note changed)</td><td><code>IDEMPOTENCY_MISMATCH</code>: “This request key belongs to a different booking.”; the database still contains <b>1</b> booking.</td></tr>
+  <tr><td>Parallel response time</td><td>All 10 finished within 277–424 ms; after the first transaction committed, the others took the replay path and did not write extra room-nights.</td></tr>
+</table>
+<p>
+  This verifies both roles of the idempotency key: <b>request de-duplication</b> (one
+  key creates one booking) and <b>request binding</b> (a key cannot silently become a
+  different booking). Both are verified at the HTTP layer, not only in a service call.
+</p>
+
+<h3>4.3 False sold-out probe</h3>
+<table>
+  <tr><th class="center">Round</th><th class="num">Sold-out date availability</th><th class="num">Another free date availability</th><th>Verdict</th></tr>
+  <tr><td class="center">1–7 (all)</td><td class="num">0</td><td class="num">1</td><td class="pass">Pass: sold-out is local to that date</td></tr>
+</table>
+<p>
+  After every round the probe calls the public JSON search endpoint. The contested date
+  returns zero rooms, while a date that was never occupied still returns one room. This
+  shows that “sold out” comes from real room-night occupancy, not from a failed
+  candidate search or exhausted retries.
+</p>
+
+<h3>4.4 Database-side evidence</h3>
+<table>
+  <tr><th style="width:46%">MySQL global status (delta across the conflict suite)</th><th class="num">Value</th></tr>
+  <tr><td><code>Innodb_row_lock_waits</code></td><td class="num">26</td></tr>
+  <tr><td><code>Innodb_row_lock_time</code></td><td class="num">4,772 ms</td></tr>
+  <tr><td>Average wait per lock event</td><td class="num">≈ 184 ms</td></tr>
+  <tr><td><code>Slow_queries</code></td><td class="num">0</td></tr>
+  <tr><td><code>Questions</code></td><td class="num">4,822</td></tr>
+  <tr><td><code>Com_select</code> / <code>Com_insert</code></td><td class="num">3,133 / 86</td></tr>
+</table>
+<p>
+  The 26 row-lock waits are consistent with a queue forming during 20-client rounds.
+  There were no slow queries and no aborted connections. The 1.0–1.5 s latency band is
+  the direct cost of serialising the same Room row: the winner holds the X lock through
+  its write and commit, and each later request acquires the lock, re-checks availability
+  and returns sold out.
+</p>
+
+<!-- ============================ 5 ============================ -->
+<h2 class="page-break">5　Stress-test results</h2>
+
+<h3>5.1 Three scenarios</h3>
+<table>
+  <tr>
+    <th style="width:13%">Scenario</th><th class="num" style="width:4%">VU</th><th class="num" style="width:7%">Duration (s)</th><th class="num" style="width:8%">Requests</th>
+    <th class="num" style="width:11%">Req/s</th><th class="num" style="width:6%">P50 (ms)</th><th class="num" style="width:6%">P95 (ms)</th>
+    <th class="num" style="width:6%">P99 (ms)</th><th class="num" style="width:6%">Max (ms)</th><th style="width:33%">Outcome</th>
+  </tr>
+  <tr><td><b>S-browse</b></td><td class="num">20</td><td class="num">45</td><td class="num">6,130</td><td class="num">135.9</td><td class="num">79</td><td class="num">187</td><td class="num">224</td><td class="num">295</td><td>All normal</td></tr>
+  <tr><td><b>S-book</b></td><td class="num">15</td><td class="num">61</td><td class="num">2,022</td><td class="num">32.9</td><td class="num">36</td><td class="num">108</td><td class="num">277</td><td class="num">641</td><td>673 bookings; 1 busy</td></tr>
+  <tr><td><b>S-mixed</b></td><td class="num">20</td><td class="num">61</td><td class="num">2,960</td><td class="num">48.9</td><td class="num">46</td><td class="num">192</td><td class="num">420</td><td class="num">732</td><td>475 bookings; 0 refused</td></tr>
+  <tr><td><b>S-book peak</b></td><td class="num">30</td><td class="num">33</td><td class="num">1,079</td><td class="num">33.1</td><td class="num">345</td><td class="num">1,219</td><td class="num">1,578</td><td class="num">1,904</td><td>354 bookings; 5 busy / 1 unavailable</td></tr>
+</table>
+<figure>
+  <img src="assets/charts/chart_latency_percentiles.png" alt="Latency percentiles">
+  <figcaption>Figure 3　P50/P95/P99 at design load. All three design scenarios stay below 1 s P95; the 1,219 ms P95 belongs to the saturation probe.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_latency_ecdf.png" alt="Latency ECDF">
+  <figcaption>Figure 4　Response-time ECDF. S-browse has the widest tail but stays below 0.5 s; S-book and S-mixed are dominated by short requests with a small booking tail.</figcaption>
+</figure>
+
+<h3>5.2 Ramp and saturation</h3>
+<table>
+  <tr><th class="center">VU</th><th class="num">S-browse throughput</th><th class="num">S-browse P95</th><th class="num">S-book throughput</th><th class="num">S-book P95</th></tr>
+  <tr><td class="center">1</td><td class="num">12.8</td><td class="num">42 ms</td><td class="num">2.2</td><td class="num">93 ms</td></tr>
+  <tr><td class="center">5</td><td class="num">64.9</td><td class="num">42 ms</td><td class="num">11.2</td><td class="num">78 ms</td></tr>
+  <tr><td class="center">10</td><td class="num">120.3</td><td class="num">56 ms</td><td class="num">21.8</td><td class="num">80 ms</td></tr>
+  <tr><td class="center">20</td><td class="num">151.0</td><td class="num">129 ms</td><td class="num">30.7</td><td class="num">581 ms</td></tr>
+  <tr><td class="center">30</td><td class="num">—</td><td class="num">—</td><td class="num">33.1</td><td class="num">1,219 ms</td></tr>
+  <tr><td class="center">40</td><td class="num">153.6</td><td class="num">354 ms</td><td class="num">—</td><td class="num">—</td></tr>
+</table>
+<p class="note">
+  Single-scenario runs and ramp levels were executed separately; the same VU count can
+  vary by roughly ±10% because of cache state, background processes and client-thread
+  scheduling. The ramp is used for trends and saturation, not as a capacity promise.
+</p>
+<figure>
+  <img src="assets/charts/chart_ramp_browse.png" alt="Browse ramp">
+  <figcaption>Figure 5　S-browse ramp: throughput rises from 12.8 to 153.6 req/s at 40 VU; growth flattens after 20 VU and P95 rises from 42 to 354 ms.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_ramp_book.png" alt="Booking ramp">
+  <figcaption>Figure 6　S-book ramp: the write path settles at about 33 req/s between 20 and 30 VU, while P95 rises from 581 to 1,219 ms. The bottleneck is server-side serialisation, not the client.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_scaling_compare.png" alt="Read/write scalability">
+  <figcaption>Figure 7　Read vs write scalability: about 154 req/s for reads and about 33 req/s for writes on the single-process development server.</figcaption>
+</figure>
+
+<h3>5.3 Outcomes and stability</h3>
+<figure>
+  <img src="assets/charts/chart_outcomes.png" alt="Outcome composition">
+  <figcaption>Figure 8　The three design scenarios issued 11,112 requests. S-browse and S-mixed had no non-normal response; S-book had one busy response (0.049%). No 5xx occurred.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_timeline.png" alt="Requests per second">
+  <figcaption>Figure 9　S-mixed requests per second: mostly 40–55 req/s, peaking at 65, mean about 49. There is no collapse, cliff or connection-pool exhaustion.</figcaption>
+</figure>
+<figure>
+  <img src="assets/charts/chart_db_contention.png" alt="Database lock contention">
+  <figcaption>Figure 10　Database-side contention: zero row-lock waits on the read path; 10–26 waits in write scenarios; zero slow queries in every scenario.</figcaption>
+</figure>
+
+<h3>5.4 Saturation analysis</h3>
+<ul>
+  <li><b>Read path:</b> near-linear growth from 12.8 req/s at 1 VU to 151.0 req/s at 20 VU; at 40 VU throughput is 153.6 req/s and P95 rises from 129 to 354 ms. This is queueing on a single-process Python server.</li>
+  <li><b>Write path:</b> near-linear from 2.2 to 30.7 req/s at 20 VU; at 30 VU it reaches about 33.1 req/s with P95 at 1.2 s. Row locks, commits and audit writes dominate.</li>
+  <li><b>Mixed path:</b> 48.9 req/s, 475 bookings and zero refusals at 20 VU; there is no starvation or error amplification.</li>
+  <li><b>Absolute-value caveat:</b> the application is a single-process <code>flask run</code> server and the load generator shares the machine with MySQL. These numbers compare this build against itself and locate saturation; they are not production-capacity claims.</li>
+</ul>
+
+<!-- ============================ 6 ============================ -->
+<h2 class="page-break">6　Data-consistency checks</h2>
+<p>
+  The full check was run after the conflict suite and again after all stress and ramp
+  runs. Both runs produced the table below (all values zero):
+</p>
+<table>
+  <tr><th style="width:8%">ID</th><th>Check</th><th class="num">Expected</th><th class="num">Actual</th><th class="center" style="width:10%">Result</th></tr>
+  <tr><td>I1</td><td>Two room-nights for the same room and date (overbooking)</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I2</td><td>Overlapping active bookings on the same room</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I3</td><td>Active booking with a room-night count different from its stay</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I4</td><td>Room-night outside the booking stay</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I5</td><td>Cancelled/no-show booking still holding room-nights</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I6</td><td>Nightly amounts not equal to the booking total</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I7</td><td>Load-test booking inside a maintenance block</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I8</td><td>Multiple bookings for one actor/key pair</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I9</td><td>Multiple payments/refunds for one actor/key pair</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I10</td><td>Refund greater than successful payment for a booking</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I11</td><td>Negative booking total or nightly amount</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I12</td><td>Booking room type different from the physical room (whole DB)</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I13</td><td>Room-night in a retired period</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I14</td><td>Orphan room-night</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+  <tr><td>I15</td><td>Duplicate room-type display name</td><td class="num">0</td><td class="num">0</td><td class="center pass">PASS</td></tr>
+</table>
+<p>
+  The set covers the five places where concurrent writes usually break:
+  <b>room-night uniqueness</b> (I1/I2), <b>transaction completeness</b>
+  (I3/I4/I5/I14), <b>price snapshots</b> (I6/I10/I11), <b>maintenance and room-type
+  constraints</b> (I7/I12/I13), plus <b>request idempotency</b> (I8/I9) and
+  <b>room-type naming</b> (I15). All 15 pass, so the load runs left no partial writes,
+  duplicate charges or mismatched data.
+</p>
+<div class="callout">
+  <b>“No 5xx” and “no dirty data” are different claims.</b> This test checks both the
+  response layer (status codes and business outcomes) and the database layer (15 SQL
+  invariants), so a 200 response cannot be mistaken for correct data. I12 is now a
+  whole-database check and I15 directly guards the F1 fix.
+</div>
+
+<!-- ============================ 7 ============================ -->
+<h2 class="page-break">7　UI and end-to-end evidence</h2>
+<p>
+  The screenshots below were taken from the same build and test database through a real
+  browser after the load runs. They show that the harness exercised the real pages rather
+  than writing directly to the database.
+</p>
+<figure>
+  <img src="assets/screenshots/01_guest_search.png" alt="Guest search">
+  <figcaption>Figure 11　Guest search for 23–25 November 2026: room types, nightly prices, two-night total and live availability. Searching does not lock a room.</figcaption>
+</figure>
+<figure>
+  <img src="assets/screenshots/02_guest_confirm.png" alt="Booking confirmation">
+  <figcaption>Figure 12　Confirmation page: locked dates, price snapshot, guests, expected arrival and note; hidden fields carry the quote signature and this request’s idempotency key.</figcaption>
+</figure>
+<figure>
+  <img src="assets/screenshots/03_guest_booking_detail.png" alt="Booking detail">
+  <figcaption>Figure 13　Booking detail after submission (BK-001984): Confirmed status, assigned room, nightly prices summing to the total, and actions for room-type, date, extension and cancellation requests.</figcaption>
+</figure>
+<figure>
+  <img src="assets/screenshots/05_frontdesk_board.png" alt="Front-desk room board">
+  <figcaption>Figure 14　Front-desk workbench: 293 rooms, 12-floor plan, 4 arrivals / 2 in house / 1 due out. The maintenance banner states that a block never overwrites an existing booking and offers a same-type move.</figcaption>
+</figure>
+<figure>
+  <img src="assets/screenshots/06_frontdesk_orders.png" alt="Front-desk orders">
+  <figcaption>Figure 15　Front-desk order list: arrivals, room, stay, status, paid/due and late-arrival marker. After the fix, room 301 shows Classic Single and agrees with the room board and the booking room type.</figcaption>
+</figure>
+<figure>
+  <img src="assets/screenshots/08_manager_reports.png" alt="Manager reports">
+  <figcaption>Figure 16　Manager occupancy report: sellable past nights, occupied nights, occupancy, upcoming reserved nights and average price. After the fix there are exactly six room-type rows; the duplicated City Twin / Harbour King rows are gone.</figcaption>
+</figure>
+
+<!-- ============================ 8 ============================ -->
+<h2 class="page-break">8　Defect and risks</h2>
+
+<h3>8.1 Fixed defect F1: demo-seed room-type mismatch and duplicate room types</h3>
+<table>
+  <tr><th style="width:14%">Attribute</th><th>Detail</th></tr>
+  <tr><td>Status</td><td><span class="tag">Fixed</span>　Code changed in <code>app/cli.py</code> (<code>seed-desk</code>); I15 and 9 seed checks added as regression gates.</td></tr>
+  <tr><td>Severity</td><td><span class="tag gold">Medium</span>　Affected the credibility of demo data and manager reports; did not affect concurrency correctness.</td></tr>
+  <tr><td>Detection</td><td>Consistency SQL I12, manager report screenshot, front-desk order screenshot.</td></tr>
+  <tr><td>Reproduction</td><td>Run the documented order <code>seed-demo → seed-rooms → seed-desk</code> on an empty database.</td></tr>
+  <tr><td>Before</td><td>7 demo bookings (13 room-nights) had a <code>booking.room_type_id</code> different from the physical room; the manager report showed two “City Twin” and two “Harbour King” rows.</td></tr>
+  <tr><td>After</td><td>0 mismatched bookings and 0 mismatched room-nights; room types reduced from 8 to 6; 0 duplicate-name groups; all 7 demo bookings use <code>demo-single</code> with guest counts and amounts matching capacity and base price.</td></tr>
+</table>
+<p><b>Root cause.</b> <code>seed-demo</code> creates <code>demo-*</code> room types; <code>seed-rooms</code> reuses the first listed type for each bed type; <code>seed-desk</code> then unconditionally created <code>harbour-king</code> and <code>city-twin</code> and booked rooms 301–306. Those rooms already existed, so the old code skipped room creation but did not change the booking room type.</p>
+<p><b>Fix.</b></p>
+<ul>
+  <li>When 301–306 already exist, bookings use <code>room.room_type</code>; no parallel Harbour King / City Twin catalogue is created.</li>
+  <li>A fallback type is created only when the room number does not exist, and only after looking for an existing bed-type type that already has physical rooms. This keeps standalone <code>seed-desk</code> working.</li>
+  <li>Re-running <code>seed-desk</code> repairs legacy demo bookings (room type, total, nightly amounts, successful payment and guest count) and removes duplicate types that have no rooms, bookings or price rules.</li>
+  <li><code>loadtest/run_seed_check.py</code> adds 9 seed checks; I15 checks duplicate room-type names and I12 now covers the whole database.</li>
+</ul>
+<pre># app/cli.py seed-desk (excerpt)
+room = session.scalar(db.select(Room).where(Room.number == number))
+if room is None:
+    room_type = desk_room_type(bed_type, code, name, description, capacity, price)
+    room = Room(number=number, room_type_id=room_type.id, ...)
+rooms[number] = room
+room_types[number] = session.get(RoomType, room.room_type_id)
+...
+booking.room_type_id = actual_type.id
+booking.total = actual_type.base_price * nights
+booking.guests = min(booking.guests, actual_type.capacity)</pre>
+<p><b>Verification.</b></p>
+<pre>python -m loadtest.run_seed_check
+9/9 seed checks passed
+
+python -m loadtest.run_dbcheck
+I12  booking room type differs from the physical room (whole DB)   0  PASS
+I15  duplicate room-type display name                              0  PASS
+15/15 passed
+
+Re-running seed-desk: "Front desk demo data is already present."
+Rooms / types / bookings remain 293 / 6 / 7.
+
+Legacy repair drill: inject one wrong Harbour King booking, then run seed-desk
+→ Repaired 1 demo booking(s) to match their physical room type.
+→ Room type, total, nightly amounts, payment and guest count restored; duplicate type removed.</pre>
+<p>
+  After the fix the front-desk order page shows room 301 as Classic Single (Figure 15)
+  and the manager report has six room-type rows (Figure 16). Full before/after SQL is in
+  <code>loadtest/results/finding_f1_seed_data.txt</code>.
+</p>
+
+<h3>8.2 Risk R1: the single-process development server is the throughput ceiling</h3>
+<p>
+  S-browse reaches about 154 req/s at 40 VU, with P95 rising from 129 to 354 ms; S-book
+  reaches P95 around 1.2 s at 30 VU. This is not a business-logic defect: it is the
+  result of a single-process <code>flask run</code>, the GIL and a co-located load
+  generator. A deployment should use waitress/gunicorn with multiple workers, size the
+  connection pool to the worker count, and serve static assets from a front-end server.
+</p>
+
+<h3>8.3 Risk R2: 20-way same-room contention is the worst case, not the norm</h3>
+<p>
+  When 20 requests hit the same room together, strict two-phase locking makes 19 of them
+  queue, with a median of 1.05–1.46 s. For a 293-room hotel this is far above normal
+  collision probability. The current design prioritises “never overbook”; the latency is
+  an acceptable trade-off. If a flash-sale-style hot room is ever required, candidate
+  pre-filtering, <code>SKIP LOCKED</code> or lease-based holds can be considered as a
+  later upgrade, not as part of the first version.
+</p>
+
+<h3>8.4 Observation R3: business refusals are rare and correctly classified</h3>
+<p>
+  Across about 28,800 requests, 72 were business refusals: 61 expected “room already
+  taken” outcomes in the contention suite, 9 busy responses (1 from 15 VU, 5 from 30 VU,
+  3 from the S-book 20 VU ramp), 1 unavailable confirmation page and 1 idempotency
+  conflict. All returned a clear message; none was a 5xx and none left a partial write.
+</p>
+
+<!-- ============================ 9 ============================ -->
+<h2 class="page-break">9　Conclusion and exit-criteria review</h2>
+<table>
+  <tr><th style="width:9%">ID</th><th>Criterion</th><th style="width:22%">Measured</th><th class="center" style="width:10%">Verdict</th></tr>
+  <tr><td>E1</td><td>No overbooking or overlapping active stays</td><td>I1=0, I2=0</td><td class="center pass">PASS</td></tr>
+  <tr><td>E2</td><td>All 15 consistency invariants pass</td><td>15/15</td><td class="center pass">PASS</td></tr>
+  <tr><td>E3</td><td>Exactly one successful booking per contention round</td><td>7/7</td><td class="center pass">PASS</td></tr>
+  <tr><td>E4</td><td>No false sold-out</td><td>7/7 probes: 0 vs 1</td><td class="center pass">PASS</td></tr>
+  <tr><td>E5</td><td>No 5xx responses</td><td>0</td><td class="center pass">PASS</td></tr>
+  <tr><td>E6</td><td>P95 ≤ 1 s at design load</td><td>browse 187 / book 108 / mixed 192 ms</td><td class="center pass">PASS</td></tr>
+  <tr><td>E7</td><td>Business-refusal rate &lt; 1% at design load</td><td>S-book 15 VU: 0.049%</td><td class="center pass">PASS</td></tr>
+</table>
+<p>For the refactored and F1-fixed build, the test programme supports three conclusions:</p>
+<ol>
+  <li><b>No functional regression.</b> All 130 MySQL integration tests pass, covering locks, rollback, retry, cross-end flows and requirement close-out.</li>
+  <li><b>The concurrency layer holds its invariants.</b> 2 and 20 clients competing for one room always produced exactly one booking; 10 parallel same-key submissions created one booking; sold-out dates did not contaminate other dates; 15/15 SQL invariants and 9/9 seed checks pass.</li>
+  <li><b>The performance envelope is clear.</b> On the single-process development server, reads saturate at about 154 req/s and writes at about 33 req/s; at design load P95 stays below 1 s and no 5xx occurs.</li>
+</ol>
+<div class="callout">
+  <b>Overall verdict:</b> <span class="pass">PASS</span>. The row-level pessimistic locking, unique constraint and request idempotency design produced no overbooking, dirty data or server errors in the tested concurrency and stress envelope. The F1 demo-seed defect is fixed and covered by regression checks.
+</div>
+
+<!-- ============================ 10 ============================ -->
+<h2 class="page-break">10　Reproduction steps and test-code inventory</h2>
+
+<h3>10.1 Repository layout</h3>
+<pre>hotel_booking_website/
+├── loadtest/                         # independent HTTP test harness; app change only in seed-desk
+│   ├── config.py                     # base URL, database, accounts, fixture settings
+│   ├── serve_app.py                  # test server launcher (larger DB pool)
+│   ├── run_conflict.py               # same-room contention + idempotency + false sold-out
+│   ├── run_stress.py                 # S-browse / S-book / S-mixed
+│   ├── run_ramp.py                   # stepwise user ramp
+│   ├── run_seed_check.py             # F1 seed-data regression checks (9)
+│   ├── run_dbcheck.py                # I1–I15 consistency checks
+│   ├── lib/http.py                   # per-VU session, login, CSRF, search, booking
+│   ├── lib/metrics.py                # thread-safe samples, percentiles, CSV/JSON
+│   ├── lib/seed.py                   # test accounts, conflict fixture, cleanup
+│   ├── lib/dbcheck.py                # 15 invariants + MySQL counters
+│   ├── scenarios/conflict.py         # barrier-synchronised contention
+│   ├── scenarios/stress.py           # three virtual-user loops
+│   ├── tools/make_charts.py          # charts, --lang zh|en
+│   ├── tools/html_to_docx.py         # HTML → DOCX/PDF layout
+│   └── results/                      # raw CSV/JSON, pytest baseline, F1 evidence
+└── docs/test-report-2026-11-21/      # this report and its assets</pre>
+
+<h3>10.2 Commands</h3>
+<pre># 1) Database and demo data
+python -m flask --app app db upgrade
+python -m flask --app app seed-demo
+python -m flask --app app seed-rooms
+python -m flask --app app seed-desk
+python -m loadtest.run_seed_check
+
+# 2) Test server on port 5001
+python -m loadtest.serve_app
+
+# 3) Regression
+TEST_DATABASE_URL="mysql+pymysql://.../hero_test_20261121b?charset=utf8mb4" \
+  python -m pytest -q
+
+# 4) Conflict, stress and ramps
+python -m loadtest.run_conflict --two-clients 4 --heavy-clients 20 --heavy-rounds 3
+python -m loadtest.run_stress --scenario browse --users 20 --duration 45
+python -m loadtest.run_stress --scenario book   --users 15 --duration 60
+python -m loadtest.run_stress --scenario mixed  --users 20 --duration 60
+python -m loadtest.run_stress --scenario book   --users 30 --duration 30
+python -m loadtest.run_ramp --scenario browse --users 1,5,10,20,40 --duration 30
+python -m loadtest.run_ramp --scenario book   --users 1,5,10,20 --duration 20
+
+# 5) Consistency and charts
+python -m loadtest.run_dbcheck
+python loadtest/tools/make_charts.py --lang en \
+  --results loadtest/results --output assets/charts</pre>
+
+<h3>10.3 Key code: barrier synchronisation and real form submission</h3>
+<pre># loadtest/scenarios/conflict.py (excerpt)
+barrier = threading.Barrier(len(clients))
+
+def attempt(index):
+    client = clients[index]
+    fields = fields_list[index]
+    barrier.wait(timeout=timeout)          # release all POSTs together
+    return client.submit_booking(fields)   # real POST /guest/book
+
+with ThreadPoolExecutor(max_workers=len(clients)) as pool:
+    results = list(pool.map(attempt, range(len(clients))))</pre>
+<pre># loadtest/lib/http.py (excerpt)
+page = session.get(f"{base_url}/login")
+token = hidden_fields(page.text)["csrf_token"]
+session.post(f"{base_url}/login", data={
+    "csrf_token": token, "email": email, "password": password, "submit": "Sign in",
+})
+
+fields, _, _ = client.prepare_booking(room_type_id, check_in, check_out, guests=1)
+result = client.submit_booking(fields)     # quote + fresh idempotency key</pre>
+
+<h3>10.4 Raw data</h3>
+<table>
+  <tr><th>File</th><th>Contents</th></tr>
+  <tr><td><code>loadtest/results/conflict.json</code> / <code>.csv</code></td><td>7 contention rounds, idempotency, false sold-out probes, lock counters, 15 checks</td></tr>
+  <tr><td><code>loadtest/results/browse_20u.json</code> / <code>.csv</code></td><td>Every S-browse request at 20 VU</td></tr>
+  <tr><td><code>loadtest/results/book_15u.json</code> / <code>.csv</code></td><td>Every S-book request at 15 VU</td></tr>
+  <tr><td><code>loadtest/results/mixed_20u.json</code> / <code>.csv</code></td><td>Every S-mixed request at 20 VU</td></tr>
+  <tr><td><code>loadtest/results/book_30u.json</code></td><td>Write-path saturation probe</td></tr>
+  <tr><td><code>loadtest/results/ramp_browse.json</code> / <code>ramp_book.json</code></td><td>Ramp summaries per level</td></tr>
+  <tr><td><code>loadtest/results/pytest_baseline.txt</code></td><td>130-test run (35.85 s)</td></tr>
+  <tr><td><code>loadtest/results/seed_check_after_fix.txt</code></td><td>9/9 seed checks after F1 fix</td></tr>
+  <tr><td><code>loadtest/results/finding_f1_seed_data.txt</code></td><td>Before/after SQL evidence for F1</td></tr>
+  <tr><td><code>loadtest/results/dbcheck_final.txt</code></td><td>15/15 checks after all runs</td></tr>
+</table>
+
+<p class="sig">
+  Report generated on 2026-11-21. Test scripts, raw JSON/CSV, charts and screenshots are
+  delivered in <code>loadtest/</code> and this report directory. Charts can be regenerated
+  from the raw data with <code>loadtest/tools/make_charts.py --lang en</code>.
+</p>
+
+</body>
+</html>
