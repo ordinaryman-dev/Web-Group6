@@ -67,7 +67,7 @@ DEMO_STAFF_PASSWORD = "Desk2026!"
 @click.command("seed-desk")
 @with_appcontext
 def seed_desk():
-    """Add a demo front desk: staff login, rooms 301-305, today's bookings."""
+    """Add a demo front desk: staff login, rooms 301-306, today's bookings."""
     today = hotel_now().date()
     with Session(db.engine) as session, session.begin():
         staff = session.scalar(db.select(User).where(User.email == DEMO_STAFF_EMAIL))
@@ -82,35 +82,129 @@ def seed_desk():
             record_audit(session, staff.id, "create_staff", "user", staff.id,
                          details={"email": DEMO_STAFF_EMAIL, "source": "seed"})
 
-        room_types = [
-            ("harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00", "king",
-             ["301", "302", "305", "306"]),
-            ("city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00", "twin",
-             ["303", "304"]),
-        ]
-        created = {}
-        for code, name, description, capacity, price, bed_type, numbers in room_types:
-            room_type = session.scalar(db.select(RoomType).where(RoomType.code == code))
-            if room_type is None:
-                room_type = RoomType(code=code, name=name, description=description,
-                                     capacity=capacity, base_price=Decimal(price),
-                                     bed_type=bed_type, listed=True)
-                session.add(room_type)
+        # 演示前台优先使用实体房已有的房型。只有房号不存在（例如单独执行
+        # seed-desk）时才创建兜底房型，避免 seed-rooms 之后出现同名重复房型。
+        room_specs = (
+            ("301", "king", "harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00"),
+            ("302", "king", "harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00"),
+            ("305", "king", "harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00"),
+            ("306", "king", "harbour-king", "Harbour King", "Sea-facing king room.", 2, "680.00"),
+            ("303", "twin", "city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00"),
+            ("304", "twin", "city-twin", "City Twin", "Twin beds facing the city.", 2, "520.00"),
+        )
+
+        def desk_room_type(bed_type, code, name, description, capacity, price):
+            # 先找已有实体房的同床型房型；再按 code 复用；最后才新建。
+            occupied = db.select(Room.id).where(
+                Room.room_type_id == RoomType.id
+            ).correlate(RoomType).exists()
+            existing = session.scalar(
+                db.select(RoomType)
+                .where(RoomType.bed_type == bed_type,
+                       RoomType.listed.is_(True),
+                       occupied)
+                .order_by(RoomType.id)
+            )
+            if existing is not None:
+                return existing
+            existing = session.scalar(
+                db.select(RoomType).where(RoomType.code == code)
+            )
+            if existing is not None:
+                return existing
+            room_type = RoomType(
+                code=code, name=name, description=description,
+                capacity=capacity, base_price=Decimal(price),
+                bed_type=bed_type, listed=True,
+            )
+            session.add(room_type)
+            session.flush()
+            return room_type
+
+        rooms = {}
+        room_types = {}
+        for number, bed_type, code, name, description, capacity, price in room_specs:
+            room = session.scalar(db.select(Room).where(Room.number == number))
+            if room is None:
+                room_type = desk_room_type(
+                    bed_type, code, name, description, capacity, price
+                )
+                room = Room(number=number, room_type_id=room_type.id,
+                            operational_from=date(2020, 1, 1))
+                session.add(room)
                 session.flush()
-            created[code] = room_type
-            for number in numbers:
-                if session.scalar(db.select(Room.id).where(Room.number == number)) is None:
-                    session.add(Room(number=number, room_type_id=room_type.id,
-                                     operational_from=date(2020, 1, 1)))
+            rooms[number] = room
+            room_types[number] = session.get(RoomType, room.room_type_id)
+        session.flush()
+
+        # 老版本 seed-desk 曾把 301-306 的订单写成 Harbour King/City Twin，
+        # 与实体房房型不一致。重复执行本命令时先按房间实际房型修正旧订单、
+        # 逐晚金额和成功收款，再删除没有房间也没有订单的重复房型。
+        repaired = 0
+        seed_bookings = session.scalars(
+            db.select(Booking).where(
+                Booking.actor_user_id == staff.id,
+                Booking.idempotency_key.like("seed-%"),
+            )
+        ).all()
+        for booking in seed_bookings:
+            actual_type = session.get(RoomType, booking.room.room_type_id)
+            if actual_type is None:
+                continue
+            nights = (booking.check_out - booking.check_in).days
+            total = actual_type.base_price * nights
+            guests = min(booking.guests, actual_type.capacity)
+            if (booking.room_type_id == actual_type.id
+                    and booking.total == total
+                    and booking.guests == guests):
+                continue
+            booking.room_type_id = actual_type.id
+            booking.total = total
+            booking.guests = guests
+            for line in session.scalars(
+                db.select(BookingPriceLine).where(
+                    BookingPriceLine.booking_id == booking.id
+                )
+            ):
+                line.amount = actual_type.base_price
+                line.price_rule_id = None
+            for payment in session.scalars(
+                db.select(PaymentRecord).where(
+                    PaymentRecord.booking_id == booking.id,
+                    PaymentRecord.kind == "payment",
+                    PaymentRecord.result == "success",
+                )
+            ):
+                payment.amount = total
+            repaired += 1
+        session.flush()
+        if repaired:
+            click.echo(
+                f"Repaired {repaired} demo booking(s) to match their physical room type."
+            )
+
+        for code in ("harbour-king", "city-twin"):
+            room_type = session.scalar(
+                db.select(RoomType).where(RoomType.code == code)
+            )
+            if room_type is None:
+                continue
+            has_room = session.scalar(
+                db.select(Room.id).where(Room.room_type_id == room_type.id).limit(1)
+            )
+            has_booking = session.scalar(
+                db.select(Booking.id).where(Booking.room_type_id == room_type.id).limit(1)
+            )
+            has_rule = session.scalar(
+                db.select(PriceRule.id).where(PriceRule.room_type_id == room_type.id).limit(1)
+            )
+            if has_room is None and has_booking is None and has_rule is None:
+                session.delete(room_type)
         session.flush()
 
         if session.scalar(db.select(Booking.id).where(Booking.actor_user_id == staff.id).limit(1)):
             click.echo("Front desk demo data is already present.")
             return
-
-        king = created["harbour-king"]
-        twin = created["city-twin"]
-        rooms = {room.number: room for room in session.scalars(db.select(Room)).all()}
 
         def guest(name, phone):
             customer = Customer(name=name, phone=phone)
@@ -124,8 +218,9 @@ def seed_desk():
             booking = Booking(
                 customer_id=customer.id, room_id=room.id, room_type_id=room_type.id,
                 actor_user_id=staff.id, idempotency_key=f"seed-{customer.id}-{room.id}-{check_in}",
-                request_digest="seed", check_in=check_in, check_out=check_out, guests=2,
-                total=room_type.base_price * nights, expected_arrival=arrival,
+                request_digest="seed", check_in=check_in, check_out=check_out,
+                guests=min(2, room_type.capacity), expected_arrival=arrival,
+                total=room_type.base_price * nights,
                 cancel_by=deadline_for(check_in),
                 status=status,
                 checked_in_at=utc_now() if status != "confirmed" else None,
@@ -145,32 +240,32 @@ def seed_desk():
             return booking
 
         # Today's arrivals: two unpaid or partly paid, one already paid.
-        a1 = stay(guest("Wei Chen", "13800000001"), rooms["301"], king, 2, "confirmed",
-                  time(14, 0), paid=False)
-        a2 = stay(guest("Li Na", "13800000002"), rooms["304"], twin, 1, "confirmed",
-                  time(15, 30), paid=False)
-        a3 = stay(guest("Zhao Min", "13800000003"), rooms["302"], king, 2, "confirmed",
-                  time(18, 0), paid=True)
+        a1 = stay(guest("Wei Chen", "13800000001"), rooms["301"], room_types["301"], 2,
+                  "confirmed", time(14, 0), paid=False)
+        a2 = stay(guest("Li Na", "13800000002"), rooms["304"], room_types["304"], 1,
+                  "confirmed", time(15, 30), paid=False)
+        a3 = stay(guest("Zhao Min", "13800000003"), rooms["302"], room_types["302"], 2,
+                  "confirmed", time(18, 0), paid=True)
 
         # A late arrival: expected at 09:00 and still not here, so the desk can
         # practise the contact log and the no-show rule.
-        late = stay(guest("Mark Lee", "13800000007"), rooms["306"], king, 1, "confirmed",
-                    time(9, 0), paid=False)
+        late = stay(guest("Mark Lee", "13800000007"), rooms["306"], room_types["306"], 1,
+                    "confirmed", time(9, 0), paid=False)
 
         # In house: arrived yesterday, leaving tomorrow.
-        stay(guest("Sun Hao", "13800000004"), rooms["305"], king, 3, "checked_in",
-             time(16, 0), paid=True, offset_in=-1)
+        stay(guest("Sun Hao", "13800000004"), rooms["305"], room_types["305"], 3,
+             "checked_in", time(16, 0), paid=True, offset_in=-1)
 
         # Departing today.
-        d1 = stay(guest("Guo Jing", "13800000005"), rooms["303"], twin, 2, "checked_in",
-                  time(11, 0), paid=True, offset_in=-2)
+        d1 = stay(guest("Guo Jing", "13800000005"), rooms["303"], room_types["303"], 2,
+                  "checked_in", time(11, 0), paid=True, offset_in=-2)
 
         # A maintenance block that collides with a later booking (drives the banner).
         session.add(RoomBlock(room_id=rooms["303"].id, start_date=today + timedelta(days=2),
                               end_date=today + timedelta(days=3), created_by_id=staff.id,
                               reason="Bathroom leak under repair"))
-        later = stay(guest("Zhang Lei", "13800000006"), rooms["303"], twin, 2, "confirmed",
-                     time(14, 30), paid=False, offset_in=2)
+        later = stay(guest("Zhang Lei", "13800000006"), rooms["303"], room_types["303"], 2,
+                     "confirmed", time(14, 30), paid=False, offset_in=2)
 
         # Pending guest requests for the queue.
         session.add(BookingRequest(

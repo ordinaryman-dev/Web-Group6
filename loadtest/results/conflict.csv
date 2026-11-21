@@ -1,0 +1,80 @@
+﻿ts,scenario,label,users,action,vu,status_code,latency_ms,outcome,detail
+1795257741.918,conflict,conflict,20,book_2_clients,0,200,290.64,sold_out,No single room covers the entire stay.
+1795257741.918,conflict,conflict,20,book_2_clients,0,200,248.41,success,Booking BK-000008 is confirmed.
+1795257742.186,conflict,conflict,20,book_2_clients,0,200,131.0,sold_out,No single room covers the entire stay.
+1795257742.186,conflict,conflict,20,book_2_clients,0,200,97.3,success,Booking BK-000009 is confirmed.
+1795257742.415,conflict,conflict,20,book_2_clients,0,200,90.22,sold_out,No single room covers the entire stay.
+1795257742.415,conflict,conflict,20,book_2_clients,0,200,90.71,success,Booking BK-000010 is confirmed.
+1795257742.666,conflict,conflict,20,book_2_clients,0,200,112.71,sold_out,No single room covers the entire stay.
+1795257742.666,conflict,conflict,20,book_2_clients,0,200,71.05,success,Booking BK-000011 is confirmed.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1353.37,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1362.85,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1513.81,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1427.58,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1307.82,success,Booking BK-000012 is confirmed.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1388.54,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1491.28,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1417.77,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1479.05,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1472.79,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1502.81,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1455.55,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1455.49,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1434.09,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1375.6,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1485.9,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1512.04,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1437.36,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1507.75,sold_out,No single room covers the entire stay.
+1795257746.23,conflict,conflict,20,book_20_clients,0,200,1455.73,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,942.47,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1082.81,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1055.67,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1142.25,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1157.88,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1070.29,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1110.93,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,941.85,success,Booking BK-000013 is confirmed.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1161.65,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1020.71,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1065.22,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1050.27,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1045.92,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1155.28,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1117.75,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1106.53,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1000.84,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1162.22,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1065.16,sold_out,No single room covers the entire stay.
+1795257748.065,conflict,conflict,20,book_20_clients,0,200,1012.5,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1033.77,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1070.82,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,775.68,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1067.31,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,943.2,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1084.37,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,830.31,success,Booking BK-000014 is confirmed.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1077.81,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1053.81,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1089.31,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1044.72,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,959.51,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1086.48,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1025.61,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,932.12,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1051.3,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1038.12,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1068.33,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1091.74,sold_out,No single room covers the entire stay.
+1795257749.824,conflict,conflict,20,book_20_clients,0,200,1071.74,sold_out,No single room covers the entire stay.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,375.31,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,411.79,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,417.72,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,327.38,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,393.62,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,318.33,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,423.86,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,324.31,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,400.28,success,Booking BK-000015 is confirmed.
+1795257751.547,conflict,conflict,20,book_same_key,0,200,277.43,success,Booking BK-000015 is confirmed.
+1795257751.667,conflict,conflict,20,book_same_key_different_body,0,200,38.36,idempotency_mismatch,This request key belongs to a different booking.

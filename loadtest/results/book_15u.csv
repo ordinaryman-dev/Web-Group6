@@ -1,0 +1,2023 @@
+﻿ts,scenario,label,users,action,vu,status_code,latency_ms,outcome,detail
+1795257809.214,book,book_15u,15,api_search,9,200,35.08,ok,
+1795257809.217,book,book_15u,15,api_search,15,200,38.29,ok,
+1795257809.222,book,book_15u,15,api_search,10,200,42.59,ok,
+1795257809.223,book,book_15u,15,api_search,11,200,43.49,ok,
+1795257809.225,book,book_15u,15,api_search,5,200,46.19,ok,
+1795257809.227,book,book_15u,15,api_search,3,200,47.35,ok,
+1795257809.231,book,book_15u,15,api_search,12,200,51.02,ok,
+1795257809.233,book,book_15u,15,api_search,8,200,53.19,ok,
+1795257809.24,book,book_15u,15,api_search,6,200,60.29,ok,
+1795257809.249,book,book_15u,15,api_search,4,200,69.7,ok,
+1795257809.25,book,book_15u,15,api_search,2,200,70.8,ok,
+1795257809.266,book,book_15u,15,api_search,1,200,87.21,ok,
+1795257809.266,book,book_15u,15,api_search,13,200,86.89,ok,
+1795257809.281,book,book_15u,15,api_search,14,200,100.99,ok,
+1795257809.289,book,book_15u,15,api_search,7,200,109.27,ok,
+1795257809.303,book,book_15u,15,prepare,9,200,88.01,ok,
+1795257809.305,book,book_15u,15,prepare,15,200,87.22,ok,
+1795257809.323,book,book_15u,15,prepare,10,200,100.57,ok,
+1795257809.34,book,book_15u,15,prepare,11,200,116.49,ok,
+1795257809.342,book,book_15u,15,prepare,5,200,116.87,ok,
+1795257809.352,book,book_15u,15,prepare,3,200,124.44,ok,
+1795257809.366,book,book_15u,15,prepare,8,200,133.25,ok,
+1795257809.373,book,book_15u,15,prepare,12,200,142.22,ok,
+1795257809.377,book,book_15u,15,prepare,2,200,126.99,ok,
+1795257809.383,book,book_15u,15,prepare,6,200,142.93,ok,
+1795257809.39,book,book_15u,15,prepare,4,200,140.13,ok,
+1795257809.392,book,book_15u,15,prepare,13,200,125.82,ok,
+1795257809.395,book,book_15u,15,prepare,1,200,128.66,ok,
+1795257809.402,book,book_15u,15,prepare,14,200,121.66,ok,
+1795257809.41,book,book_15u,15,prepare,7,200,121.07,ok,
+1795257809.719,book,book_15u,15,book,15,200,414.7,success,Booking BK-000017 is confirmed.
+1795257809.724,book,book_15u,15,book,9,200,421.26,success,Booking BK-000016 is confirmed.
+1795257809.762,book,book_15u,15,book,10,200,438.85,success,Booking BK-000018 is confirmed.
+1795257809.764,book,book_15u,15,book,5,200,421.38,success,Booking BK-000020 is confirmed.
+1795257809.813,book,book_15u,15,book,8,200,447.04,success,Booking BK-000019 is confirmed.
+1795257809.874,book,book_15u,15,book,4,200,484.47,success,Booking BK-000023 is confirmed.
+1795257809.881,book,book_15u,15,book,13,200,488.23,success,Booking BK-000022 is confirmed.
+1795257809.881,book,book_15u,15,book,6,200,498.7,success,Booking BK-000021 is confirmed.
+1795257809.884,book,book_15u,15,book,7,200,474.31,success,Booking BK-000024 is confirmed.
+1795257809.888,book,book_15u,15,book,11,200,548.13,success,Booking BK-000025 is confirmed.
+1795257809.907,book,book_15u,15,book,12,200,533.59,success,Booking BK-000026 is confirmed.
+1795257809.935,book,book_15u,15,book,14,200,533.05,success,Booking BK-000027 is confirmed.
+1795257809.962,book,book_15u,15,book,2,200,584.99,success,Booking BK-000028 is confirmed.
+1795257809.991,book,book_15u,15,book,1,200,595.64,success,Booking BK-000029 is confirmed.
+1795257809.992,book,book_15u,15,book,3,200,640.62,busy,The rooms are busy. Please try the same booking again.
+1795257810.734,book,book_15u,15,api_search,4,200,30.8,ok,
+1795257810.764,book,book_15u,15,prepare,4,200,30.53,ok,
+1795257810.778,book,book_15u,15,api_search,13,200,20.59,ok,
+1795257810.811,book,book_15u,15,prepare,13,200,33.23,ok,
+1795257810.825,book,book_15u,15,api_search,7,200,28.46,ok,
+1795257810.838,book,book_15u,15,prepare,7,200,13.09,ok,
+1795257810.848,book,book_15u,15,book,4,200,84.22,success,Booking BK-000030 is confirmed.
+1795257810.888,book,book_15u,15,book,13,200,77.28,success,Booking BK-000031 is confirmed.
+1795257810.901,book,book_15u,15,api_search,10,200,12.49,ok,
+1795257810.915,book,book_15u,15,prepare,10,200,13.57,ok,
+1795257810.928,book,book_15u,15,book,7,200,89.81,success,Booking BK-000032 is confirmed.
+1795257810.94,book,book_15u,15,api_search,2,200,18.09,ok,
+1795257810.958,book,book_15u,15,prepare,2,200,17.15,ok,
+1795257810.971,book,book_15u,15,api_search,6,200,35.21,ok,
+1795257810.988,book,book_15u,15,book,10,200,72.76,success,Booking BK-000033 is confirmed.
+1795257811.007,book,book_15u,15,prepare,6,200,35.96,ok,
+1795257811.008,book,book_15u,15,book,2,200,50.15,success,Booking BK-000034 is confirmed.
+1795257811.052,book,book_15u,15,api_search,15,200,12.48,ok,
+1795257811.062,book,book_15u,15,book,6,200,54.72,success,Booking BK-000035 is confirmed.
+1795257811.077,book,book_15u,15,prepare,15,200,24.8,ok,
+1795257811.091,book,book_15u,15,api_search,9,200,33.15,ok,
+1795257811.124,book,book_15u,15,prepare,9,200,33.06,ok,
+1795257811.139,book,book_15u,15,book,15,200,61.38,success,Booking BK-000036 is confirmed.
+1795257811.149,book,book_15u,15,api_search,8,200,10.11,ok,
+1795257811.167,book,book_15u,15,prepare,8,200,17.55,ok,
+1795257811.177,book,book_15u,15,api_search,12,200,10.53,ok,
+1795257811.224,book,book_15u,15,book,9,200,99.28,success,Booking BK-000037 is confirmed.
+1795257811.225,book,book_15u,15,api_search,1,200,48.83,ok,
+1795257811.235,book,book_15u,15,prepare,12,200,57.7,ok,
+1795257811.235,book,book_15u,15,api_search,5,200,60.44,ok,
+1795257811.255,book,book_15u,15,prepare,1,200,29.93,ok,
+1795257811.277,book,book_15u,15,prepare,5,200,41.71,ok,
+1795257811.307,book,book_15u,15,api_search,11,200,48.26,ok,
+1795257811.309,book,book_15u,15,book,8,200,141.68,success,Booking BK-000038 is confirmed.
+1795257811.316,book,book_15u,15,book,12,200,81.19,success,Booking BK-000039 is confirmed.
+1795257811.332,book,book_15u,15,book,1,200,77.0,success,Booking BK-000040 is confirmed.
+1795257811.344,book,book_15u,15,prepare,11,200,36.58,ok,
+1795257811.377,book,book_15u,15,book,5,200,99.97,success,Booking BK-000041 is confirmed.
+1795257811.423,book,book_15u,15,book,11,200,78.65,success,Booking BK-000042 is confirmed.
+1795257811.514,book,book_15u,15,api_search,14,200,22.27,ok,
+1795257811.546,book,book_15u,15,prepare,14,200,31.9,ok,
+1795257811.596,book,book_15u,15,book,14,200,49.25,success,Booking BK-000043 is confirmed.
+1795257811.596,book,book_15u,15,api_search,3,200,22.69,ok,
+1795257811.626,book,book_15u,15,prepare,3,200,30.24,ok,
+1795257811.671,book,book_15u,15,book,3,200,44.97,success,Booking BK-000044 is confirmed.
+1795257811.954,book,book_15u,15,api_search,2,200,33.65,ok,
+1795257811.986,book,book_15u,15,prepare,2,200,31.95,ok,
+1795257812.018,book,book_15u,15,api_search,13,200,31.71,ok,
+1795257812.046,book,book_15u,15,prepare,13,200,27.58,ok,
+1795257812.06,book,book_15u,15,book,2,200,74.4,success,Booking BK-000045 is confirmed.
+1795257812.108,book,book_15u,15,book,13,200,62.27,success,Booking BK-000046 is confirmed.
+1795257812.197,book,book_15u,15,api_search,7,200,9.9,ok,
+1795257812.208,book,book_15u,15,prepare,7,200,11.09,ok,
+1795257812.236,book,book_15u,15,api_search,5,200,24.97,ok,
+1795257812.248,book,book_15u,15,prepare,5,200,11.76,ok,
+1795257812.281,book,book_15u,15,book,7,200,72.59,success,Booking BK-000047 is confirmed.
+1795257812.296,book,book_15u,15,api_search,11,200,33.02,ok,
+1795257812.34,book,book_15u,15,api_search,1,200,38.5,ok,
+1795257812.34,book,book_15u,15,book,5,200,92.08,success,Booking BK-000048 is confirmed.
+1795257812.34,book,book_15u,15,prepare,11,200,44.48,ok,
+1795257812.34,book,book_15u,15,api_search,4,200,23.46,ok,
+1795257812.36,book,book_15u,15,prepare,1,200,20.04,ok,
+1795257812.362,book,book_15u,15,prepare,4,200,22.07,ok,
+1795257812.405,book,book_15u,15,book,11,200,65.11,success,Booking BK-000049 is confirmed.
+1795257812.415,book,book_15u,15,book,4,200,52.47,success,Booking BK-000051 is confirmed.
+1795257812.422,book,book_15u,15,book,1,200,61.72,success,Booking BK-000050 is confirmed.
+1795257812.486,book,book_15u,15,api_search,10,200,36.35,ok,
+1795257812.494,book,book_15u,15,api_search,15,200,18.99,ok,
+1795257812.512,book,book_15u,15,prepare,10,200,25.63,ok,
+1795257812.532,book,book_15u,15,prepare,15,200,37.69,ok,
+1795257812.563,book,book_15u,15,book,10,200,51.17,success,Booking BK-000052 is confirmed.
+1795257812.566,book,book_15u,15,api_search,14,200,41.38,ok,
+1795257812.58,book,book_15u,15,prepare,14,200,13.61,ok,
+1795257812.604,book,book_15u,15,book,15,200,71.5,success,Booking BK-000053 is confirmed.
+1795257812.62,book,book_15u,15,api_search,6,200,26.22,ok,
+1795257812.632,book,book_15u,15,prepare,6,200,12.5,ok,
+1795257812.638,book,book_15u,15,book,14,200,57.4,success,Booking BK-000054 is confirmed.
+1795257812.649,book,book_15u,15,api_search,12,200,22.86,ok,
+1795257812.665,book,book_15u,15,prepare,12,200,16.07,ok,
+1795257812.666,book,book_15u,15,api_search,9,200,16.35,ok,
+1795257812.703,book,book_15u,15,prepare,9,200,36.33,ok,
+1795257812.713,book,book_15u,15,book,6,200,80.48,success,Booking BK-000055 is confirmed.
+1795257812.746,book,book_15u,15,book,12,200,80.52,success,Booking BK-000056 is confirmed.
+1795257812.746,book,book_15u,15,api_search,8,200,35.78,ok,
+1795257812.76,book,book_15u,15,book,9,200,56.67,success,Booking BK-000057 is confirmed.
+1795257812.773,book,book_15u,15,prepare,8,200,26.87,ok,
+1795257812.852,book,book_15u,15,book,8,200,79.02,success,Booking BK-000058 is confirmed.
+1795257812.881,book,book_15u,15,api_search,3,200,10.92,ok,
+1795257812.917,book,book_15u,15,prepare,3,200,36.01,ok,
+1795257812.947,book,book_15u,15,api_search,2,200,33.46,ok,
+1795257812.976,book,book_15u,15,prepare,2,200,28.71,ok,
+1795257812.994,book,book_15u,15,book,3,200,77.16,success,Booking BK-000059 is confirmed.
+1795257813.023,book,book_15u,15,book,2,200,46.96,success,Booking BK-000060 is confirmed.
+1795257813.315,book,book_15u,15,api_search,1,200,9.83,ok,
+1795257813.348,book,book_15u,15,prepare,1,200,33.0,ok,
+1795257813.398,book,book_15u,15,book,1,200,49.5,success,Booking BK-000061 is confirmed.
+1795257813.441,book,book_15u,15,api_search,4,200,13.15,ok,
+1795257813.454,book,book_15u,15,api_search,13,200,9.04,ok,
+1795257813.471,book,book_15u,15,prepare,4,200,29.67,ok,
+1795257813.485,book,book_15u,15,prepare,13,200,31.17,ok,
+1795257813.551,book,book_15u,15,book,4,200,79.82,success,Booking BK-000062 is confirmed.
+1795257813.551,book,book_15u,15,book,13,200,65.45,success,Booking BK-000063 is confirmed.
+1795257813.562,book,book_15u,15,api_search,11,200,27.75,ok,
+1795257813.601,book,book_15u,15,api_search,7,200,36.97,ok,
+1795257813.603,book,book_15u,15,api_search,10,200,31.26,ok,
+1795257813.604,book,book_15u,15,prepare,11,200,41.99,ok,
+1795257813.619,book,book_15u,15,prepare,7,200,18.57,ok,
+1795257813.621,book,book_15u,15,prepare,10,200,17.3,ok,
+1795257813.67,book,book_15u,15,book,11,200,65.94,success,Booking BK-000064 is confirmed.
+1795257813.671,book,book_15u,15,book,10,200,49.94,success,Booking BK-000066 is confirmed.
+1795257813.688,book,book_15u,15,book,7,200,68.31,success,Booking BK-000065 is confirmed.
+1795257813.812,book,book_15u,15,api_search,12,200,29.91,ok,
+1795257813.823,book,book_15u,15,prepare,12,200,10.6,ok,
+1795257813.875,book,book_15u,15,book,12,200,51.6,success,Booking BK-000067 is confirmed.
+1795257813.909,book,book_15u,15,api_search,5,200,30.5,ok,
+1795257813.942,book,book_15u,15,prepare,5,200,32.28,ok,
+1795257813.961,book,book_15u,15,api_search,14,200,14.85,ok,
+1795257813.973,book,book_15u,15,api_search,9,200,29.95,ok,
+1795257813.974,book,book_15u,15,api_search,15,200,31.83,ok,
+1795257813.989,book,book_15u,15,prepare,9,200,15.1,ok,
+1795257813.989,book,book_15u,15,prepare,14,200,27.32,ok,
+1795257814.003,book,book_15u,15,book,5,200,61.27,success,Booking BK-000068 is confirmed.
+1795257814.006,book,book_15u,15,prepare,15,200,31.14,ok,
+1795257814.021,book,book_15u,15,api_search,3,200,37.94,ok,
+1795257814.04,book,book_15u,15,api_search,6,200,17.84,ok,
+1795257814.061,book,book_15u,15,prepare,3,200,40.31,ok,
+1795257814.068,book,book_15u,15,prepare,6,200,27.82,ok,
+1795257814.098,book,book_15u,15,book,14,200,109.28,success,Booking BK-000069 is confirmed.
+1795257814.104,book,book_15u,15,book,15,200,98.28,success,Booking BK-000070 is confirmed.
+1795257814.127,book,book_15u,15,book,9,200,138.0,success,Booking BK-000072 is confirmed.
+1795257814.142,book,book_15u,15,book,3,200,80.41,success,Booking BK-000071 is confirmed.
+1795257814.159,book,book_15u,15,book,6,200,91.02,success,Booking BK-000073 is confirmed.
+1795257814.195,book,book_15u,15,api_search,8,200,34.42,ok,
+1795257814.225,book,book_15u,15,prepare,8,200,29.59,ok,
+1795257814.281,book,book_15u,15,book,8,200,55.77,success,Booking BK-000074 is confirmed.
+1795257814.549,book,book_15u,15,api_search,2,200,22.99,ok,
+1795257814.559,book,book_15u,15,prepare,2,200,10.16,ok,
+1795257814.575,book,book_15u,15,api_search,13,200,24.52,ok,
+1795257814.609,book,book_15u,15,prepare,13,200,33.49,ok,
+1795257814.638,book,book_15u,15,book,2,200,78.72,success,Booking BK-000075 is confirmed.
+1795257814.682,book,book_15u,15,book,13,200,73.56,success,Booking BK-000076 is confirmed.
+1795257814.738,book,book_15u,15,api_search,4,200,17.26,ok,
+1795257814.748,book,book_15u,15,prepare,4,200,10.43,ok,
+1795257814.795,book,book_15u,15,api_search,10,200,30.31,ok,
+1795257814.799,book,book_15u,15,book,4,200,51.24,success,Booking BK-000077 is confirmed.
+1795257814.826,book,book_15u,15,prepare,10,200,31.62,ok,
+1795257814.887,book,book_15u,15,api_search,1,200,32.39,ok,
+1795257814.901,book,book_15u,15,book,10,200,74.74,success,Booking BK-000078 is confirmed.
+1795257814.917,book,book_15u,15,prepare,1,200,30.67,ok,
+1795257814.966,book,book_15u,15,book,1,200,48.34,success,Booking BK-000079 is confirmed.
+1795257814.968,book,book_15u,15,api_search,15,200,36.51,ok,
+1795257814.978,book,book_15u,15,api_search,7,200,22.19,ok,
+1795257815.0,book,book_15u,15,prepare,15,200,31.79,ok,
+1795257815.017,book,book_15u,15,prepare,7,200,37.95,ok,
+1795257815.041,book,book_15u,15,api_search,11,200,14.21,ok,
+1795257815.056,book,book_15u,15,book,15,200,56.02,success,Booking BK-000080 is confirmed.
+1795257815.074,book,book_15u,15,book,7,200,56.82,success,Booking BK-000081 is confirmed.
+1795257815.076,book,book_15u,15,prepare,11,200,34.73,ok,
+1795257815.12,book,book_15u,15,book,11,200,43.63,success,Booking BK-000082 is confirmed.
+1795257815.136,book,book_15u,15,api_search,6,200,34.46,ok,
+1795257815.169,book,book_15u,15,prepare,6,200,33.36,ok,
+1795257815.19,book,book_15u,15,api_search,12,200,15.57,ok,
+1795257815.214,book,book_15u,15,prepare,12,200,23.18,ok,
+1795257815.228,book,book_15u,15,book,6,200,59.04,success,Booking BK-000083 is confirmed.
+1795257815.245,book,book_15u,15,api_search,5,200,21.39,ok,
+1795257815.276,book,book_15u,15,prepare,5,200,30.3,ok,
+1795257815.291,book,book_15u,15,book,12,200,77.38,success,Booking BK-000084 is confirmed.
+1795257815.339,book,book_15u,15,api_search,14,200,34.44,ok,
+1795257815.34,book,book_15u,15,api_search,3,200,10.79,ok,
+1795257815.354,book,book_15u,15,book,5,200,77.74,success,Booking BK-000085 is confirmed.
+1795257815.359,book,book_15u,15,prepare,3,200,18.79,ok,
+1795257815.359,book,book_15u,15,prepare,14,200,19.91,ok,
+1795257815.405,book,book_15u,15,api_search,9,200,31.74,ok,
+1795257815.414,book,book_15u,15,book,3,200,55.17,success,Booking BK-000087 is confirmed.
+1795257815.432,book,book_15u,15,book,14,200,72.72,success,Booking BK-000086 is confirmed.
+1795257815.436,book,book_15u,15,prepare,9,200,30.61,ok,
+1795257815.475,book,book_15u,15,book,9,200,38.78,success,Booking BK-000088 is confirmed.
+1795257815.711,book,book_15u,15,api_search,13,200,31.38,ok,
+1795257815.744,book,book_15u,15,prepare,13,200,32.98,ok,
+1795257815.792,book,book_15u,15,book,13,200,47.78,success,Booking BK-000089 is confirmed.
+1795257815.899,book,book_15u,15,api_search,8,200,33.49,ok,
+1795257815.928,book,book_15u,15,prepare,8,200,28.78,ok,
+1795257815.977,book,book_15u,15,api_search,4,200,13.98,ok,
+1795257816.007,book,book_15u,15,book,8,200,78.86,success,Booking BK-000090 is confirmed.
+1795257816.01,book,book_15u,15,prepare,4,200,32.6,ok,
+1795257816.051,book,book_15u,15,api_search,2,200,28.33,ok,
+1795257816.062,book,book_15u,15,prepare,2,200,10.6,ok,
+1795257816.082,book,book_15u,15,book,4,200,72.7,success,Booking BK-000091 is confirmed.
+1795257816.127,book,book_15u,15,book,2,200,65.01,success,Booking BK-000092 is confirmed.
+1795257816.16,book,book_15u,15,api_search,1,200,11.08,ok,
+1795257816.172,book,book_15u,15,prepare,1,200,12.22,ok,
+1795257816.255,book,book_15u,15,book,1,200,83.14,success,Booking BK-000093 is confirmed.
+1795257816.365,book,book_15u,15,api_search,15,200,32.13,ok,
+1795257816.396,book,book_15u,15,prepare,15,200,30.39,ok,
+1795257816.442,book,book_15u,15,book,15,200,45.48,success,Booking BK-000094 is confirmed.
+1795257816.457,book,book_15u,15,api_search,10,200,18.49,ok,
+1795257816.494,book,book_15u,15,prepare,10,200,36.61,ok,
+1795257816.525,book,book_15u,15,api_search,6,200,40.21,ok,
+1795257816.552,book,book_15u,15,prepare,6,200,27.37,ok,
+1795257816.571,book,book_15u,15,book,10,200,77.14,success,Booking BK-000095 is confirmed.
+1795257816.614,book,book_15u,15,book,6,200,61.31,success,Booking BK-000096 is confirmed.
+1795257816.615,book,book_15u,15,api_search,12,200,22.62,ok,
+1795257816.646,book,book_15u,15,prepare,12,200,30.69,ok,
+1795257816.646,book,book_15u,15,api_search,3,200,34.6,ok,
+1795257816.659,book,book_15u,15,api_search,7,200,26.54,ok,
+1795257816.675,book,book_15u,15,prepare,3,200,28.9,ok,
+1795257816.699,book,book_15u,15,book,12,200,52.22,success,Booking BK-000097 is confirmed.
+1795257816.7,book,book_15u,15,prepare,7,200,40.86,ok,
+1795257816.748,book,book_15u,15,api_search,5,200,33.62,ok,
+1795257816.749,book,book_15u,15,api_search,11,200,34.24,ok,
+1795257816.758,book,book_15u,15,book,3,200,82.57,success,Booking BK-000098 is confirmed.
+1795257816.802,book,book_15u,15,book,7,200,101.7,success,Booking BK-000099 is confirmed.
+1795257816.802,book,book_15u,15,prepare,11,200,52.86,ok,
+1795257816.807,book,book_15u,15,api_search,9,200,56.22,ok,
+1795257816.809,book,book_15u,15,prepare,5,200,60.82,ok,
+1795257816.842,book,book_15u,15,prepare,9,200,35.46,ok,
+1795257816.865,book,book_15u,15,api_search,14,200,36.54,ok,
+1795257816.896,book,book_15u,15,book,11,200,93.84,success,Booking BK-000100 is confirmed.
+1795257816.9,book,book_15u,15,book,5,200,90.91,success,Booking BK-000101 is confirmed.
+1795257816.906,book,book_15u,15,prepare,14,200,41.03,ok,
+1795257816.944,book,book_15u,15,book,9,200,101.81,success,Booking BK-000102 is confirmed.
+1795257816.976,book,book_15u,15,book,14,200,69.69,success,Booking BK-000103 is confirmed.
+1795257816.977,book,book_15u,15,api_search,8,200,17.91,ok,
+1795257817.004,book,book_15u,15,prepare,8,200,27.08,ok,
+1795257817.046,book,book_15u,15,book,8,200,41.39,success,Booking BK-000104 is confirmed.
+1795257817.13,book,book_15u,15,api_search,1,200,36.43,ok,
+1795257817.157,book,book_15u,15,prepare,1,200,27.03,ok,
+1795257817.188,book,book_15u,15,api_search,2,200,13.4,ok,
+1795257817.216,book,book_15u,15,prepare,2,200,28.2,ok,
+1795257817.231,book,book_15u,15,book,1,200,73.76,success,Booking BK-000105 is confirmed.
+1795257817.266,book,book_15u,15,book,2,200,49.75,success,Booking BK-000106 is confirmed.
+1795257817.277,book,book_15u,15,api_search,4,200,25.81,ok,
+1795257817.311,book,book_15u,15,prepare,4,200,33.74,ok,
+1795257817.39,book,book_15u,15,book,4,200,78.93,success,Booking BK-000107 is confirmed.
+1795257817.391,book,book_15u,15,api_search,13,200,38.77,ok,
+1795257817.419,book,book_15u,15,prepare,13,200,27.77,ok,
+1795257817.468,book,book_15u,15,book,13,200,48.66,success,Booking BK-000108 is confirmed.
+1795257817.556,book,book_15u,15,api_search,10,200,17.11,ok,
+1795257817.572,book,book_15u,15,prepare,10,200,15.84,ok,
+1795257817.624,book,book_15u,15,api_search,12,200,41.84,ok,
+1795257817.655,book,book_15u,15,book,10,200,83.08,success,Booking BK-000109 is confirmed.
+1795257817.659,book,book_15u,15,prepare,12,200,34.77,ok,
+1795257817.73,book,book_15u,15,book,12,200,71.1,success,Booking BK-000110 is confirmed.
+1795257817.732,book,book_15u,15,api_search,15,200,22.22,ok,
+1795257817.742,book,book_15u,15,prepare,15,200,10.44,ok,
+1795257817.805,book,book_15u,15,book,15,200,62.25,success,Booking BK-000111 is confirmed.
+1795257817.886,book,book_15u,15,api_search,6,200,33.28,ok,
+1795257817.895,book,book_15u,15,prepare,6,200,9.45,ok,
+1795257817.914,book,book_15u,15,api_search,14,200,8.99,ok,
+1795257817.925,book,book_15u,15,prepare,14,200,11.78,ok,
+1795257817.957,book,book_15u,15,api_search,7,200,16.97,ok,
+1795257817.966,book,book_15u,15,api_search,9,200,16.14,ok,
+1795257817.974,book,book_15u,15,prepare,7,200,17.59,ok,
+1795257817.981,book,book_15u,15,api_search,3,200,37.63,ok,
+1795257817.981,book,book_15u,15,book,6,200,85.81,success,Booking BK-000112 is confirmed.
+1795257817.998,book,book_15u,15,book,14,200,72.73,success,Booking BK-000113 is confirmed.
+1795257817.999,book,book_15u,15,prepare,3,200,18.02,ok,
+1795257818.003,book,book_15u,15,prepare,9,200,36.43,ok,
+1795257818.046,book,book_15u,15,book,7,200,71.07,success,Booking BK-000114 is confirmed.
+1795257818.057,book,book_15u,15,api_search,5,200,28.38,ok,
+1795257818.057,book,book_15u,15,book,9,200,54.76,success,Booking BK-000115 is confirmed.
+1795257818.088,book,book_15u,15,prepare,5,200,30.35,ok,
+1795257818.121,book,book_15u,15,book,3,200,121.47,success,Booking BK-000116 is confirmed.
+1795257818.144,book,book_15u,15,book,5,200,56.61,success,Booking BK-000117 is confirmed.
+1795257818.277,book,book_15u,15,api_search,11,200,16.57,ok,
+1795257818.29,book,book_15u,15,prepare,11,200,13.0,ok,
+1795257818.334,book,book_15u,15,book,11,200,43.27,success,Booking BK-000118 is confirmed.
+1795257818.354,book,book_15u,15,api_search,8,200,30.01,ok,
+1795257818.368,book,book_15u,15,prepare,8,200,13.89,ok,
+1795257818.431,book,book_15u,15,book,8,200,62.09,success,Booking BK-000119 is confirmed.
+1795257818.432,book,book_15u,15,api_search,4,200,31.3,ok,
+1795257818.461,book,book_15u,15,prepare,4,200,28.53,ok,
+1795257818.508,book,book_15u,15,api_search,13,200,20.53,ok,
+1795257818.519,book,book_15u,15,prepare,13,200,11.06,ok,
+1795257818.537,book,book_15u,15,book,4,200,76.46,success,Booking BK-000120 is confirmed.
+1795257818.584,book,book_15u,15,book,13,200,64.91,success,Booking BK-000121 is confirmed.
+1795257818.618,book,book_15u,15,api_search,12,200,33.62,ok,
+1795257818.629,book,book_15u,15,prepare,12,200,10.94,ok,
+1795257818.677,book,book_15u,15,book,12,200,48.5,success,Booking BK-000122 is confirmed.
+1795257818.803,book,book_15u,15,api_search,1,200,25.4,ok,
+1795257818.833,book,book_15u,15,prepare,1,200,29.44,ok,
+1795257818.848,book,book_15u,15,api_search,2,200,9.76,ok,
+1795257818.873,book,book_15u,15,api_search,10,200,17.62,ok,
+1795257818.885,book,book_15u,15,prepare,2,200,36.86,ok,
+1795257818.893,book,book_15u,15,prepare,10,200,19.46,ok,
+1795257818.904,book,book_15u,15,api_search,6,200,31.73,ok,
+1795257818.905,book,book_15u,15,book,1,200,72.65,success,Booking BK-000123 is confirmed.
+1795257818.922,book,book_15u,15,prepare,6,200,17.7,ok,
+1795257818.958,book,book_15u,15,book,2,200,72.79,success,Booking BK-000124 is confirmed.
+1795257818.975,book,book_15u,15,book,10,200,82.26,success,Booking BK-000125 is confirmed.
+1795257819.007,book,book_15u,15,book,6,200,84.56,success,Booking BK-000126 is confirmed.
+1795257819.132,book,book_15u,15,api_search,3,200,22.82,ok,
+1795257819.161,book,book_15u,15,api_search,15,200,16.95,ok,
+1795257819.167,book,book_15u,15,prepare,3,200,35.05,ok,
+1795257819.215,book,book_15u,15,prepare,15,200,54.2,ok,
+1795257819.253,book,book_15u,15,book,3,200,85.98,success,Booking BK-000127 is confirmed.
+1795257819.288,book,book_15u,15,book,15,200,72.55,success,Booking BK-000128 is confirmed.
+1795257819.351,book,book_15u,15,api_search,5,200,37.79,ok,
+1795257819.378,book,book_15u,15,prepare,5,200,27.57,ok,
+1795257819.453,book,book_15u,15,book,5,200,74.8,success,Booking BK-000129 is confirmed.
+1795257819.502,book,book_15u,15,api_search,9,200,26.88,ok,
+1795257819.503,book,book_15u,15,api_search,14,200,30.41,ok,
+1795257819.514,book,book_15u,15,prepare,9,200,11.47,ok,
+1795257819.516,book,book_15u,15,api_search,7,200,20.56,ok,
+1795257819.536,book,book_15u,15,prepare,14,200,33.04,ok,
+1795257819.553,book,book_15u,15,prepare,7,200,37.38,ok,
+1795257819.579,book,book_15u,15,book,9,200,64.7,success,Booking BK-000130 is confirmed.
+1795257819.59,book,book_15u,15,book,14,200,54.27,success,Booking BK-000131 is confirmed.
+1795257819.606,book,book_15u,15,book,7,200,52.12,success,Booking BK-000132 is confirmed.
+1795257819.84,book,book_15u,15,api_search,4,200,35.14,ok,
+1795257819.875,book,book_15u,15,api_search,12,200,28.06,ok,
+1795257819.875,book,book_15u,15,prepare,4,200,34.54,ok,
+1795257819.887,book,book_15u,15,api_search,6,200,19.69,ok,
+1795257819.909,book,book_15u,15,prepare,12,200,34.63,ok,
+1795257819.92,book,book_15u,15,prepare,6,200,33.16,ok,
+1795257819.939,book,book_15u,15,book,4,200,64.37,success,Booking BK-000133 is confirmed.
+1795257819.942,book,book_15u,15,api_search,8,200,29.88,ok,
+1795257819.97,book,book_15u,15,api_search,11,200,38.31,ok,
+1795257819.972,book,book_15u,15,prepare,8,200,29.05,ok,
+1795257819.983,book,book_15u,15,book,6,200,63.29,success,Booking BK-000134 is confirmed.
+1795257819.989,book,book_15u,15,api_search,1,200,30.03,ok,
+1795257819.997,book,book_15u,15,book,12,200,88.05,success,Booking BK-000135 is confirmed.
+1795257820.009,book,book_15u,15,prepare,11,200,38.93,ok,
+1795257820.013,book,book_15u,15,prepare,1,200,24.29,ok,
+1795257820.049,book,book_15u,15,book,8,200,76.78,success,Booking BK-000136 is confirmed.
+1795257820.056,book,book_15u,15,api_search,2,200,44.75,ok,
+1795257820.069,book,book_15u,15,api_search,13,200,40.76,ok,
+1795257820.088,book,book_15u,15,prepare,2,200,32.47,ok,
+1795257820.11,book,book_15u,15,book,11,200,101.04,success,Booking BK-000138 is confirmed.
+1795257820.11,book,book_15u,15,book,1,200,96.97,success,Booking BK-000137 is confirmed.
+1795257820.114,book,book_15u,15,prepare,13,200,44.03,ok,
+1795257820.164,book,book_15u,15,book,2,200,75.59,success,Booking BK-000139 is confirmed.
+1795257820.18,book,book_15u,15,book,13,200,66.18,success,Booking BK-000140 is confirmed.
+1795257820.203,book,book_15u,15,api_search,10,200,12.42,ok,
+1795257820.231,book,book_15u,15,prepare,10,200,27.84,ok,
+1795257820.283,book,book_15u,15,book,10,200,52.64,success,Booking BK-000141 is confirmed.
+1795257820.367,book,book_15u,15,api_search,3,200,14.48,ok,
+1795257820.401,book,book_15u,15,prepare,3,200,33.59,ok,
+1795257820.443,book,book_15u,15,book,3,200,42.18,success,Booking BK-000142 is confirmed.
+1795257820.784,book,book_15u,15,api_search,15,200,10.6,ok,
+1795257820.796,book,book_15u,15,prepare,15,200,12.5,ok,
+1795257820.852,book,book_15u,15,book,15,200,55.83,success,Booking BK-000143 is confirmed.
+1795257820.854,book,book_15u,15,api_search,14,200,30.51,ok,
+1795257820.883,book,book_15u,15,prepare,14,200,28.73,ok,
+1795257820.926,book,book_15u,15,book,14,200,43.54,success,Booking BK-000144 is confirmed.
+1795257820.96,book,book_15u,15,api_search,6,200,9.7,ok,
+1795257820.997,book,book_15u,15,api_search,5,200,28.54,ok,
+1795257820.997,book,book_15u,15,prepare,6,200,36.86,ok,
+1795257821.008,book,book_15u,15,prepare,5,200,11.2,ok,
+1795257821.053,book,book_15u,15,book,5,200,45.4,success,Booking BK-000145 is confirmed.
+1795257821.072,book,book_15u,15,book,6,200,74.75,success,Booking BK-000146 is confirmed.
+1795257821.074,book,book_15u,15,api_search,12,200,26.48,ok,
+1795257821.103,book,book_15u,15,api_search,9,200,24.7,ok,
+1795257821.103,book,book_15u,15,prepare,12,200,29.56,ok,
+1795257821.113,book,book_15u,15,prepare,9,200,10.19,ok,
+1795257821.162,book,book_15u,15,book,9,200,48.69,success,Booking BK-000147 is confirmed.
+1795257821.176,book,book_15u,15,book,12,200,72.72,success,Booking BK-000148 is confirmed.
+1795257821.21,book,book_15u,15,api_search,7,200,31.24,ok,
+1795257821.243,book,book_15u,15,prepare,7,200,33.52,ok,
+1795257821.302,book,book_15u,15,book,7,200,58.63,success,Booking BK-000149 is confirmed.
+1795257821.352,book,book_15u,15,api_search,2,200,32.32,ok,
+1795257821.355,book,book_15u,15,api_search,1,200,14.83,ok,
+1795257821.38,book,book_15u,15,prepare,2,200,28.5,ok,
+1795257821.381,book,book_15u,15,prepare,1,200,25.39,ok,
+1795257821.424,book,book_15u,15,book,1,200,43.46,success,Booking BK-000150 is confirmed.
+1795257821.455,book,book_15u,15,book,2,200,74.68,success,Booking BK-000151 is confirmed.
+1795257821.463,book,book_15u,15,api_search,8,200,9.36,ok,
+1795257821.488,book,book_15u,15,prepare,8,200,24.2,ok,
+1795257821.532,book,book_15u,15,book,8,200,44.03,success,Booking BK-000152 is confirmed.
+1795257821.568,book,book_15u,15,api_search,4,200,39.11,ok,
+1795257821.579,book,book_15u,15,prepare,4,200,10.66,ok,
+1795257821.636,book,book_15u,15,book,4,200,57.64,success,Booking BK-000153 is confirmed.
+1795257821.659,book,book_15u,15,api_search,11,200,21.86,ok,
+1795257821.7,book,book_15u,15,prepare,11,200,40.55,ok,
+1795257821.75,book,book_15u,15,api_search,13,200,11.86,ok,
+1795257821.772,book,book_15u,15,book,11,200,72.49,success,Booking BK-000154 is confirmed.
+1795257821.774,book,book_15u,15,api_search,3,200,14.99,ok,
+1795257821.785,book,book_15u,15,prepare,13,200,34.16,ok,
+1795257821.813,book,book_15u,15,api_search,15,200,44.8,ok,
+1795257821.814,book,book_15u,15,prepare,3,200,39.92,ok,
+1795257821.827,book,book_15u,15,prepare,15,200,14.4,ok,
+1795257821.83,book,book_15u,15,book,13,200,45.38,success,Booking BK-000155 is confirmed.
+1795257821.875,book,book_15u,15,api_search,10,200,17.79,ok,
+1795257821.877,book,book_15u,15,api_search,5,200,17.31,ok,
+1795257821.892,book,book_15u,15,prepare,5,200,14.32,ok,
+1795257821.894,book,book_15u,15,book,3,200,80.54,success,Booking BK-000156 is confirmed.
+1795257821.91,book,book_15u,15,book,15,200,82.2,success,Booking BK-000157 is confirmed.
+1795257821.913,book,book_15u,15,prepare,10,200,37.28,ok,
+1795257821.972,book,book_15u,15,book,5,200,79.76,success,Booking BK-000158 is confirmed.
+1795257821.972,book,book_15u,15,book,10,200,59.05,success,Booking BK-000159 is confirmed.
+1795257822.035,book,book_15u,15,api_search,6,200,30.19,ok,
+1795257822.062,book,book_15u,15,prepare,6,200,27.69,ok,
+1795257822.111,book,book_15u,15,book,6,200,48.82,success,Booking BK-000160 is confirmed.
+1795257822.113,book,book_15u,15,api_search,12,200,36.55,ok,
+1795257822.14,book,book_15u,15,prepare,12,200,27.36,ok,
+1795257822.196,book,book_15u,15,api_search,9,200,9.62,ok,
+1795257822.225,book,book_15u,15,book,12,200,84.17,success,Booking BK-000161 is confirmed.
+1795257822.226,book,book_15u,15,api_search,14,200,39.71,ok,
+1795257822.227,book,book_15u,15,prepare,9,200,31.0,ok,
+1795257822.241,book,book_15u,15,prepare,14,200,14.49,ok,
+1795257822.278,book,book_15u,15,book,9,200,51.03,success,Booking BK-000162 is confirmed.
+1795257822.294,book,book_15u,15,book,14,200,52.86,success,Booking BK-000163 is confirmed.
+1795257822.527,book,book_15u,15,api_search,1,200,9.21,ok,
+1795257822.562,book,book_15u,15,prepare,1,200,35.21,ok,
+1795257822.594,book,book_15u,15,api_search,2,200,28.16,ok,
+1795257822.622,book,book_15u,15,prepare,2,200,28.39,ok,
+1795257822.641,book,book_15u,15,book,1,200,78.58,success,Booking BK-000164 is confirmed.
+1795257822.654,book,book_15u,15,api_search,7,200,10.21,ok,
+1795257822.665,book,book_15u,15,book,2,200,42.56,success,Booking BK-000165 is confirmed.
+1795257822.682,book,book_15u,15,prepare,7,200,27.77,ok,
+1795257822.733,book,book_15u,15,book,7,200,50.44,success,Booking BK-000166 is confirmed.
+1795257822.816,book,book_15u,15,api_search,13,200,37.69,ok,
+1795257822.838,book,book_15u,15,prepare,13,200,22.3,ok,
+1795257822.867,book,book_15u,15,api_search,8,200,21.93,ok,
+1795257822.882,book,book_15u,15,book,13,200,43.76,success,Booking BK-000167 is confirmed.
+1795257822.9,book,book_15u,15,prepare,8,200,32.73,ok,
+1795257822.916,book,book_15u,15,api_search,4,200,36.2,ok,
+1795257822.929,book,book_15u,15,prepare,4,200,12.16,ok,
+1795257822.959,book,book_15u,15,book,8,200,59.0,success,Booking BK-000168 is confirmed.
+1795257822.975,book,book_15u,15,book,4,200,46.72,success,Booking BK-000169 is confirmed.
+1795257823.023,book,book_15u,15,api_search,6,200,19.72,ok,
+1795257823.057,book,book_15u,15,api_search,10,200,29.08,ok,
+1795257823.058,book,book_15u,15,prepare,6,200,34.36,ok,
+1795257823.094,book,book_15u,15,prepare,10,200,36.26,ok,
+1795257823.138,book,book_15u,15,book,6,200,79.89,success,Booking BK-000170 is confirmed.
+1795257823.138,book,book_15u,15,api_search,15,200,26.55,ok,
+1795257823.153,book,book_15u,15,book,10,200,59.44,success,Booking BK-000171 is confirmed.
+1795257823.154,book,book_15u,15,api_search,5,200,41.49,ok,
+1795257823.158,book,book_15u,15,prepare,15,200,19.15,ok,
+1795257823.18,book,book_15u,15,prepare,5,200,25.92,ok,
+1795257823.212,book,book_15u,15,book,15,200,54.56,success,Booking BK-000172 is confirmed.
+1795257823.239,book,book_15u,15,book,5,200,58.61,success,Booking BK-000173 is confirmed.
+1795257823.244,book,book_15u,15,api_search,11,200,24.25,ok,
+1795257823.277,book,book_15u,15,prepare,11,200,32.87,ok,
+1795257823.337,book,book_15u,15,api_search,3,200,28.21,ok,
+1795257823.349,book,book_15u,15,book,11,200,72.37,success,Booking BK-000174 is confirmed.
+1795257823.368,book,book_15u,15,prepare,3,200,30.77,ok,
+1795257823.428,book,book_15u,15,book,3,200,60.27,success,Booking BK-000175 is confirmed.
+1795257823.527,book,book_15u,15,api_search,9,200,34.95,ok,
+1795257823.553,book,book_15u,15,prepare,9,200,26.33,ok,
+1795257823.602,book,book_15u,15,book,9,200,49.11,success,Booking BK-000176 is confirmed.
+1795257823.683,book,book_15u,15,api_search,2,200,36.19,ok,
+1795257823.709,book,book_15u,15,prepare,2,200,25.97,ok,
+1795257823.784,book,book_15u,15,book,2,200,74.87,success,Booking BK-000177 is confirmed.
+1795257823.814,book,book_15u,15,api_search,12,200,23.66,ok,
+1795257823.848,book,book_15u,15,prepare,12,200,33.43,ok,
+1795257823.861,book,book_15u,15,api_search,8,200,21.97,ok,
+1795257823.873,book,book_15u,15,prepare,8,200,11.67,ok,
+1795257823.906,book,book_15u,15,book,12,200,57.89,success,Booking BK-000178 is confirmed.
+1795257823.925,book,book_15u,15,api_search,14,200,33.8,ok,
+1795257823.94,book,book_15u,15,prepare,14,200,14.65,ok,
+1795257823.941,book,book_15u,15,book,8,200,67.73,success,Booking BK-000179 is confirmed.
+1795257823.959,book,book_15u,15,api_search,7,200,32.48,ok,
+1795257823.971,book,book_15u,15,book,14,200,31.51,success,Booking BK-000180 is confirmed.
+1795257823.986,book,book_15u,15,prepare,7,200,27.47,ok,
+1795257824.002,book,book_15u,15,api_search,1,200,9.07,ok,
+1795257824.021,book,book_15u,15,api_search,4,200,32.2,ok,
+1795257824.042,book,book_15u,15,api_search,6,200,31.19,ok,
+1795257824.042,book,book_15u,15,prepare,4,200,21.28,ok,
+1795257824.045,book,book_15u,15,prepare,1,200,42.19,ok,
+1795257824.055,book,book_15u,15,book,7,200,68.26,success,Booking BK-000181 is confirmed.
+1795257824.076,book,book_15u,15,prepare,6,200,33.83,ok,
+1795257824.113,book,book_15u,15,book,1,200,68.19,success,Booking BK-000182 is confirmed.
+1795257824.162,book,book_15u,15,book,4,200,119.77,success,Booking BK-000183 is confirmed.
+1795257824.162,book,book_15u,15,book,6,200,86.22,success,Booking BK-000184 is confirmed.
+1795257824.221,book,book_15u,15,api_search,11,200,35.37,ok,
+1795257824.231,book,book_15u,15,prepare,11,200,10.25,ok,
+1795257824.295,book,book_15u,15,book,11,200,63.97,success,Booking BK-000185 is confirmed.
+1795257824.411,book,book_15u,15,api_search,15,200,40.06,ok,
+1795257824.411,book,book_15u,15,api_search,3,200,42.36,ok,
+1795257824.421,book,book_15u,15,api_search,13,200,24.48,ok,
+1795257824.424,book,book_15u,15,prepare,15,200,13.66,ok,
+1795257824.434,book,book_15u,15,prepare,3,200,22.78,ok,
+1795257824.461,book,book_15u,15,prepare,13,200,40.59,ok,
+1795257824.465,book,book_15u,15,api_search,5,200,20.11,ok,
+1795257824.5,book,book_15u,15,book,3,200,65.6,success,Booking BK-000186 is confirmed.
+1795257824.505,book,book_15u,15,prepare,5,200,39.71,ok,
+1795257824.511,book,book_15u,15,book,15,200,86.41,success,Booking BK-000187 is confirmed.
+1795257824.53,book,book_15u,15,book,13,200,68.33,success,Booking BK-000188 is confirmed.
+1795257824.542,book,book_15u,15,api_search,10,200,18.08,ok,
+1795257824.556,book,book_15u,15,prepare,10,200,13.61,ok,
+1795257824.561,book,book_15u,15,book,5,200,55.77,success,Booking BK-000189 is confirmed.
+1795257824.614,book,book_15u,15,book,10,200,57.89,success,Booking BK-000190 is confirmed.
+1795257824.621,book,book_15u,15,api_search,2,200,24.5,ok,
+1795257824.63,book,book_15u,15,prepare,2,200,9.49,ok,
+1795257824.682,book,book_15u,15,book,2,200,52.01,success,Booking BK-000191 is confirmed.
+1795257824.859,book,book_15u,15,api_search,9,200,31.74,ok,
+1795257824.889,book,book_15u,15,api_search,12,200,23.88,ok,
+1795257824.889,book,book_15u,15,prepare,9,200,29.97,ok,
+1795257824.926,book,book_15u,15,prepare,12,200,36.79,ok,
+1795257824.964,book,book_15u,15,book,9,200,74.7,success,Booking BK-000192 is confirmed.
+1795257824.979,book,book_15u,15,book,12,200,53.47,success,Booking BK-000193 is confirmed.
+1795257825.012,book,book_15u,15,api_search,14,200,28.13,ok,
+1795257825.046,book,book_15u,15,prepare,14,200,34.26,ok,
+1795257825.099,book,book_15u,15,book,14,200,53.37,success,Booking BK-000194 is confirmed.
+1795257825.229,book,book_15u,15,api_search,8,200,13.69,ok,
+1795257825.239,book,book_15u,15,prepare,8,200,10.36,ok,
+1795257825.263,book,book_15u,15,api_search,7,200,31.97,ok,
+1795257825.292,book,book_15u,15,prepare,7,200,29.1,ok,
+1795257825.309,book,book_15u,15,book,8,200,69.94,success,Booking BK-000195 is confirmed.
+1795257825.338,book,book_15u,15,book,7,200,45.11,success,Booking BK-000196 is confirmed.
+1795257825.519,book,book_15u,15,api_search,1,200,46.46,ok,
+1795257825.529,book,book_15u,15,prepare,1,200,10.35,ok,
+1795257825.564,book,book_15u,15,api_search,6,200,41.68,ok,
+1795257825.587,book,book_15u,15,prepare,6,200,22.75,ok,
+1795257825.619,book,book_15u,15,book,1,200,89.14,success,Booking BK-000197 is confirmed.
+1795257825.622,book,book_15u,15,api_search,5,200,15.21,ok,
+1795257825.631,book,book_15u,15,book,6,200,43.7,success,Booking BK-000198 is confirmed.
+1795257825.649,book,book_15u,15,prepare,5,200,27.1,ok,
+1795257825.696,book,book_15u,15,book,5,200,46.53,success,Booking BK-000199 is confirmed.
+1795257825.698,book,book_15u,15,api_search,4,200,31.21,ok,
+1795257825.709,book,book_15u,15,api_search,11,200,20.2,ok,
+1795257825.726,book,book_15u,15,prepare,4,200,28.74,ok,
+1795257825.741,book,book_15u,15,prepare,11,200,31.77,ok,
+1795257825.787,book,book_15u,15,book,4,200,60.56,success,Booking BK-000200 is confirmed.
+1795257825.82,book,book_15u,15,book,11,200,79.17,success,Booking BK-000201 is confirmed.
+1795257825.822,book,book_15u,15,api_search,9,200,26.14,ok,
+1795257825.838,book,book_15u,15,prepare,9,200,16.05,ok,
+1795257825.838,book,book_15u,15,api_search,15,200,32.26,ok,
+1795257825.84,book,book_15u,15,api_search,10,200,35.63,ok,
+1795257825.855,book,book_15u,15,prepare,15,200,17.2,ok,
+1795257825.869,book,book_15u,15,prepare,10,200,29.18,ok,
+1795257825.876,book,book_15u,15,book,9,200,38.23,success,Booking BK-000202 is confirmed.
+1795257825.91,book,book_15u,15,book,15,200,54.2,success,Booking BK-000203 is confirmed.
+1795257825.976,book,book_15u,15,book,10,200,106.78,success,Booking BK-000204 is confirmed.
+1795257826.037,book,book_15u,15,api_search,3,200,35.17,ok,
+1795257826.038,book,book_15u,15,api_search,14,200,12.32,ok,
+1795257826.054,book,book_15u,15,prepare,14,200,16.06,ok,
+1795257826.054,book,book_15u,15,prepare,3,200,17.13,ok,
+1795257826.062,book,book_15u,15,api_search,13,200,10.89,ok,
+1795257826.101,book,book_15u,15,prepare,13,200,38.6,ok,
+1795257826.115,book,book_15u,15,api_search,2,200,31.71,ok,
+1795257826.139,book,book_15u,15,prepare,2,200,24.22,ok,
+1795257826.157,book,book_15u,15,book,14,200,102.88,success,Booking BK-000205 is confirmed.
+1795257826.158,book,book_15u,15,book,3,200,103.34,success,Booking BK-000206 is confirmed.
+1795257826.186,book,book_15u,15,book,2,200,46.78,success,Booking BK-000208 is confirmed.
+1795257826.192,book,book_15u,15,book,13,200,91.28,success,Booking BK-000207 is confirmed.
+1795257826.474,book,book_15u,15,api_search,12,200,17.74,ok,
+1795257826.505,book,book_15u,15,prepare,12,200,31.05,ok,
+1795257826.589,book,book_15u,15,book,12,200,83.28,success,Booking BK-000209 is confirmed.
+1795257826.608,book,book_15u,15,api_search,8,200,34.21,ok,
+1795257826.623,book,book_15u,15,prepare,8,200,15.08,ok,
+1795257826.664,book,book_15u,15,book,8,200,40.34,success,Booking BK-000210 is confirmed.
+1795257826.728,book,book_15u,15,api_search,11,200,17.18,ok,
+1795257826.746,book,book_15u,15,api_search,7,200,17.51,ok,
+1795257826.747,book,book_15u,15,prepare,11,200,18.56,ok,
+1795257826.747,book,book_15u,15,api_search,15,200,17.39,ok,
+1795257826.761,book,book_15u,15,prepare,7,200,14.96,ok,
+1795257826.762,book,book_15u,15,prepare,15,200,14.95,ok,
+1795257826.807,book,book_15u,15,book,11,200,60.18,success,Booking BK-000211 is confirmed.
+1795257826.832,book,book_15u,15,book,7,200,70.79,success,Booking BK-000212 is confirmed.
+1795257826.832,book,book_15u,15,book,15,200,69.9,success,Booking BK-000213 is confirmed.
+1795257826.863,book,book_15u,15,api_search,6,200,33.31,ok,
+1795257826.864,book,book_15u,15,api_search,1,200,37.55,ok,
+1795257826.878,book,book_15u,15,prepare,6,200,15.12,ok,
+1795257826.879,book,book_15u,15,prepare,1,200,14.58,ok,
+1795257826.907,book,book_15u,15,api_search,5,200,49.44,ok,
+1795257826.909,book,book_15u,15,api_search,9,200,27.43,ok,
+1795257826.931,book,book_15u,15,prepare,9,200,21.39,ok,
+1795257826.94,book,book_15u,15,prepare,5,200,32.71,ok,
+1795257826.97,book,book_15u,15,book,1,200,91.15,success,Booking BK-000215 is confirmed.
+1795257826.97,book,book_15u,15,book,6,200,91.88,success,Booking BK-000214 is confirmed.
+1795257826.989,book,book_15u,15,book,5,200,48.61,success,Booking BK-000216 is confirmed.
+1795257827.017,book,book_15u,15,book,9,200,85.77,success,Booking BK-000217 is confirmed.
+1795257827.235,book,book_15u,15,api_search,10,200,21.21,ok,
+1795257827.245,book,book_15u,15,prepare,10,200,9.93,ok,
+1795257827.297,book,book_15u,15,book,10,200,52.45,success,Booking BK-000218 is confirmed.
+1795257827.369,book,book_15u,15,api_search,4,200,37.11,ok,
+1795257827.37,book,book_15u,15,api_search,14,200,39.08,ok,
+1795257827.395,book,book_15u,15,prepare,14,200,25.36,ok,
+1795257827.396,book,book_15u,15,prepare,4,200,27.08,ok,
+1795257827.438,book,book_15u,15,book,14,200,42.79,success,Booking BK-000219 is confirmed.
+1795257827.453,book,book_15u,15,book,4,200,56.83,success,Booking BK-000220 is confirmed.
+1795257827.487,book,book_15u,15,api_search,3,200,23.93,ok,
+1795257827.497,book,book_15u,15,prepare,3,200,9.59,ok,
+1795257827.551,book,book_15u,15,book,3,200,54.53,success,Booking BK-000221 is confirmed.
+1795257827.553,book,book_15u,15,api_search,13,200,32.69,ok,
+1795257827.563,book,book_15u,15,prepare,13,200,9.9,ok,
+1795257827.597,book,book_15u,15,api_search,2,200,30.97,ok,
+1795257827.626,book,book_15u,15,prepare,2,200,28.47,ok,
+1795257827.641,book,book_15u,15,book,13,200,77.97,success,Booking BK-000222 is confirmed.
+1795257827.689,book,book_15u,15,book,2,200,63.42,success,Booking BK-000223 is confirmed.
+1795257827.691,book,book_15u,15,api_search,11,200,22.78,ok,
+1795257827.72,book,book_15u,15,prepare,11,200,28.74,ok,
+1795257827.738,book,book_15u,15,api_search,12,200,36.12,ok,
+1795257827.75,book,book_15u,15,prepare,12,200,11.04,ok,
+1795257827.769,book,book_15u,15,book,11,200,49.04,success,Booking BK-000224 is confirmed.
+1795257827.795,book,book_15u,15,book,12,200,44.97,success,Booking BK-000225 is confirmed.
+1795257827.812,book,book_15u,15,api_search,8,200,22.55,ok,
+1795257827.847,book,book_15u,15,prepare,8,200,35.33,ok,
+1795257827.884,book,book_15u,15,api_search,7,200,13.33,ok,
+1795257827.905,book,book_15u,15,prepare,7,200,20.51,ok,
+1795257827.923,book,book_15u,15,book,8,200,76.32,success,Booking BK-000226 is confirmed.
+1795257827.951,book,book_15u,15,book,7,200,46.56,success,Booking BK-000227 is confirmed.
+1795257828.098,book,book_15u,15,api_search,6,200,33.42,ok,
+1795257828.128,book,book_15u,15,prepare,6,200,29.17,ok,
+1795257828.204,book,book_15u,15,book,6,200,76.09,success,Booking BK-000228 is confirmed.
+1795257828.253,book,book_15u,15,api_search,1,200,37.44,ok,
+1795257828.281,book,book_15u,15,prepare,1,200,27.77,ok,
+1795257828.295,book,book_15u,15,api_search,5,200,13.43,ok,
+1795257828.307,book,book_15u,15,api_search,9,200,11.12,ok,
+1795257828.327,book,book_15u,15,prepare,5,200,31.64,ok,
+1795257828.344,book,book_15u,15,book,1,200,62.69,success,Booking BK-000229 is confirmed.
+1795257828.345,book,book_15u,15,prepare,9,200,38.06,ok,
+1795257828.387,book,book_15u,15,book,5,200,60.69,success,Booking BK-000230 is confirmed.
+1795257828.396,book,book_15u,15,book,9,200,50.13,success,Booking BK-000231 is confirmed.
+1795257828.419,book,book_15u,15,api_search,15,200,28.15,ok,
+1795257828.429,book,book_15u,15,prepare,15,200,9.85,ok,
+1795257828.484,book,book_15u,15,book,15,200,54.9,success,Booking BK-000232 is confirmed.
+1795257828.607,book,book_15u,15,api_search,4,200,26.44,ok,
+1795257828.638,book,book_15u,15,prepare,4,200,30.85,ok,
+1795257828.717,book,book_15u,15,book,4,200,78.63,success,Booking BK-000233 is confirmed.
+1795257828.732,book,book_15u,15,api_search,2,200,25.51,ok,
+1795257828.733,book,book_15u,15,api_search,10,200,38.18,ok,
+1795257828.743,book,book_15u,15,prepare,2,200,11.26,ok,
+1795257828.761,book,book_15u,15,prepare,10,200,28.7,ok,
+1795257828.78,book,book_15u,15,api_search,14,200,26.59,ok,
+1795257828.812,book,book_15u,15,prepare,14,200,31.85,ok,
+1795257828.821,book,book_15u,15,book,10,200,59.69,success,Booking BK-000235 is confirmed.
+1795257828.828,book,book_15u,15,book,2,200,85.11,success,Booking BK-000234 is confirmed.
+1795257828.83,book,book_15u,15,api_search,3,200,27.91,ok,
+1795257828.858,book,book_15u,15,prepare,3,200,28.07,ok,
+1795257828.871,book,book_15u,15,book,14,200,59.64,success,Booking BK-000236 is confirmed.
+1795257828.882,book,book_15u,15,api_search,11,200,10.0,ok,
+1795257828.894,book,book_15u,15,api_search,13,200,12.93,ok,
+1795257828.907,book,book_15u,15,prepare,11,200,24.87,ok,
+1795257828.917,book,book_15u,15,prepare,13,200,22.84,ok,
+1795257828.936,book,book_15u,15,book,3,200,77.87,success,Booking BK-000237 is confirmed.
+1795257828.984,book,book_15u,15,book,11,200,77.18,success,Booking BK-000238 is confirmed.
+1795257828.985,book,book_15u,15,book,13,200,67.25,success,Booking BK-000239 is confirmed.
+1795257829.012,book,book_15u,15,api_search,7,200,33.31,ok,
+1795257829.028,book,book_15u,15,api_search,8,200,26.26,ok,
+1795257829.041,book,book_15u,15,prepare,8,200,12.67,ok,
+1795257829.046,book,book_15u,15,prepare,7,200,33.55,ok,
+1795257829.103,book,book_15u,15,book,8,200,61.93,success,Booking BK-000240 is confirmed.
+1795257829.122,book,book_15u,15,book,7,200,76.02,success,Booking BK-000241 is confirmed.
+1795257829.154,book,book_15u,15,api_search,12,200,31.24,ok,
+1795257829.186,book,book_15u,15,prepare,12,200,32.11,ok,
+1795257829.244,book,book_15u,15,book,12,200,57.44,success,Booking BK-000242 is confirmed.
+1795257829.419,book,book_15u,15,api_search,5,200,21.96,ok,
+1795257829.452,book,book_15u,15,prepare,5,200,33.16,ok,
+1795257829.495,book,book_15u,15,book,5,200,42.19,success,Booking BK-000243 is confirmed.
+1795257829.511,book,book_15u,15,api_search,9,200,23.52,ok,
+1795257829.522,book,book_15u,15,prepare,9,200,10.88,ok,
+1795257829.577,book,book_15u,15,book,9,200,55.29,success,Booking BK-000244 is confirmed.
+1795257829.579,book,book_15u,15,api_search,15,200,33.46,ok,
+1795257829.605,book,book_15u,15,prepare,15,200,26.45,ok,
+1795257829.668,book,book_15u,15,api_search,1,200,34.17,ok,
+1795257829.669,book,book_15u,15,api_search,6,200,25.17,ok,
+1795257829.687,book,book_15u,15,prepare,1,200,19.33,ok,
+1795257829.688,book,book_15u,15,book,15,200,82.41,success,Booking BK-000245 is confirmed.
+1795257829.688,book,book_15u,15,prepare,6,200,19.42,ok,
+1795257829.729,book,book_15u,15,book,1,200,41.38,success,Booking BK-000247 is confirmed.
+1795257829.73,book,book_15u,15,book,6,200,41.22,success,Booking BK-000246 is confirmed.
+1795257829.819,book,book_15u,15,api_search,2,200,40.59,ok,
+1795257829.855,book,book_15u,15,prepare,2,200,35.95,ok,
+1795257829.902,book,book_15u,15,api_search,3,200,35.98,ok,
+1795257829.911,book,book_15u,15,api_search,10,200,28.55,ok,
+1795257829.932,book,book_15u,15,book,2,200,76.52,success,Booking BK-000248 is confirmed.
+1795257829.934,book,book_15u,15,prepare,3,200,32.58,ok,
+1795257829.945,book,book_15u,15,prepare,10,200,33.48,ok,
+1795257829.992,book,book_15u,15,book,3,200,57.71,success,Booking BK-000249 is confirmed.
+1795257830.025,book,book_15u,15,book,10,200,80.01,success,Booking BK-000250 is confirmed.
+1795257830.056,book,book_15u,15,api_search,4,200,30.62,ok,
+1795257830.09,book,book_15u,15,api_search,12,200,31.68,ok,
+1795257830.09,book,book_15u,15,prepare,4,200,33.37,ok,
+1795257830.101,book,book_15u,15,api_search,8,200,20.29,ok,
+1795257830.12,book,book_15u,15,prepare,8,200,18.77,ok,
+1795257830.125,book,book_15u,15,prepare,12,200,35.08,ok,
+1795257830.173,book,book_15u,15,book,4,200,83.04,success,Booking BK-000251 is confirmed.
+1795257830.189,book,book_15u,15,book,8,200,68.54,success,Booking BK-000253 is confirmed.
+1795257830.216,book,book_15u,15,book,12,200,91.16,success,Booking BK-000252 is confirmed.
+1795257830.323,book,book_15u,15,api_search,13,200,30.44,ok,
+1795257830.333,book,book_15u,15,prepare,13,200,10.29,ok,
+1795257830.352,book,book_15u,15,api_search,7,200,23.73,ok,
+1795257830.388,book,book_15u,15,api_search,11,200,32.86,ok,
+1795257830.388,book,book_15u,15,prepare,7,200,36.13,ok,
+1795257830.402,book,book_15u,15,book,13,200,68.89,success,Booking BK-000254 is confirmed.
+1795257830.407,book,book_15u,15,prepare,11,200,18.82,ok,
+1795257830.432,book,book_15u,15,api_search,5,200,36.74,ok,
+1795257830.448,book,book_15u,15,api_search,14,200,22.3,ok,
+1795257830.449,book,book_15u,15,book,7,200,60.49,success,Booking BK-000255 is confirmed.
+1795257830.461,book,book_15u,15,prepare,5,200,29.09,ok,
+1795257830.476,book,book_15u,15,book,11,200,68.99,success,Booking BK-000256 is confirmed.
+1795257830.479,book,book_15u,15,prepare,14,200,31.06,ok,
+1795257830.537,book,book_15u,15,book,5,200,75.59,success,Booking BK-000257 is confirmed.
+1795257830.553,book,book_15u,15,book,14,200,73.8,success,Booking BK-000258 is confirmed.
+1795257830.574,book,book_15u,15,api_search,6,200,33.69,ok,
+1795257830.588,book,book_15u,15,prepare,6,200,14.57,ok,
+1795257830.65,book,book_15u,15,book,6,200,61.05,success,Booking BK-000259 is confirmed.
+1795257830.807,book,book_15u,15,api_search,9,200,11.12,ok,
+1795257830.84,book,book_15u,15,api_search,15,200,31.23,ok,
+1795257830.84,book,book_15u,15,prepare,9,200,32.77,ok,
+1795257830.854,book,book_15u,15,prepare,15,200,14.32,ok,
+1795257830.868,book,book_15u,15,api_search,1,200,31.24,ok,
+1795257830.886,book,book_15u,15,prepare,1,200,17.98,ok,
+1795257830.899,book,book_15u,15,book,9,200,59.37,success,Booking BK-000260 is confirmed.
+1795257830.936,book,book_15u,15,book,15,200,81.84,success,Booking BK-000261 is confirmed.
+1795257830.96,book,book_15u,15,book,1,200,73.86,success,Booking BK-000262 is confirmed.
+1795257831.182,book,book_15u,15,api_search,4,200,21.48,ok,
+1795257831.197,book,book_15u,15,api_search,2,200,26.54,ok,
+1795257831.213,book,book_15u,15,prepare,2,200,15.82,ok,
+1795257831.218,book,book_15u,15,prepare,4,200,35.3,ok,
+1795257831.292,book,book_15u,15,book,2,200,78.77,success,Booking BK-000264 is confirmed.
+1795257831.292,book,book_15u,15,book,4,200,74.6,success,Booking BK-000263 is confirmed.
+1795257831.307,book,book_15u,15,api_search,10,200,12.52,ok,
+1795257831.342,book,book_15u,15,prepare,10,200,34.88,ok,
+1795257831.424,book,book_15u,15,book,10,200,81.26,success,Booking BK-000265 is confirmed.
+1795257831.428,book,book_15u,15,api_search,3,200,39.46,ok,
+1795257831.439,book,book_15u,15,api_search,8,200,30.44,ok,
+1795257831.441,book,book_15u,15,api_search,11,200,41.23,ok,
+1795257831.457,book,book_15u,15,prepare,8,200,17.85,ok,
+1795257831.473,book,book_15u,15,prepare,11,200,32.3,ok,
+1795257831.474,book,book_15u,15,prepare,3,200,46.22,ok,
+1795257831.527,book,book_15u,15,book,8,200,69.15,success,Booking BK-000266 is confirmed.
+1795257831.565,book,book_15u,15,book,11,200,92.06,success,Booking BK-000267 is confirmed.
+1795257831.588,book,book_15u,15,book,3,200,113.47,success,Booking BK-000268 is confirmed.
+1795257831.643,book,book_15u,15,api_search,5,200,16.63,ok,
+1795257831.654,book,book_15u,15,prepare,5,200,11.31,ok,
+1795257831.698,book,book_15u,15,api_search,13,200,35.16,ok,
+1795257831.733,book,book_15u,15,book,5,200,78.45,success,Booking BK-000269 is confirmed.
+1795257831.737,book,book_15u,15,prepare,13,200,38.4,ok,
+1795257831.745,book,book_15u,15,api_search,7,200,25.56,ok,
+1795257831.779,book,book_15u,15,prepare,7,200,33.32,ok,
+1795257831.786,book,book_15u,15,book,13,200,49.3,success,Booking BK-000270 is confirmed.
+1795257831.824,book,book_15u,15,api_search,12,200,35.71,ok,
+1795257831.838,book,book_15u,15,prepare,12,200,13.05,ok,
+1795257831.853,book,book_15u,15,book,7,200,74.33,success,Booking BK-000271 is confirmed.
+1795257831.915,book,book_15u,15,book,12,200,77.02,success,Booking BK-000272 is confirmed.
+1795257832.052,book,book_15u,15,api_search,1,200,15.06,ok,
+1795257832.068,book,book_15u,15,prepare,1,200,16.12,ok,
+1795257832.106,book,book_15u,15,api_search,14,200,14.81,ok,
+1795257832.137,book,book_15u,15,api_search,2,200,29.15,ok,
+1795257832.137,book,book_15u,15,prepare,14,200,30.94,ok,
+1795257832.157,book,book_15u,15,api_search,9,200,29.41,ok,
+1795257832.158,book,book_15u,15,book,1,200,90.14,success,Booking BK-000273 is confirmed.
+1795257832.162,book,book_15u,15,prepare,2,200,24.43,ok,
+1795257832.179,book,book_15u,15,prepare,9,200,22.12,ok,
+1795257832.216,book,book_15u,15,book,14,200,78.85,success,Booking BK-000274 is confirmed.
+1795257832.216,book,book_15u,15,book,2,200,54.73,success,Booking BK-000275 is confirmed.
+1795257832.236,book,book_15u,15,api_search,6,200,23.93,ok,
+1795257832.242,book,book_15u,15,api_search,4,200,29.58,ok,
+1795257832.263,book,book_15u,15,book,9,200,83.46,success,Booking BK-000276 is confirmed.
+1795257832.269,book,book_15u,15,prepare,6,200,32.94,ok,
+1795257832.28,book,book_15u,15,prepare,4,200,37.18,ok,
+1795257832.296,book,book_15u,15,api_search,10,200,27.89,ok,
+1795257832.324,book,book_15u,15,prepare,10,200,27.77,ok,
+1795257832.362,book,book_15u,15,book,4,200,82.32,success,Booking BK-000278 is confirmed.
+1795257832.363,book,book_15u,15,book,6,200,93.52,success,Booking BK-000277 is confirmed.
+1795257832.374,book,book_15u,15,api_search,15,200,10.45,ok,
+1795257832.385,book,book_15u,15,prepare,15,200,10.85,ok,
+1795257832.403,book,book_15u,15,book,10,200,78.34,success,Booking BK-000279 is confirmed.
+1795257832.419,book,book_15u,15,book,15,200,33.47,success,Booking BK-000280 is confirmed.
+1795257832.479,book,book_15u,15,api_search,8,200,37.23,ok,
+1795257832.507,book,book_15u,15,prepare,8,200,28.75,ok,
+1795257832.586,book,book_15u,15,book,8,200,78.44,success,Booking BK-000281 is confirmed.
+1795257832.762,book,book_15u,15,api_search,11,200,32.95,ok,
+1795257832.793,book,book_15u,15,prepare,11,200,31.4,ok,
+1795257832.869,book,book_15u,15,book,11,200,75.14,success,Booking BK-000282 is confirmed.
+1795257833.044,book,book_15u,15,api_search,3,200,30.11,ok,
+1795257833.056,book,book_15u,15,prepare,3,200,11.8,ok,
+1795257833.104,book,book_15u,15,book,3,200,47.95,success,Booking BK-000283 is confirmed.
+1795257833.153,book,book_15u,15,api_search,1,200,31.93,ok,
+1795257833.187,book,book_15u,15,prepare,1,200,33.87,ok,
+1795257833.211,book,book_15u,15,api_search,9,200,45.67,ok,
+1795257833.212,book,book_15u,15,api_search,5,200,36.8,ok,
+1795257833.216,book,book_15u,15,api_search,12,200,40.04,ok,
+1795257833.233,book,book_15u,15,prepare,9,200,22.04,ok,
+1795257833.271,book,book_15u,15,book,1,200,84.15,success,Booking BK-000284 is confirmed.
+1795257833.272,book,book_15u,15,prepare,5,200,59.84,ok,
+1795257833.274,book,book_15u,15,prepare,12,200,57.45,ok,
+1795257833.281,book,book_15u,15,api_search,2,200,36.28,ok,
+1795257833.312,book,book_15u,15,book,9,200,78.92,success,Booking BK-000285 is confirmed.
+1795257833.335,book,book_15u,15,prepare,2,200,53.83,ok,
+1795257833.344,book,book_15u,15,api_search,7,200,46.14,ok,
+1795257833.351,book,book_15u,15,api_search,13,200,35.38,ok,
+1795257833.374,book,book_15u,15,book,12,200,99.86,success,Booking BK-000286 is confirmed.
+1795257833.383,book,book_15u,15,prepare,13,200,31.59,ok,
+1795257833.384,book,book_15u,15,prepare,7,200,39.94,ok,
+1795257833.397,book,book_15u,15,book,5,200,124.98,success,Booking BK-000287 is confirmed.
+1795257833.45,book,book_15u,15,book,2,200,114.57,success,Booking BK-000288 is confirmed.
+1795257833.453,book,book_15u,15,api_search,14,200,42.98,ok,
+1795257833.455,book,book_15u,15,api_search,4,200,35.24,ok,
+1795257833.473,book,book_15u,15,book,13,200,90.71,success,Booking BK-000289 is confirmed.
+1795257833.483,book,book_15u,15,prepare,14,200,29.89,ok,
+1795257833.49,book,book_15u,15,book,7,200,105.85,success,Booking BK-000290 is confirmed.
+1795257833.492,book,book_15u,15,prepare,4,200,36.48,ok,
+1795257833.552,book,book_15u,15,api_search,6,200,13.29,ok,
+1795257833.571,book,book_15u,15,book,14,200,87.6,success,Booking BK-000291 is confirmed.
+1795257833.591,book,book_15u,15,book,4,200,98.9,success,Booking BK-000292 is confirmed.
+1795257833.593,book,book_15u,15,prepare,6,200,41.42,ok,
+1795257833.637,book,book_15u,15,api_search,8,200,25.7,ok,
+1795257833.649,book,book_15u,15,book,6,200,55.18,success,Booking BK-000293 is confirmed.
+1795257833.654,book,book_15u,15,prepare,8,200,16.65,ok,
+1795257833.71,book,book_15u,15,book,8,200,56.6,success,Booking BK-000294 is confirmed.
+1795257833.837,book,book_15u,15,api_search,10,200,31.73,ok,
+1795257833.868,book,book_15u,15,prepare,10,200,30.49,ok,
+1795257833.912,book,book_15u,15,api_search,15,200,23.89,ok,
+1795257833.922,book,book_15u,15,book,10,200,54.4,success,Booking BK-000295 is confirmed.
+1795257833.927,book,book_15u,15,prepare,15,200,14.98,ok,
+1795257833.979,book,book_15u,15,book,15,200,52.13,success,Booking BK-000296 is confirmed.
+1795257834.093,book,book_15u,15,api_search,3,200,13.35,ok,
+1795257834.107,book,book_15u,15,prepare,3,200,13.89,ok,
+1795257834.183,book,book_15u,15,book,3,200,75.33,success,Booking BK-000297 is confirmed.
+1795257834.184,book,book_15u,15,api_search,11,200,30.16,ok,
+1795257834.213,book,book_15u,15,prepare,11,200,28.97,ok,
+1795257834.276,book,book_15u,15,book,11,200,62.7,success,Booking BK-000298 is confirmed.
+1795257834.352,book,book_15u,15,api_search,13,200,34.41,ok,
+1795257834.366,book,book_15u,15,api_search,7,200,20.76,ok,
+1795257834.383,book,book_15u,15,prepare,13,200,30.44,ok,
+1795257834.402,book,book_15u,15,prepare,7,200,36.15,ok,
+1795257834.444,book,book_15u,15,book,13,200,61.35,success,Booking BK-000300 is confirmed.
+1795257834.463,book,book_15u,15,book,7,200,61.0,success,Booking BK-000299 is confirmed.
+1795257834.512,book,book_15u,15,api_search,5,200,14.94,ok,
+1795257834.541,book,book_15u,15,prepare,5,200,29.34,ok,
+1795257834.574,book,book_15u,15,api_search,2,200,28.84,ok,
+1795257834.6,book,book_15u,15,prepare,2,200,25.9,ok,
+1795257834.614,book,book_15u,15,book,5,200,72.72,success,Booking BK-000301 is confirmed.
+1795257834.666,book,book_15u,15,book,2,200,65.02,success,Booking BK-000302 is confirmed.
+1795257834.666,book,book_15u,15,api_search,1,200,36.49,ok,
+1795257834.678,book,book_15u,15,prepare,1,200,11.82,ok,
+1795257834.748,book,book_15u,15,api_search,12,200,16.2,ok,
+1795257834.762,book,book_15u,15,api_search,9,200,38.16,ok,
+1795257834.771,book,book_15u,15,prepare,12,200,23.3,ok,
+1795257834.775,book,book_15u,15,book,1,200,97.67,success,Booking BK-000303 is confirmed.
+1795257834.789,book,book_15u,15,prepare,9,200,27.06,ok,
+1795257834.806,book,book_15u,15,api_search,4,200,36.8,ok,
+1795257834.837,book,book_15u,15,api_search,8,200,19.29,ok,
+1795257834.846,book,book_15u,15,prepare,4,200,39.86,ok,
+1795257834.85,book,book_15u,15,book,12,200,79.05,success,Booking BK-000304 is confirmed.
+1795257834.879,book,book_15u,15,book,9,200,89.63,success,Booking BK-000305 is confirmed.
+1795257834.879,book,book_15u,15,prepare,8,200,41.83,ok,
+1795257834.905,book,book_15u,15,api_search,14,200,16.71,ok,
+1795257834.934,book,book_15u,15,book,4,200,87.45,success,Booking BK-000306 is confirmed.
+1795257834.936,book,book_15u,15,prepare,14,200,31.04,ok,
+1795257834.947,book,book_15u,15,book,8,200,68.0,success,Booking BK-000307 is confirmed.
+1795257835.014,book,book_15u,15,book,14,200,78.12,success,Booking BK-000308 is confirmed.
+1795257835.016,book,book_15u,15,api_search,10,200,42.07,ok,
+1795257835.03,book,book_15u,15,prepare,10,200,12.93,ok,
+1795257835.101,book,book_15u,15,book,10,200,71.52,success,Booking BK-000309 is confirmed.
+1795257835.103,book,book_15u,15,api_search,15,200,27.39,ok,
+1795257835.129,book,book_15u,15,prepare,15,200,26.24,ok,
+1795257835.144,book,book_15u,15,api_search,3,200,30.44,ok,
+1795257835.179,book,book_15u,15,prepare,3,200,35.33,ok,
+1795257835.211,book,book_15u,15,book,15,200,81.7,success,Booking BK-000310 is confirmed.
+1795257835.241,book,book_15u,15,book,3,200,62.04,success,Booking BK-000311 is confirmed.
+1795257835.255,book,book_15u,15,api_search,6,200,22.48,ok,
+1795257835.287,book,book_15u,15,prepare,6,200,32.3,ok,
+1795257835.361,book,book_15u,15,book,6,200,73.63,success,Booking BK-000312 is confirmed.
+1795257835.461,book,book_15u,15,api_search,5,200,40.4,ok,
+1795257835.488,book,book_15u,15,prepare,5,200,26.94,ok,
+1795257835.543,book,book_15u,15,book,5,200,54.75,success,Booking BK-000313 is confirmed.
+1795257835.677,book,book_15u,15,api_search,2,200,35.85,ok,
+1795257835.71,book,book_15u,15,prepare,2,200,33.67,ok,
+1795257835.737,book,book_15u,15,api_search,7,200,12.41,ok,
+1795257835.749,book,book_15u,15,book,2,200,38.72,success,Booking BK-000314 is confirmed.
+1795257835.753,book,book_15u,15,prepare,7,200,15.63,ok,
+1795257835.765,book,book_15u,15,api_search,11,200,23.31,ok,
+1795257835.805,book,book_15u,15,api_search,1,200,34.8,ok,
+1795257835.805,book,book_15u,15,prepare,11,200,40.25,ok,
+1795257835.82,book,book_15u,15,book,7,200,66.46,success,Booking BK-000315 is confirmed.
+1795257835.826,book,book_15u,15,prepare,1,200,21.37,ok,
+1795257835.862,book,book_15u,15,api_search,9,200,33.11,ok,
+1795257835.876,book,book_15u,15,book,11,200,70.7,success,Booking BK-000316 is confirmed.
+1795257835.898,book,book_15u,15,book,1,200,71.89,success,Booking BK-000317 is confirmed.
+1795257835.899,book,book_15u,15,prepare,9,200,36.38,ok,
+1795257835.93,book,book_15u,15,api_search,13,200,42.88,ok,
+1795257835.952,book,book_15u,15,prepare,13,200,22.44,ok,
+1795257835.959,book,book_15u,15,book,9,200,60.1,success,Booking BK-000318 is confirmed.
+1795257836.0,book,book_15u,15,api_search,12,200,11.93,ok,
+1795257836.005,book,book_15u,15,book,13,200,53.0,success,Booking BK-000319 is confirmed.
+1795257836.031,book,book_15u,15,prepare,12,200,30.73,ok,
+1795257836.068,book,book_15u,15,api_search,14,200,19.28,ok,
+1795257836.074,book,book_15u,15,api_search,10,200,18.77,ok,
+1795257836.097,book,book_15u,15,prepare,14,200,28.74,ok,
+1795257836.097,book,book_15u,15,prepare,10,200,22.2,ok,
+1795257836.108,book,book_15u,15,book,12,200,77.2,success,Booking BK-000320 is confirmed.
+1795257836.152,book,book_15u,15,book,14,200,55.59,success,Booking BK-000322 is confirmed.
+1795257836.17,book,book_15u,15,book,10,200,73.25,success,Booking BK-000321 is confirmed.
+1795257836.255,book,book_15u,15,api_search,4,200,17.61,ok,
+1795257836.266,book,book_15u,15,prepare,4,200,10.85,ok,
+1795257836.313,book,book_15u,15,book,4,200,46.95,success,Booking BK-000323 is confirmed.
+1795257836.372,book,book_15u,15,api_search,8,200,23.93,ok,
+1795257836.383,book,book_15u,15,prepare,8,200,11.46,ok,
+1795257836.433,book,book_15u,15,book,8,200,50.0,success,Booking BK-000324 is confirmed.
+1795257836.702,book,book_15u,15,api_search,15,200,27.86,ok,
+1795257836.712,book,book_15u,15,prepare,15,200,10.15,ok,
+1795257836.746,book,book_15u,15,api_search,3,200,27.37,ok,
+1795257836.747,book,book_15u,15,api_search,5,200,28.62,ok,
+1795257836.761,book,book_15u,15,book,15,200,48.55,success,Booking BK-000325 is confirmed.
+1795257836.762,book,book_15u,15,prepare,3,200,15.89,ok,
+1795257836.776,book,book_15u,15,api_search,11,200,26.4,ok,
+1795257836.777,book,book_15u,15,prepare,5,200,29.59,ok,
+1795257836.812,book,book_15u,15,prepare,11,200,36.16,ok,
+1795257836.831,book,book_15u,15,book,3,200,68.06,success,Booking BK-000326 is confirmed.
+1795257836.871,book,book_15u,15,book,11,200,58.69,success,Booking BK-000328 is confirmed.
+1795257836.871,book,book_15u,15,book,5,200,94.34,success,Booking BK-000327 is confirmed.
+1795257836.884,book,book_15u,15,api_search,6,200,20.34,ok,
+1795257836.917,book,book_15u,15,prepare,6,200,33.12,ok,
+1795257836.948,book,book_15u,15,book,6,200,30.4,success,Booking BK-000329 is confirmed.
+1795257837.011,book,book_15u,15,api_search,13,200,25.88,ok,
+1795257837.012,book,book_15u,15,api_search,2,200,24.78,ok,
+1795257837.025,book,book_15u,15,prepare,13,200,14.13,ok,
+1795257837.032,book,book_15u,15,api_search,9,200,12.46,ok,
+1795257837.042,book,book_15u,15,prepare,2,200,29.9,ok,
+1795257837.066,book,book_15u,15,prepare,9,200,33.63,ok,
+1795257837.106,book,book_15u,15,book,2,200,64.03,success,Booking BK-000330 is confirmed.
+1795257837.119,book,book_15u,15,book,9,200,52.66,success,Booking BK-000331 is confirmed.
+1795257837.13,book,book_15u,15,book,13,200,104.6,success,Booking BK-000332 is confirmed.
+1795257837.2,book,book_15u,15,api_search,7,200,31.04,ok,
+1795257837.209,book,book_15u,15,prepare,7,200,9.56,ok,
+1795257837.264,book,book_15u,15,api_search,14,200,9.93,ok,
+1795257837.275,book,book_15u,15,prepare,14,200,10.88,ok,
+1795257837.294,book,book_15u,15,book,7,200,84.13,success,Booking BK-000333 is confirmed.
+1795257837.304,book,book_15u,15,api_search,12,200,12.06,ok,
+1795257837.339,book,book_15u,15,book,14,200,63.54,success,Booking BK-000334 is confirmed.
+1795257837.341,book,book_15u,15,prepare,12,200,36.85,ok,
+1795257837.382,book,book_15u,15,book,12,200,40.65,success,Booking BK-000335 is confirmed.
+1795257837.449,book,book_15u,15,api_search,10,200,36.91,ok,
+1795257837.475,book,book_15u,15,prepare,10,200,26.09,ok,
+1795257837.506,book,book_15u,15,api_search,1,200,26.39,ok,
+1795257837.521,book,book_15u,15,book,10,200,45.28,success,Booking BK-000336 is confirmed.
+1795257837.539,book,book_15u,15,api_search,4,200,26.68,ok,
+1795257837.54,book,book_15u,15,prepare,1,200,34.34,ok,
+1795257837.569,book,book_15u,15,prepare,4,200,29.52,ok,
+1795257837.582,book,book_15u,15,book,1,200,41.88,success,Booking BK-000337 is confirmed.
+1795257837.63,book,book_15u,15,book,4,200,60.67,success,Booking BK-000338 is confirmed.
+1795257837.756,book,book_15u,15,api_search,8,200,16.86,ok,
+1795257837.77,book,book_15u,15,prepare,8,200,13.47,ok,
+1795257837.791,book,book_15u,15,api_search,11,200,29.39,ok,
+1795257837.81,book,book_15u,15,api_search,3,200,37.16,ok,
+1795257837.829,book,book_15u,15,prepare,3,200,19.38,ok,
+1795257837.829,book,book_15u,15,prepare,11,200,38.39,ok,
+1795257837.848,book,book_15u,15,book,8,200,78.72,success,Booking BK-000339 is confirmed.
+1795257837.899,book,book_15u,15,book,11,200,69.15,success,Booking BK-000340 is confirmed.
+1795257837.899,book,book_15u,15,book,3,200,69.63,success,Booking BK-000341 is confirmed.
+1795257837.978,book,book_15u,15,api_search,5,200,24.96,ok,
+1795257837.979,book,book_15u,15,api_search,13,200,31.19,ok,
+1795257837.989,book,book_15u,15,prepare,13,200,10.52,ok,
+1795257838.005,book,book_15u,15,prepare,5,200,27.1,ok,
+1795257838.047,book,book_15u,15,book,13,200,58.01,success,Booking BK-000342 is confirmed.
+1795257838.081,book,book_15u,15,book,5,200,75.54,success,Booking BK-000343 is confirmed.
+1795257838.19,book,book_15u,15,api_search,6,200,23.35,ok,
+1795257838.224,book,book_15u,15,prepare,6,200,33.55,ok,
+1795257838.257,book,book_15u,15,book,6,200,33.05,success,Booking BK-000344 is confirmed.
+1795257838.287,book,book_15u,15,api_search,9,200,36.46,ok,
+1795257838.321,book,book_15u,15,api_search,2,200,39.65,ok,
+1795257838.322,book,book_15u,15,prepare,9,200,34.52,ok,
+1795257838.333,book,book_15u,15,prepare,2,200,12.06,ok,
+1795257838.369,book,book_15u,15,api_search,15,200,13.72,ok,
+1795257838.38,book,book_15u,15,book,9,200,58.43,success,Booking BK-000345 is confirmed.
+1795257838.396,book,book_15u,15,prepare,15,200,26.74,ok,
+1795257838.41,book,book_15u,15,book,2,200,76.31,success,Booking BK-000346 is confirmed.
+1795257838.458,book,book_15u,15,book,15,200,62.54,success,Booking BK-000347 is confirmed.
+1795257838.46,book,book_15u,15,api_search,14,200,23.18,ok,
+1795257838.489,book,book_15u,15,prepare,14,200,29.6,ok,
+1795257838.534,book,book_15u,15,book,14,200,44.77,success,Booking BK-000348 is confirmed.
+1795257838.569,book,book_15u,15,api_search,4,200,24.7,ok,
+1795257838.579,book,book_15u,15,prepare,4,200,9.77,ok,
+1795257838.658,book,book_15u,15,book,4,200,78.43,success,Booking BK-000349 is confirmed.
+1795257838.675,book,book_15u,15,api_search,7,200,32.22,ok,
+1795257838.676,book,book_15u,15,api_search,12,200,29.13,ok,
+1795257838.71,book,book_15u,15,prepare,7,200,34.72,ok,
+1795257838.71,book,book_15u,15,prepare,12,200,33.81,ok,
+1795257838.774,book,book_15u,15,book,12,200,63.43,success,Booking BK-000350 is confirmed.
+1795257838.774,book,book_15u,15,book,7,200,63.86,success,Booking BK-000351 is confirmed.
+1795257838.774,book,book_15u,15,api_search,10,200,29.83,ok,
+1795257838.798,book,book_15u,15,prepare,10,200,23.83,ok,
+1795257838.88,book,book_15u,15,book,10,200,82.19,success,Booking BK-000352 is confirmed.
+1795257838.882,book,book_15u,15,api_search,8,200,27.11,ok,
+1795257838.894,book,book_15u,15,prepare,8,200,11.57,ok,
+1795257838.926,book,book_15u,15,api_search,1,200,34.33,ok,
+1795257838.955,book,book_15u,15,prepare,1,200,29.07,ok,
+1795257838.97,book,book_15u,15,book,8,200,76.46,success,Booking BK-000353 is confirmed.
+1795257839.017,book,book_15u,15,book,1,200,62.16,success,Booking BK-000354 is confirmed.
+1795257839.035,book,book_15u,15,api_search,13,200,29.9,ok,
+1795257839.036,book,book_15u,15,api_search,11,200,32.55,ok,
+1795257839.069,book,book_15u,15,prepare,11,200,33.07,ok,
+1795257839.069,book,book_15u,15,prepare,13,200,33.9,ok,
+1795257839.099,book,book_15u,15,api_search,6,200,32.39,ok,
+1795257839.11,book,book_15u,15,book,11,200,41.35,success,Booking BK-000355 is confirmed.
+1795257839.123,book,book_15u,15,api_search,5,200,12.9,ok,
+1795257839.13,book,book_15u,15,book,13,200,60.78,success,Booking BK-000356 is confirmed.
+1795257839.131,book,book_15u,15,prepare,6,200,32.26,ok,
+1795257839.162,book,book_15u,15,prepare,5,200,39.21,ok,
+1795257839.207,book,book_15u,15,book,6,200,75.31,success,Booking BK-000357 is confirmed.
+1795257839.234,book,book_15u,15,book,5,200,71.69,success,Booking BK-000358 is confirmed.
+1795257839.314,book,book_15u,15,api_search,9,200,37.61,ok,
+1795257839.345,book,book_15u,15,api_search,3,200,36.8,ok,
+1795257839.346,book,book_15u,15,prepare,9,200,31.49,ok,
+1795257839.357,book,book_15u,15,prepare,3,200,11.78,ok,
+1795257839.403,book,book_15u,15,book,3,200,45.99,success,Booking BK-000359 is confirmed.
+1795257839.42,book,book_15u,15,book,9,200,74.35,success,Booking BK-000360 is confirmed.
+1795257839.73,book,book_15u,15,api_search,7,200,23.57,ok,
+1795257839.743,book,book_15u,15,prepare,7,200,13.26,ok,
+1795257839.748,book,book_15u,15,api_search,15,200,34.01,ok,
+1795257839.779,book,book_15u,15,prepare,15,200,31.07,ok,
+1795257839.797,book,book_15u,15,book,7,200,53.87,success,Booking BK-000361 is confirmed.
+1795257839.839,book,book_15u,15,book,15,200,59.9,success,Booking BK-000362 is confirmed.
+1795257839.968,book,book_15u,15,api_search,2,200,34.7,ok,
+1795257839.995,book,book_15u,15,prepare,2,200,26.15,ok,
+1795257840.031,book,book_15u,15,api_search,14,200,29.14,ok,
+1795257840.056,book,book_15u,15,book,2,200,60.93,success,Booking BK-000363 is confirmed.
+1795257840.059,book,book_15u,15,prepare,14,200,28.56,ok,
+1795257840.107,book,book_15u,15,book,14,200,47.43,success,Booking BK-000364 is confirmed.
+1795257840.108,book,book_15u,15,api_search,8,200,40.55,ok,
+1795257840.109,book,book_15u,15,api_search,5,200,41.02,ok,
+1795257840.117,book,book_15u,15,api_search,10,200,27.11,ok,
+1795257840.135,book,book_15u,15,prepare,5,200,25.84,ok,
+1795257840.138,book,book_15u,15,prepare,8,200,29.67,ok,
+1795257840.151,book,book_15u,15,prepare,10,200,33.55,ok,
+1795257840.193,book,book_15u,15,book,8,200,55.6,success,Booking BK-000365 is confirmed.
+1795257840.209,book,book_15u,15,book,5,200,73.23,success,Booking BK-000366 is confirmed.
+1795257840.225,book,book_15u,15,book,10,200,74.04,success,Booking BK-000367 is confirmed.
+1795257840.257,book,book_15u,15,api_search,4,200,29.31,ok,
+1795257840.272,book,book_15u,15,prepare,4,200,14.64,ok,
+1795257840.275,book,book_15u,15,api_search,12,200,37.51,ok,
+1795257840.288,book,book_15u,15,prepare,12,200,12.99,ok,
+1795257840.35,book,book_15u,15,book,12,200,62.08,success,Booking BK-000369 is confirmed.
+1795257840.355,book,book_15u,15,book,4,200,82.65,success,Booking BK-000368 is confirmed.
+1795257840.502,book,book_15u,15,api_search,6,200,32.68,ok,
+1795257840.512,book,book_15u,15,prepare,6,200,9.91,ok,
+1795257840.569,book,book_15u,15,book,6,200,57.17,success,Booking BK-000370 is confirmed.
+1795257840.587,book,book_15u,15,api_search,9,200,33.21,ok,
+1795257840.621,book,book_15u,15,prepare,9,200,33.89,ok,
+1795257840.631,book,book_15u,15,api_search,1,200,14.95,ok,
+1795257840.666,book,book_15u,15,prepare,1,200,34.96,ok,
+1795257840.683,book,book_15u,15,api_search,13,200,18.64,ok,
+1795257840.684,book,book_15u,15,book,9,200,63.05,success,Booking BK-000371 is confirmed.
+1795257840.716,book,book_15u,15,api_search,11,200,27.46,ok,
+1795257840.717,book,book_15u,15,prepare,13,200,33.59,ok,
+1795257840.727,book,book_15u,15,book,1,200,60.84,success,Booking BK-000372 is confirmed.
+1795257840.731,book,book_15u,15,prepare,11,200,14.9,ok,
+1795257840.791,book,book_15u,15,book,13,200,74.69,success,Booking BK-000373 is confirmed.
+1795257840.806,book,book_15u,15,book,11,200,75.47,success,Booking BK-000374 is confirmed.
+1795257840.825,book,book_15u,15,api_search,3,200,10.84,ok,
+1795257840.837,book,book_15u,15,prepare,3,200,11.3,ok,
+1795257840.882,book,book_15u,15,book,3,200,44.71,success,Booking BK-000375 is confirmed.
+1795257840.976,book,book_15u,15,api_search,7,200,21.96,ok,
+1795257841.009,book,book_15u,15,prepare,7,200,33.76,ok,
+1795257841.084,book,book_15u,15,book,7,200,74.25,success,Booking BK-000376 is confirmed.
+1795257841.184,book,book_15u,15,api_search,14,200,41.91,ok,
+1795257841.184,book,book_15u,15,api_search,2,200,29.03,ok,
+1795257841.196,book,book_15u,15,prepare,2,200,11.77,ok,
+1795257841.208,book,book_15u,15,prepare,14,200,23.91,ok,
+1795257841.272,book,book_15u,15,book,14,200,64.33,success,Booking BK-000378 is confirmed.
+1795257841.272,book,book_15u,15,book,2,200,76.35,success,Booking BK-000377 is confirmed.
+1795257841.382,book,book_15u,15,api_search,5,200,34.52,ok,
+1795257841.411,book,book_15u,15,api_search,15,200,30.33,ok,
+1795257841.411,book,book_15u,15,prepare,5,200,28.79,ok,
+1795257841.44,book,book_15u,15,prepare,15,200,28.64,ok,
+1795257841.454,book,book_15u,15,book,5,200,42.22,success,Booking BK-000379 is confirmed.
+1795257841.516,book,book_15u,15,book,15,200,75.54,success,Booking BK-000380 is confirmed.
+1795257841.596,book,book_15u,15,api_search,1,200,30.06,ok,
+1795257841.624,book,book_15u,15,api_search,12,200,11.58,ok,
+1795257841.628,book,book_15u,15,prepare,1,200,32.23,ok,
+1795257841.66,book,book_15u,15,prepare,12,200,35.6,ok,
+1795257841.706,book,book_15u,15,book,1,200,77.46,success,Booking BK-000381 is confirmed.
+1795257841.722,book,book_15u,15,api_search,13,200,13.41,ok,
+1795257841.737,book,book_15u,15,book,12,200,76.93,success,Booking BK-000382 is confirmed.
+1795257841.738,book,book_15u,15,prepare,13,200,15.29,ok,
+1795257841.785,book,book_15u,15,api_search,8,200,12.67,ok,
+1795257841.797,book,book_15u,15,book,13,200,59.83,success,Booking BK-000383 is confirmed.
+1795257841.8,book,book_15u,15,prepare,8,200,14.28,ok,
+1795257841.83,book,book_15u,15,api_search,10,200,13.43,ok,
+1795257841.846,book,book_15u,15,api_search,4,200,24.48,ok,
+1795257841.857,book,book_15u,15,prepare,10,200,26.89,ok,
+1795257841.868,book,book_15u,15,book,8,200,68.06,success,Booking BK-000384 is confirmed.
+1795257841.881,book,book_15u,15,prepare,4,200,34.86,ok,
+1795257841.914,book,book_15u,15,book,10,200,56.67,success,Booking BK-000385 is confirmed.
+1795257841.943,book,book_15u,15,api_search,6,200,29.3,ok,
+1795257841.979,book,book_15u,15,book,4,200,98.43,success,Booking BK-000386 is confirmed.
+1795257841.983,book,book_15u,15,prepare,6,200,39.53,ok,
+1795257842.063,book,book_15u,15,book,6,200,79.94,success,Booking BK-000387 is confirmed.
+1795257842.126,book,book_15u,15,api_search,3,200,28.87,ok,
+1795257842.161,book,book_15u,15,prepare,3,200,34.03,ok,
+1795257842.238,book,book_15u,15,book,3,200,77.82,success,Booking BK-000388 is confirmed.
+1795257842.271,book,book_15u,15,api_search,11,200,31.27,ok,
+1795257842.272,book,book_15u,15,api_search,14,200,27.87,ok,
+1795257842.284,book,book_15u,15,prepare,14,200,12.48,ok,
+1795257842.286,book,book_15u,15,api_search,9,200,36.13,ok,
+1795257842.301,book,book_15u,15,api_search,7,200,15.55,ok,
+1795257842.305,book,book_15u,15,prepare,11,200,33.89,ok,
+1795257842.324,book,book_15u,15,prepare,9,200,37.21,ok,
+1795257842.343,book,book_15u,15,prepare,7,200,41.86,ok,
+1795257842.368,book,book_15u,15,book,14,200,83.63,success,Booking BK-000389 is confirmed.
+1795257842.384,book,book_15u,15,api_search,15,200,39.73,ok,
+1795257842.394,book,book_15u,15,book,9,200,70.15,success,Booking BK-000391 is confirmed.
+1795257842.412,book,book_15u,15,book,11,200,107.22,success,Booking BK-000390 is confirmed.
+1795257842.414,book,book_15u,15,prepare,15,200,29.95,ok,
+1795257842.44,book,book_15u,15,book,7,200,96.96,success,Booking BK-000392 is confirmed.
+1795257842.457,book,book_15u,15,api_search,5,200,35.43,ok,
+1795257842.488,book,book_15u,15,book,15,200,73.97,success,Booking BK-000393 is confirmed.
+1795257842.491,book,book_15u,15,prepare,5,200,34.06,ok,
+1795257842.546,book,book_15u,15,book,5,200,54.36,success,Booking BK-000394 is confirmed.
+1795257842.734,book,book_15u,15,api_search,2,200,26.13,ok,
+1795257842.744,book,book_15u,15,prepare,2,200,10.23,ok,
+1795257842.812,book,book_15u,15,book,2,200,67.86,success,Booking BK-000395 is confirmed.
+1795257842.957,book,book_15u,15,api_search,13,200,35.99,ok,
+1795257842.958,book,book_15u,15,api_search,8,200,41.4,ok,
+1795257842.969,book,book_15u,15,prepare,13,200,12.04,ok,
+1795257842.982,book,book_15u,15,prepare,8,200,23.47,ok,
+1795257843.006,book,book_15u,15,api_search,10,200,41.16,ok,
+1795257843.018,book,book_15u,15,api_search,1,200,27.75,ok,
+1795257843.033,book,book_15u,15,book,8,200,51.07,success,Booking BK-000396 is confirmed.
+1795257843.037,book,book_15u,15,prepare,10,200,29.98,ok,
+1795257843.039,book,book_15u,15,prepare,1,200,20.55,ok,
+1795257843.093,book,book_15u,15,book,13,200,123.06,success,Booking BK-000397 is confirmed.
+1795257843.12,book,book_15u,15,api_search,12,200,14.42,ok,
+1795257843.127,book,book_15u,15,book,10,200,89.93,success,Booking BK-000398 is confirmed.
+1795257843.128,book,book_15u,15,book,1,200,88.82,success,Booking BK-000399 is confirmed.
+1795257843.136,book,book_15u,15,prepare,12,200,16.18,ok,
+1795257843.217,book,book_15u,15,book,12,200,80.64,success,Booking BK-000400 is confirmed.
+1795257843.271,book,book_15u,15,api_search,3,200,42.01,ok,
+1795257843.271,book,book_15u,15,api_search,4,200,36.61,ok,
+1795257843.287,book,book_15u,15,prepare,3,200,16.35,ok,
+1795257843.287,book,book_15u,15,prepare,4,200,16.66,ok,
+1795257843.337,book,book_15u,15,book,4,200,49.37,success,Booking BK-000401 is confirmed.
+1795257843.353,book,book_15u,15,book,3,200,66.07,success,Booking BK-000402 is confirmed.
+1795257843.448,book,book_15u,15,api_search,6,200,29.43,ok,
+1795257843.478,book,book_15u,15,prepare,6,200,30.41,ok,
+1795257843.541,book,book_15u,15,book,6,200,62.52,success,Booking BK-000403 is confirmed.
+1795257843.721,book,book_15u,15,api_search,14,200,17.53,ok,
+1795257843.73,book,book_15u,15,api_search,9,200,23.83,ok,
+1795257843.734,book,book_15u,15,prepare,14,200,12.89,ok,
+1795257843.763,book,book_15u,15,api_search,7,200,33.31,ok,
+1795257843.764,book,book_15u,15,prepare,9,200,34.5,ok,
+1795257843.785,book,book_15u,15,book,14,200,51.58,success,Booking BK-000404 is confirmed.
+1795257843.787,book,book_15u,15,prepare,7,200,23.35,ok,
+1795257843.837,book,book_15u,15,book,9,200,72.67,success,Booking BK-000405 is confirmed.
+1795257843.844,book,book_15u,15,api_search,2,200,37.79,ok,
+1795257843.854,book,book_15u,15,book,7,200,67.38,success,Booking BK-000406 is confirmed.
+1795257843.872,book,book_15u,15,prepare,2,200,28.24,ok,
+1795257843.932,book,book_15u,15,book,2,200,59.09,success,Booking BK-000407 is confirmed.
+1795257843.98,book,book_15u,15,api_search,13,200,32.17,ok,
+1795257843.981,book,book_15u,15,api_search,11,200,35.66,ok,
+1795257843.992,book,book_15u,15,prepare,13,200,11.55,ok,
+1795257844.012,book,book_15u,15,prepare,11,200,30.91,ok,
+1795257844.047,book,book_15u,15,book,13,200,55.36,success,Booking BK-000408 is confirmed.
+1795257844.052,book,book_15u,15,api_search,15,200,30.66,ok,
+1795257844.078,book,book_15u,15,prepare,15,200,25.3,ok,
+1795257844.079,book,book_15u,15,book,11,200,66.33,success,Booking BK-000409 is confirmed.
+1795257844.094,book,book_15u,15,api_search,8,200,12.27,ok,
+1795257844.107,book,book_15u,15,api_search,5,200,36.23,ok,
+1795257844.119,book,book_15u,15,prepare,8,200,24.38,ok,
+1795257844.136,book,book_15u,15,book,15,200,58.27,success,Booking BK-000410 is confirmed.
+1795257844.14,book,book_15u,15,prepare,5,200,32.87,ok,
+1795257844.197,book,book_15u,15,book,8,200,78.19,success,Booking BK-000411 is confirmed.
+1795257844.214,book,book_15u,15,book,5,200,73.83,success,Booking BK-000412 is confirmed.
+1795257844.215,book,book_15u,15,api_search,1,200,25.19,ok,
+1795257844.244,book,book_15u,15,prepare,1,200,29.03,ok,
+1795257844.29,book,book_15u,15,book,1,200,45.47,success,Booking BK-000413 is confirmed.
+1795257844.414,book,book_15u,15,api_search,6,200,27.5,ok,
+1795257844.445,book,book_15u,15,prepare,6,200,31.23,ok,
+1795257844.492,book,book_15u,15,book,6,200,46.54,success,Booking BK-000414 is confirmed.
+1795257844.6,book,book_15u,15,api_search,3,200,27.0,ok,
+1795257844.633,book,book_15u,15,api_search,10,200,31.33,ok,
+1795257844.635,book,book_15u,15,prepare,3,200,34.91,ok,
+1795257844.664,book,book_15u,15,prepare,10,200,31.01,ok,
+1795257844.698,book,book_15u,15,book,3,200,62.63,success,Booking BK-000415 is confirmed.
+1795257844.715,book,book_15u,15,api_search,12,200,39.4,ok,
+1795257844.729,book,book_15u,15,prepare,12,200,13.81,ok,
+1795257844.745,book,book_15u,15,book,10,200,80.25,success,Booking BK-000416 is confirmed.
+1795257844.789,book,book_15u,15,book,12,200,59.93,success,Booking BK-000417 is confirmed.
+1795257844.875,book,book_15u,15,api_search,7,200,11.0,ok,
+1795257844.903,book,book_15u,15,api_search,4,200,11.47,ok,
+1795257844.904,book,book_15u,15,prepare,7,200,28.14,ok,
+1795257844.917,book,book_15u,15,prepare,4,200,13.88,ok,
+1795257844.977,book,book_15u,15,book,7,200,73.4,success,Booking BK-000418 is confirmed.
+1795257844.999,book,book_15u,15,book,4,200,81.71,success,Booking BK-000419 is confirmed.
+1795257845.039,book,book_15u,15,api_search,11,200,28.95,ok,
+1795257845.071,book,book_15u,15,prepare,11,200,32.29,ok,
+1795257845.088,book,book_15u,15,api_search,9,200,15.79,ok,
+1795257845.103,book,book_15u,15,prepare,9,200,14.72,ok,
+1795257845.132,book,book_15u,15,book,11,200,60.59,success,Booking BK-000420 is confirmed.
+1795257845.161,book,book_15u,15,api_search,2,200,29.23,ok,
+1795257845.175,book,book_15u,15,book,9,200,72.23,success,Booking BK-000421 is confirmed.
+1795257845.195,book,book_15u,15,prepare,2,200,33.96,ok,
+1795257845.211,book,book_15u,15,api_search,15,200,35.28,ok,
+1795257845.224,book,book_15u,15,api_search,13,200,26.54,ok,
+1795257845.238,book,book_15u,15,book,2,200,43.1,success,Booking BK-000422 is confirmed.
+1795257845.242,book,book_15u,15,prepare,13,200,18.39,ok,
+1795257845.246,book,book_15u,15,prepare,15,200,34.4,ok,
+1795257845.257,book,book_15u,15,api_search,5,200,25.77,ok,
+1795257845.275,book,book_15u,15,prepare,5,200,17.56,ok,
+1795257845.296,book,book_15u,15,api_search,14,200,31.38,ok,
+1795257845.323,book,book_15u,15,prepare,14,200,26.35,ok,
+1795257845.328,book,book_15u,15,book,13,200,85.34,success,Booking BK-000423 is confirmed.
+1795257845.336,book,book_15u,15,book,15,200,89.49,success,Booking BK-000424 is confirmed.
+1795257845.365,book,book_15u,15,book,5,200,89.92,success,Booking BK-000425 is confirmed.
+1795257845.396,book,book_15u,15,book,14,200,73.2,success,Booking BK-000426 is confirmed.
+1795257845.634,book,book_15u,15,api_search,3,200,34.55,ok,
+1795257845.634,book,book_15u,15,api_search,8,200,35.77,ok,
+1795257845.646,book,book_15u,15,prepare,3,200,12.35,ok,
+1795257845.647,book,book_15u,15,prepare,8,200,13.5,ok,
+1795257845.66,book,book_15u,15,api_search,10,200,21.39,ok,
+1795257845.673,book,book_15u,15,prepare,10,200,13.19,ok,
+1795257845.731,book,book_15u,15,book,8,200,83.14,success,Booking BK-000427 is confirmed.
+1795257845.731,book,book_15u,15,book,3,200,84.62,success,Booking BK-000428 is confirmed.
+1795257845.741,book,book_15u,15,book,10,200,67.74,success,Booking BK-000429 is confirmed.
+1795257845.816,book,book_15u,15,api_search,6,200,29.48,ok,
+1795257845.848,book,book_15u,15,prepare,6,200,32.18,ok,
+1795257845.91,book,book_15u,15,book,6,200,61.62,success,Booking BK-000430 is confirmed.
+1795257845.911,book,book_15u,15,api_search,1,200,62.13,ok,
+1795257845.942,book,book_15u,15,prepare,1,200,31.13,ok,
+1795257845.988,book,book_15u,15,book,1,200,45.77,success,Booking BK-000431 is confirmed.
+1795257846.002,book,book_15u,15,api_search,12,200,22.05,ok,
+1795257846.012,book,book_15u,15,prepare,12,200,9.89,ok,
+1795257846.027,book,book_15u,15,api_search,7,200,14.32,ok,
+1795257846.049,book,book_15u,15,api_search,11,200,11.74,ok,
+1795257846.052,book,book_15u,15,prepare,7,200,25.41,ok,
+1795257846.063,book,book_15u,15,book,12,200,50.16,success,Booking BK-000432 is confirmed.
+1795257846.087,book,book_15u,15,prepare,11,200,37.34,ok,
+1795257846.126,book,book_15u,15,book,7,200,73.87,success,Booking BK-000433 is confirmed.
+1795257846.142,book,book_15u,15,book,11,200,54.9,success,Booking BK-000434 is confirmed.
+1795257846.17,book,book_15u,15,api_search,4,200,10.76,ok,
+1795257846.208,book,book_15u,15,prepare,4,200,37.4,ok,
+1795257846.267,book,book_15u,15,book,4,200,59.03,success,Booking BK-000435 is confirmed.
+1795257846.368,book,book_15u,15,api_search,13,200,15.55,ok,
+1795257846.394,book,book_15u,15,api_search,14,200,17.56,ok,
+1795257846.4,book,book_15u,15,prepare,13,200,31.7,ok,
+1795257846.41,book,book_15u,15,prepare,14,200,15.93,ok,
+1795257846.457,book,book_15u,15,book,13,200,56.85,success,Booking BK-000436 is confirmed.
+1795257846.484,book,book_15u,15,book,14,200,73.12,success,Booking BK-000437 is confirmed.
+1795257846.499,book,book_15u,15,api_search,9,200,27.66,ok,
+1795257846.534,book,book_15u,15,prepare,9,200,34.58,ok,
+1795257846.578,book,book_15u,15,book,9,200,43.99,success,Booking BK-000438 is confirmed.
+1795257846.58,book,book_15u,15,api_search,8,200,34.81,ok,
+1795257846.611,book,book_15u,15,prepare,8,200,31.01,ok,
+1795257846.654,book,book_15u,15,book,8,200,42.8,success,Booking BK-000439 is confirmed.
+1795257846.754,book,book_15u,15,api_search,2,200,38.94,ok,
+1795257846.764,book,book_15u,15,prepare,2,200,10.02,ok,
+1795257846.809,book,book_15u,15,book,2,200,45.54,success,Booking BK-000440 is confirmed.
+1795257846.898,book,book_15u,15,api_search,15,200,18.9,ok,
+1795257846.918,book,book_15u,15,api_search,5,200,36.09,ok,
+1795257846.934,book,book_15u,15,api_search,12,200,24.15,ok,
+1795257846.936,book,book_15u,15,prepare,15,200,37.57,ok,
+1795257846.956,book,book_15u,15,prepare,5,200,37.69,ok,
+1795257846.969,book,book_15u,15,prepare,12,200,34.27,ok,
+1795257846.992,book,book_15u,15,book,15,200,56.57,success,Booking BK-000441 is confirmed.
+1795257847.028,book,book_15u,15,book,5,200,72.15,success,Booking BK-000442 is confirmed.
+1795257847.028,book,book_15u,15,book,12,200,59.49,success,Booking BK-000443 is confirmed.
+1795257847.087,book,book_15u,15,api_search,10,200,13.62,ok,
+1795257847.124,book,book_15u,15,prepare,10,200,36.42,ok,
+1795257847.135,book,book_15u,15,api_search,11,200,11.46,ok,
+1795257847.159,book,book_15u,15,api_search,3,200,40.27,ok,
+1795257847.159,book,book_15u,15,api_search,4,200,38.34,ok,
+1795257847.16,book,book_15u,15,api_search,7,200,32.53,ok,
+1795257847.178,book,book_15u,15,prepare,11,200,43.65,ok,
+1795257847.189,book,book_15u,15,book,10,200,64.51,success,Booking BK-000444 is confirmed.
+1795257847.189,book,book_15u,15,prepare,4,200,29.93,ok,
+1795257847.19,book,book_15u,15,prepare,7,200,29.97,ok,
+1795257847.194,book,book_15u,15,prepare,3,200,35.28,ok,
+1795257847.229,book,book_15u,15,api_search,6,200,36.95,ok,
+1795257847.25,book,book_15u,15,book,4,200,60.3,success,Booking BK-000445 is confirmed.
+1795257847.263,book,book_15u,15,prepare,6,200,34.26,ok,
+1795257847.289,book,book_15u,15,book,11,200,110.51,success,Booking BK-000446 is confirmed.
+1795257847.32,book,book_15u,15,book,7,200,129.63,success,Booking BK-000447 is confirmed.
+1795257847.334,book,book_15u,15,book,6,200,70.86,success,Booking BK-000448 is confirmed.
+1795257847.38,book,book_15u,15,book,3,200,185.44,success,Booking BK-000449 is confirmed.
+1795257847.54,book,book_15u,15,api_search,13,200,25.71,ok,
+1795257847.541,book,book_15u,15,api_search,1,200,13.25,ok,
+1795257847.553,book,book_15u,15,prepare,1,200,11.24,ok,
+1795257847.566,book,book_15u,15,prepare,13,200,26.15,ok,
+1795257847.598,book,book_15u,15,api_search,14,200,14.38,ok,
+1795257847.637,book,book_15u,15,book,13,200,70.6,success,Booking BK-000450 is confirmed.
+1795257847.64,book,book_15u,15,prepare,14,200,41.34,ok,
+1795257847.669,book,book_15u,15,book,14,200,29.7,success,Booking BK-000452 is confirmed.
+1795257847.675,book,book_15u,15,book,1,200,122.51,success,Booking BK-000451 is confirmed.
+1795257847.911,book,book_15u,15,api_search,2,200,34.4,ok,
+1795257847.922,book,book_15u,15,prepare,2,200,11.37,ok,
+1795257847.944,book,book_15u,15,api_search,9,200,28.18,ok,
+1795257847.974,book,book_15u,15,book,2,200,52.03,success,Booking BK-000453 is confirmed.
+1795257847.976,book,book_15u,15,prepare,9,200,32.24,ok,
+1795257848.053,book,book_15u,15,book,9,200,76.66,success,Booking BK-000454 is confirmed.
+1795257848.133,book,book_15u,15,api_search,5,200,28.04,ok,
+1795257848.147,book,book_15u,15,api_search,15,200,28.63,ok,
+1795257848.147,book,book_15u,15,prepare,5,200,13.89,ok,
+1795257848.179,book,book_15u,15,book,5,200,31.95,success,Booking BK-000455 is confirmed.
+1795257848.181,book,book_15u,15,prepare,15,200,33.85,ok,
+1795257848.198,book,book_15u,15,api_search,8,200,27.89,ok,
+1795257848.228,book,book_15u,15,api_search,12,200,39.1,ok,
+1795257848.23,book,book_15u,15,api_search,11,200,26.94,ok,
+1795257848.233,book,book_15u,15,prepare,8,200,35.33,ok,
+1795257848.243,book,book_15u,15,book,15,200,62.12,success,Booking BK-000456 is confirmed.
+1795257848.254,book,book_15u,15,prepare,11,200,23.56,ok,
+1795257848.267,book,book_15u,15,api_search,6,200,38.25,ok,
+1795257848.273,book,book_15u,15,prepare,12,200,44.63,ok,
+1795257848.334,book,book_15u,15,prepare,6,200,66.16,ok,
+1795257848.335,book,book_15u,15,book,8,200,101.82,success,Booking BK-000457 is confirmed.
+1795257848.354,book,book_15u,15,book,11,200,100.51,success,Booking BK-000458 is confirmed.
+1795257848.365,book,book_15u,15,book,12,200,92.04,success,Booking BK-000459 is confirmed.
+1795257848.401,book,book_15u,15,book,6,200,66.82,success,Booking BK-000460 is confirmed.
+1795257848.401,book,book_15u,15,api_search,7,200,29.28,ok,
+1795257848.414,book,book_15u,15,prepare,7,200,12.56,ok,
+1795257848.473,book,book_15u,15,book,7,200,59.27,success,Booking BK-000461 is confirmed.
+1795257848.489,book,book_15u,15,api_search,10,200,31.11,ok,
+1795257848.499,book,book_15u,15,prepare,10,200,9.54,ok,
+1795257848.508,book,book_15u,15,api_search,1,200,22.31,ok,
+1795257848.537,book,book_15u,15,prepare,1,200,29.21,ok,
+1795257848.55,book,book_15u,15,book,10,200,51.58,success,Booking BK-000462 is confirmed.
+1795257848.595,book,book_15u,15,book,1,200,57.75,success,Booking BK-000463 is confirmed.
+1795257848.68,book,book_15u,15,api_search,4,200,36.94,ok,
+1795257848.709,book,book_15u,15,prepare,4,200,28.88,ok,
+1795257848.71,book,book_15u,15,api_search,3,200,17.68,ok,
+1795257848.738,book,book_15u,15,prepare,3,200,27.82,ok,
+1795257848.753,book,book_15u,15,book,4,200,44.24,success,Booking BK-000464 is confirmed.
+1795257848.779,book,book_15u,15,book,3,200,40.6,success,Booking BK-000465 is confirmed.
+1795257849.095,book,book_15u,15,api_search,14,200,28.42,ok,
+1795257849.117,book,book_15u,15,prepare,14,200,21.9,ok,
+1795257849.18,book,book_15u,15,api_search,13,200,21.27,ok,
+1795257849.202,book,book_15u,15,prepare,13,200,21.73,ok,
+1795257849.211,book,book_15u,15,book,14,200,93.48,success,Booking BK-000466 is confirmed.
+1795257849.283,book,book_15u,15,book,13,200,81.24,success,Booking BK-000467 is confirmed.
+1795257849.288,book,book_15u,15,api_search,2,200,14.21,ok,
+1795257849.299,book,book_15u,15,prepare,2,200,11.1,ok,
+1795257849.326,book,book_15u,15,api_search,6,200,10.09,ok,
+1795257849.342,book,book_15u,15,book,2,200,42.95,success,Booking BK-000468 is confirmed.
+1795257849.361,book,book_15u,15,api_search,9,200,28.78,ok,
+1795257849.361,book,book_15u,15,prepare,6,200,34.93,ok,
+1795257849.393,book,book_15u,15,prepare,9,200,32.53,ok,
+1795257849.397,book,book_15u,15,book,6,200,35.08,success,Booking BK-000469 is confirmed.
+1795257849.468,book,book_15u,15,book,9,200,74.77,success,Booking BK-000470 is confirmed.
+1795257849.481,book,book_15u,15,api_search,8,200,25.65,ok,
+1795257849.521,book,book_15u,15,api_search,7,200,32.33,ok,
+1795257849.522,book,book_15u,15,prepare,8,200,40.25,ok,
+1795257849.537,book,book_15u,15,prepare,7,200,16.26,ok,
+1795257849.574,book,book_15u,15,book,8,200,51.82,success,Booking BK-000471 is confirmed.
+1795257849.589,book,book_15u,15,book,7,200,51.72,success,Booking BK-000472 is confirmed.
+1795257849.733,book,book_15u,15,api_search,15,200,29.28,ok,
+1795257849.761,book,book_15u,15,api_search,5,200,29.65,ok,
+1795257849.761,book,book_15u,15,prepare,15,200,27.56,ok,
+1795257849.777,book,book_15u,15,prepare,5,200,15.98,ok,
+1795257849.787,book,book_15u,15,api_search,10,200,18.27,ok,
+1795257849.811,book,book_15u,15,api_search,12,200,29.83,ok,
+1795257849.813,book,book_15u,15,api_search,11,200,34.64,ok,
+1795257849.837,book,book_15u,15,book,15,200,75.58,success,Booking BK-000473 is confirmed.
+1795257849.839,book,book_15u,15,prepare,10,200,51.48,ok,
+1795257849.844,book,book_15u,15,prepare,11,200,30.68,ok,
+1795257849.848,book,book_15u,15,prepare,12,200,36.28,ok,
+1795257849.871,book,book_15u,15,book,5,200,93.59,success,Booking BK-000474 is confirmed.
+1795257849.901,book,book_15u,15,book,11,200,57.4,success,Booking BK-000475 is confirmed.
+1795257849.932,book,book_15u,15,book,12,200,84.15,success,Booking BK-000477 is confirmed.
+1795257849.932,book,book_15u,15,book,10,200,93.4,success,Booking BK-000476 is confirmed.
+1795257850.048,book,book_15u,15,api_search,4,200,38.88,ok,
+1795257850.073,book,book_15u,15,api_search,14,200,30.78,ok,
+1795257850.074,book,book_15u,15,prepare,4,200,25.08,ok,
+1795257850.084,book,book_15u,15,prepare,14,200,11.01,ok,
+1795257850.138,book,book_15u,15,book,14,200,53.28,success,Booking BK-000479 is confirmed.
+1795257850.147,book,book_15u,15,book,4,200,73.71,success,Booking BK-000478 is confirmed.
+1795257850.229,book,book_15u,15,api_search,1,200,33.58,ok,
+1795257850.246,book,book_15u,15,api_search,3,200,29.23,ok,
+1795257850.264,book,book_15u,15,prepare,3,200,18.37,ok,
+1795257850.266,book,book_15u,15,prepare,1,200,36.7,ok,
+1795257850.315,book,book_15u,15,book,3,200,50.01,success,Booking BK-000481 is confirmed.
+1795257850.323,book,book_15u,15,book,1,200,57.56,success,Booking BK-000480 is confirmed.
+1795257850.486,book,book_15u,15,api_search,13,200,38.35,ok,
+1795257850.511,book,book_15u,15,prepare,13,200,24.92,ok,
+1795257850.561,book,book_15u,15,api_search,7,200,11.49,ok,
+1795257850.573,book,book_15u,15,prepare,7,200,11.91,ok,
+1795257850.593,book,book_15u,15,book,13,200,81.91,success,Booking BK-000482 is confirmed.
+1795257850.621,book,book_15u,15,book,7,200,47.71,success,Booking BK-000483 is confirmed.
+1795257850.694,book,book_15u,15,api_search,2,200,33.05,ok,
+1795257850.706,book,book_15u,15,prepare,2,200,11.97,ok,
+1795257850.747,book,book_15u,15,api_search,9,200,19.12,ok,
+1795257850.763,book,book_15u,15,book,2,200,56.85,success,Booking BK-000484 is confirmed.
+1795257850.765,book,book_15u,15,prepare,9,200,18.07,ok,
+1795257850.769,book,book_15u,15,api_search,10,200,15.54,ok,
+1795257850.78,book,book_15u,15,prepare,10,200,10.43,ok,
+1795257850.819,book,book_15u,15,book,10,200,39.05,success,Booking BK-000485 is confirmed.
+1795257850.827,book,book_15u,15,book,9,200,61.29,success,Booking BK-000486 is confirmed.
+1795257850.831,book,book_15u,15,api_search,6,200,12.9,ok,
+1795257850.858,book,book_15u,15,prepare,6,200,26.74,ok,
+1795257850.918,book,book_15u,15,api_search,8,200,32.51,ok,
+1795257850.933,book,book_15u,15,book,6,200,75.01,success,Booking BK-000487 is confirmed.
+1795257850.951,book,book_15u,15,prepare,8,200,32.92,ok,
+1795257850.986,book,book_15u,15,api_search,5,200,27.92,ok,
+1795257851.013,book,book_15u,15,prepare,5,200,27.57,ok,
+1795257851.028,book,book_15u,15,book,8,200,76.36,success,Booking BK-000488 is confirmed.
+1795257851.074,book,book_15u,15,book,5,200,60.73,success,Booking BK-000489 is confirmed.
+1795257851.219,book,book_15u,15,api_search,4,200,38.24,ok,
+1795257851.219,book,book_15u,15,api_search,3,200,29.82,ok,
+1795257851.22,book,book_15u,15,api_search,14,200,15.35,ok,
+1795257851.239,book,book_15u,15,prepare,4,200,19.28,ok,
+1795257851.241,book,book_15u,15,prepare,3,200,21.56,ok,
+1795257851.243,book,book_15u,15,prepare,14,200,22.44,ok,
+1795257851.264,book,book_15u,15,api_search,11,200,14.34,ok,
+1795257851.291,book,book_15u,15,api_search,15,200,35.08,ok,
+1795257851.304,book,book_15u,15,prepare,11,200,39.28,ok,
+1795257851.324,book,book_15u,15,book,4,200,84.81,success,Booking BK-000490 is confirmed.
+1795257851.327,book,book_15u,15,prepare,15,200,35.55,ok,
+1795257851.346,book,book_15u,15,book,14,200,102.75,success,Booking BK-000492 is confirmed.
+1795257851.347,book,book_15u,15,book,3,200,105.65,success,Booking BK-000491 is confirmed.
+1795257851.377,book,book_15u,15,book,11,200,73.05,success,Booking BK-000493 is confirmed.
+1795257851.398,book,book_15u,15,book,15,200,71.33,success,Booking BK-000494 is confirmed.
+1795257851.414,book,book_15u,15,api_search,13,200,19.78,ok,
+1795257851.449,book,book_15u,15,prepare,13,200,34.63,ok,
+1795257851.511,book,book_15u,15,book,13,200,61.98,success,Booking BK-000495 is confirmed.
+1795257851.513,book,book_15u,15,api_search,12,200,30.48,ok,
+1795257851.542,book,book_15u,15,prepare,12,200,29.2,ok,
+1795257851.555,book,book_15u,15,api_search,1,200,30.74,ok,
+1795257851.567,book,book_15u,15,prepare,1,200,12.0,ok,
+1795257851.617,book,book_15u,15,book,12,200,75.0,success,Booking BK-000496 is confirmed.
+1795257851.648,book,book_15u,15,book,1,200,81.28,success,Booking BK-000497 is confirmed.
+1795257851.741,book,book_15u,15,api_search,9,200,33.52,ok,
+1795257851.753,book,book_15u,15,prepare,9,200,11.59,ok,
+1795257851.806,book,book_15u,15,book,9,200,52.61,success,Booking BK-000498 is confirmed.
+1795257851.921,book,book_15u,15,api_search,10,200,31.35,ok,
+1795257851.932,book,book_15u,15,prepare,10,200,11.15,ok,
+1795257852.007,book,book_15u,15,book,10,200,74.9,success,Booking BK-000499 is confirmed.
+1795257852.228,book,book_15u,15,api_search,7,200,27.98,ok,
+1795257852.24,book,book_15u,15,api_search,2,200,28.23,ok,
+1795257852.259,book,book_15u,15,prepare,7,200,30.91,ok,
+1795257852.272,book,book_15u,15,prepare,2,200,31.69,ok,
+1795257852.296,book,book_15u,15,api_search,6,200,22.83,ok,
+1795257852.315,book,book_15u,15,prepare,6,200,18.94,ok,
+1795257852.336,book,book_15u,15,book,2,200,64.17,success,Booking BK-000500 is confirmed.
+1795257852.338,book,book_15u,15,api_search,14,200,25.51,ok,
+1795257852.354,book,book_15u,15,book,7,200,95.65,success,Booking BK-000501 is confirmed.
+1795257852.355,book,book_15u,15,api_search,11,200,24.56,ok,
+1795257852.376,book,book_15u,15,prepare,11,200,20.77,ok,
+1795257852.376,book,book_15u,15,prepare,14,200,37.52,ok,
+1795257852.398,book,book_15u,15,book,6,200,82.56,success,Booking BK-000502 is confirmed.
+1795257852.405,book,book_15u,15,api_search,13,200,27.41,ok,
+1795257852.426,book,book_15u,15,prepare,13,200,21.11,ok,
+1795257852.439,book,book_15u,15,book,14,200,62.5,success,Booking BK-000503 is confirmed.
+1795257852.441,book,book_15u,15,api_search,8,200,13.97,ok,
+1795257852.461,book,book_15u,15,book,11,200,85.17,success,Booking BK-000504 is confirmed.
+1795257852.476,book,book_15u,15,prepare,8,200,34.67,ok,
+1795257852.512,book,book_15u,15,book,13,200,85.19,success,Booking BK-000505 is confirmed.
+1795257852.526,book,book_15u,15,api_search,3,200,28.34,ok,
+1795257852.539,book,book_15u,15,prepare,3,200,12.96,ok,
+1795257852.552,book,book_15u,15,book,8,200,75.68,success,Booking BK-000506 is confirmed.
+1795257852.6,book,book_15u,15,book,3,200,60.63,success,Booking BK-000507 is confirmed.
+1795257852.677,book,book_15u,15,api_search,5,200,34.03,ok,
+1795257852.693,book,book_15u,15,api_search,4,200,33.21,ok,
+1795257852.709,book,book_15u,15,prepare,5,200,31.14,ok,
+1795257852.724,book,book_15u,15,prepare,4,200,31.03,ok,
+1795257852.766,book,book_15u,15,book,5,200,57.37,success,Booking BK-000508 is confirmed.
+1795257852.802,book,book_15u,15,book,4,200,77.13,success,Booking BK-000509 is confirmed.
+1795257852.988,book,book_15u,15,api_search,15,200,35.77,ok,
+1795257853.001,book,book_15u,15,prepare,15,200,13.5,ok,
+1795257853.003,book,book_15u,15,api_search,1,200,23.99,ok,
+1795257853.037,book,book_15u,15,book,15,200,35.64,success,Booking BK-000510 is confirmed.
+1795257853.037,book,book_15u,15,prepare,1,200,33.39,ok,
+1795257853.079,book,book_15u,15,book,1,200,41.88,success,Booking BK-000511 is confirmed.
+1795257853.133,book,book_15u,15,api_search,12,200,13.93,ok,
+1795257853.145,book,book_15u,15,api_search,10,200,28.11,ok,
+1795257853.146,book,book_15u,15,prepare,12,200,12.52,ok,
+1795257853.176,book,book_15u,15,prepare,10,200,30.69,ok,
+1795257853.193,book,book_15u,15,book,12,200,46.94,success,Booking BK-000512 is confirmed.
+1795257853.194,book,book_15u,15,api_search,9,200,38.39,ok,
+1795257853.225,book,book_15u,15,prepare,9,200,31.07,ok,
+1795257853.228,book,book_15u,15,book,10,200,52.51,success,Booking BK-000513 is confirmed.
+1795257853.281,book,book_15u,15,book,9,200,55.64,success,Booking BK-000514 is confirmed.
+1795257853.617,book,book_15u,15,api_search,8,200,37.76,ok,
+1795257853.643,book,book_15u,15,prepare,8,200,25.27,ok,
+1795257853.695,book,book_15u,15,book,8,200,52.55,success,Booking BK-000515 is confirmed.
+1795257853.756,book,book_15u,15,api_search,11,200,35.68,ok,
+1795257853.767,book,book_15u,15,prepare,11,200,10.78,ok,
+1795257853.776,book,book_15u,15,api_search,2,200,10.91,ok,
+1795257853.782,book,book_15u,15,api_search,6,200,21.13,ok,
+1795257853.793,book,book_15u,15,prepare,2,200,16.06,ok,
+1795257853.796,book,book_15u,15,api_search,14,200,15.09,ok,
+1795257853.823,book,book_15u,15,prepare,6,200,41.07,ok,
+1795257853.841,book,book_15u,15,book,11,200,73.62,success,Booking BK-000516 is confirmed.
+1795257853.841,book,book_15u,15,prepare,14,200,44.66,ok,
+1795257853.882,book,book_15u,15,book,2,200,88.79,success,Booking BK-000517 is confirmed.
+1795257853.882,book,book_15u,15,api_search,7,200,29.36,ok,
+1795257853.897,book,book_15u,15,book,6,200,73.32,success,Booking BK-000518 is confirmed.
+1795257853.909,book,book_15u,15,prepare,7,200,26.81,ok,
+1795257853.923,book,book_15u,15,book,14,200,82.18,success,Booking BK-000519 is confirmed.
+1795257853.97,book,book_15u,15,book,7,200,61.45,success,Booking BK-000520 is confirmed.
+1795257854.071,book,book_15u,15,api_search,3,200,38.77,ok,
+1795257854.072,book,book_15u,15,api_search,13,200,14.86,ok,
+1795257854.085,book,book_15u,15,prepare,3,200,14.21,ok,
+1795257854.085,book,book_15u,15,prepare,13,200,13.61,ok,
+1795257854.14,book,book_15u,15,book,13,200,54.64,success,Booking BK-000521 is confirmed.
+1795257854.155,book,book_15u,15,book,3,200,70.04,success,Booking BK-000522 is confirmed.
+1795257854.235,book,book_15u,15,api_search,4,200,21.6,ok,
+1795257854.246,book,book_15u,15,prepare,4,200,11.43,ok,
+1795257854.296,book,book_15u,15,api_search,12,200,23.2,ok,
+1795257854.308,book,book_15u,15,prepare,12,200,11.59,ok,
+1795257854.328,book,book_15u,15,book,4,200,81.27,success,Booking BK-000523 is confirmed.
+1795257854.358,book,book_15u,15,book,12,200,49.75,success,Booking BK-000524 is confirmed.
+1795257854.375,book,book_15u,15,api_search,5,200,31.78,ok,
+1795257854.376,book,book_15u,15,api_search,9,200,24.7,ok,
+1795257854.386,book,book_15u,15,prepare,5,200,11.01,ok,
+1795257854.407,book,book_15u,15,prepare,9,200,31.12,ok,
+1795257854.472,book,book_15u,15,book,9,200,64.41,success,Booking BK-000525 is confirmed.
+1795257854.472,book,book_15u,15,book,5,200,85.56,success,Booking BK-000526 is confirmed.
+1795257854.642,book,book_15u,15,api_search,1,200,39.66,ok,
+1795257854.644,book,book_15u,15,api_search,15,200,13.96,ok,
+1795257854.675,book,book_15u,15,prepare,1,200,32.86,ok,
+1795257854.676,book,book_15u,15,prepare,15,200,32.26,ok,
+1795257854.731,book,book_15u,15,book,15,200,54.88,success,Booking BK-000527 is confirmed.
+1795257854.747,book,book_15u,15,book,1,200,71.27,success,Booking BK-000528 is confirmed.
+1795257854.764,book,book_15u,15,api_search,10,200,32.39,ok,
+1795257854.795,book,book_15u,15,prepare,10,200,30.67,ok,
+1795257854.872,book,book_15u,15,book,10,200,76.82,success,Booking BK-000529 is confirmed.
+1795257854.906,book,book_15u,15,api_search,6,200,10.56,ok,
+1795257854.934,book,book_15u,15,prepare,6,200,28.51,ok,
+1795257854.98,book,book_15u,15,book,6,200,45.31,success,Booking BK-000530 is confirmed.
+1795257854.982,book,book_15u,15,api_search,8,200,30.36,ok,
+1795257855.017,book,book_15u,15,prepare,8,200,34.38,ok,
+1795257855.042,book,book_15u,15,api_search,7,200,31.18,ok,
+1795257855.05,book,book_15u,15,api_search,3,200,11.55,ok,
+1795257855.054,book,book_15u,15,book,8,200,37.71,success,Booking BK-000531 is confirmed.
+1795257855.076,book,book_15u,15,prepare,7,200,33.55,ok,
+1795257855.076,book,book_15u,15,prepare,3,200,25.82,ok,
+1795257855.09,book,book_15u,15,api_search,14,200,37.04,ok,
+1795257855.124,book,book_15u,15,book,3,200,48.25,success,Booking BK-000532 is confirmed.
+1795257855.125,book,book_15u,15,prepare,14,200,34.98,ok,
+1795257855.138,book,book_15u,15,book,7,200,61.46,success,Booking BK-000533 is confirmed.
+1795257855.178,book,book_15u,15,book,14,200,53.15,success,Booking BK-000534 is confirmed.
+1795257855.226,book,book_15u,15,api_search,2,200,33.44,ok,
+1795257855.243,book,book_15u,15,api_search,13,200,27.69,ok,
+1795257855.244,book,book_15u,15,api_search,11,200,31.02,ok,
+1795257855.258,book,book_15u,15,prepare,13,200,15.38,ok,
+1795257855.262,book,book_15u,15,prepare,11,200,18.65,ok,
+1795257855.267,book,book_15u,15,prepare,2,200,41.17,ok,
+1795257855.271,book,book_15u,15,api_search,12,200,17.56,ok,
+1795257855.33,book,book_15u,15,prepare,12,200,58.45,ok,
+1795257855.364,book,book_15u,15,book,11,200,101.87,success,Booking BK-000535 is confirmed.
+1795257855.366,book,book_15u,15,book,2,200,98.53,success,Booking BK-000536 is confirmed.
+1795257855.366,book,book_15u,15,book,13,200,107.69,success,Booking BK-000537 is confirmed.
+1795257855.383,book,book_15u,15,book,12,200,53.13,success,Booking BK-000538 is confirmed.
+1795257855.385,book,book_15u,15,api_search,4,200,30.75,ok,
+1795257855.412,book,book_15u,15,prepare,4,200,27.41,ok,
+1795257855.495,book,book_15u,15,book,4,200,82.12,success,Booking BK-000539 is confirmed.
+1795257855.68,book,book_15u,15,api_search,15,200,13.07,ok,
+1795257855.711,book,book_15u,15,prepare,15,200,30.7,ok,
+1795257855.759,book,book_15u,15,book,15,200,48.41,success,Booking BK-000540 is confirmed.
+1795257855.761,book,book_15u,15,api_search,9,200,39.62,ok,
+1795257855.771,book,book_15u,15,prepare,9,200,10.65,ok,
+1795257855.815,book,book_15u,15,book,9,200,43.3,success,Booking BK-000541 is confirmed.
+1795257855.898,book,book_15u,15,api_search,1,200,26.99,ok,
+1795257855.929,book,book_15u,15,prepare,1,200,30.13,ok,
+1795257856.001,book,book_15u,15,book,1,200,72.53,success,Booking BK-000542 is confirmed.
+1795257856.017,book,book_15u,15,api_search,5,200,30.47,ok,
+1795257856.049,book,book_15u,15,prepare,5,200,31.87,ok,
+1795257856.095,book,book_15u,15,book,5,200,46.66,success,Booking BK-000543 is confirmed.
+1795257856.097,book,book_15u,15,api_search,6,200,37.5,ok,
+1795257856.108,book,book_15u,15,prepare,6,200,10.73,ok,
+1795257856.158,book,book_15u,15,book,6,200,50.48,success,Booking BK-000544 is confirmed.
+1795257856.16,book,book_15u,15,api_search,8,200,27.33,ok,
+1795257856.173,book,book_15u,15,prepare,8,200,13.11,ok,
+1795257856.188,book,book_15u,15,api_search,3,200,15.11,ok,
+1795257856.201,book,book_15u,15,api_search,10,200,15.32,ok,
+1795257856.222,book,book_15u,15,prepare,3,200,32.94,ok,
+1795257856.237,book,book_15u,15,book,8,200,64.31,success,Booking BK-000545 is confirmed.
+1795257856.244,book,book_15u,15,prepare,10,200,42.98,ok,
+1795257856.316,book,book_15u,15,book,3,200,94.26,success,Booking BK-000546 is confirmed.
+1795257856.316,book,book_15u,15,book,10,200,72.27,success,Booking BK-000547 is confirmed.
+1795257856.443,book,book_15u,15,api_search,13,200,9.1,ok,
+1795257856.469,book,book_15u,15,prepare,13,200,26.12,ok,
+1795257856.502,book,book_15u,15,book,13,200,32.5,success,Booking BK-000548 is confirmed.
+1795257856.596,book,book_15u,15,api_search,7,200,26.57,ok,
+1795257856.628,book,book_15u,15,prepare,7,200,31.96,ok,
+1795257856.632,book,book_15u,15,api_search,14,200,11.5,ok,
+1795257856.662,book,book_15u,15,prepare,14,200,30.37,ok,
+1795257856.688,book,book_15u,15,book,7,200,59.64,success,Booking BK-000549 is confirmed.
+1795257856.703,book,book_15u,15,api_search,12,200,10.44,ok,
+1795257856.717,book,book_15u,15,book,14,200,54.68,success,Booking BK-000550 is confirmed.
+1795257856.735,book,book_15u,15,prepare,12,200,31.49,ok,
+1795257856.804,book,book_15u,15,api_search,15,200,12.5,ok,
+1795257856.811,book,book_15u,15,book,12,200,76.23,success,Booking BK-000551 is confirmed.
+1795257856.829,book,book_15u,15,prepare,15,200,24.19,ok,
+1795257856.894,book,book_15u,15,api_search,11,200,10.85,ok,
+1795257856.904,book,book_15u,15,book,15,200,74.92,success,Booking BK-000552 is confirmed.
+1795257856.921,book,book_15u,15,prepare,11,200,27.07,ok,
+1795257856.938,book,book_15u,15,api_search,4,200,24.93,ok,
+1795257856.954,book,book_15u,15,prepare,4,200,16.03,ok,
+1795257856.968,book,book_15u,15,api_search,2,200,33.04,ok,
+1795257857.007,book,book_15u,15,book,11,200,85.82,success,Booking BK-000553 is confirmed.
+1795257857.011,book,book_15u,15,prepare,2,200,42.3,ok,
+1795257857.033,book,book_15u,15,api_search,9,200,21.97,ok,
+1795257857.048,book,book_15u,15,book,4,200,93.7,success,Booking BK-000554 is confirmed.
+1795257857.069,book,book_15u,15,book,2,200,58.69,success,Booking BK-000555 is confirmed.
+1795257857.07,book,book_15u,15,prepare,9,200,36.61,ok,
+1795257857.112,book,book_15u,15,book,9,200,41.9,success,Booking BK-000556 is confirmed.
+1795257857.174,book,book_15u,15,api_search,5,200,39.04,ok,
+1795257857.189,book,book_15u,15,prepare,5,200,14.79,ok,
+1795257857.247,book,book_15u,15,book,5,200,58.25,success,Booking BK-000557 is confirmed.
+1795257857.545,book,book_15u,15,api_search,3,200,39.52,ok,
+1795257857.563,book,book_15u,15,api_search,14,200,42.65,ok,
+1795257857.593,book,book_15u,15,prepare,3,200,47.34,ok,
+1795257857.594,book,book_15u,15,api_search,1,200,21.44,ok,
+1795257857.594,book,book_15u,15,prepare,14,200,30.63,ok,
+1795257857.629,book,book_15u,15,prepare,1,200,35.03,ok,
+1795257857.676,book,book_15u,15,api_search,10,200,27.3,ok,
+1795257857.681,book,book_15u,15,api_search,12,200,48.91,ok,
+1795257857.696,book,book_15u,15,book,14,200,102.02,success,Booking BK-000559 is confirmed.
+1795257857.697,book,book_15u,15,book,3,200,103.45,success,Booking BK-000558 is confirmed.
+1795257857.714,book,book_15u,15,prepare,12,200,33.28,ok,
+1795257857.716,book,book_15u,15,prepare,10,200,39.44,ok,
+1795257857.727,book,book_15u,15,api_search,6,200,45.01,ok,
+1795257857.736,book,book_15u,15,book,1,200,107.49,success,Booking BK-000560 is confirmed.
+1795257857.757,book,book_15u,15,api_search,8,200,41.72,ok,
+1795257857.774,book,book_15u,15,prepare,6,200,46.41,ok,
+1795257857.8,book,book_15u,15,book,12,200,85.84,success,Booking BK-000561 is confirmed.
+1795257857.8,book,book_15u,15,api_search,15,200,31.14,ok,
+1795257857.813,book,book_15u,15,book,10,200,96.67,success,Booking BK-000562 is confirmed.
+1795257857.813,book,book_15u,15,prepare,8,200,55.54,ok,
+1795257857.833,book,book_15u,15,prepare,15,200,32.41,ok,
+1795257857.867,book,book_15u,15,book,6,200,92.92,success,Booking BK-000563 is confirmed.
+1795257857.881,book,book_15u,15,book,15,200,48.44,success,Booking BK-000565 is confirmed.
+1795257857.9,book,book_15u,15,book,8,200,87.66,success,Booking BK-000564 is confirmed.
+1795257857.95,book,book_15u,15,api_search,11,200,33.0,ok,
+1795257857.951,book,book_15u,15,api_search,13,200,35.23,ok,
+1795257857.962,book,book_15u,15,prepare,13,200,11.54,ok,
+1795257857.979,book,book_15u,15,prepare,11,200,28.16,ok,
+1795257857.993,book,book_15u,15,api_search,2,200,14.63,ok,
+1795257858.011,book,book_15u,15,prepare,2,200,17.92,ok,
+1795257858.031,book,book_15u,15,book,13,200,68.52,success,Booking BK-000566 is confirmed.
+1795257858.063,book,book_15u,15,book,11,200,83.96,success,Booking BK-000567 is confirmed.
+1795257858.107,book,book_15u,15,api_search,4,200,26.79,ok,
+1795257858.108,book,book_15u,15,book,2,200,97.04,success,Booking BK-000568 is confirmed.
+1795257858.121,book,book_15u,15,prepare,4,200,13.89,ok,
+1795257858.157,book,book_15u,15,api_search,7,200,38.15,ok,
+1795257858.178,book,book_15u,15,prepare,7,200,20.91,ok,
+1795257858.219,book,book_15u,15,book,4,200,97.68,success,Booking BK-000569 is confirmed.
+1795257858.247,book,book_15u,15,api_search,5,200,13.59,ok,
+1795257858.261,book,book_15u,15,prepare,5,200,13.73,ok,
+1795257858.281,book,book_15u,15,book,7,200,102.75,success,Booking BK-000570 is confirmed.
+1795257858.32,book,book_15u,15,book,5,200,59.01,success,Booking BK-000571 is confirmed.
+1795257858.603,book,book_15u,15,api_search,9,200,26.83,ok,
+1795257858.619,book,book_15u,15,api_search,14,200,18.83,ok,
+1795257858.637,book,book_15u,15,prepare,9,200,34.24,ok,
+1795257858.642,book,book_15u,15,prepare,14,200,23.22,ok,
+1795257858.71,book,book_15u,15,book,9,200,72.57,success,Booking BK-000572 is confirmed.
+1795257858.725,book,book_15u,15,book,14,200,82.34,success,Booking BK-000573 is confirmed.
+1795257858.803,book,book_15u,15,api_search,12,200,22.74,ok,
+1795257858.838,book,book_15u,15,prepare,12,200,34.98,ok,
+1795257858.898,book,book_15u,15,book,12,200,59.79,success,Booking BK-000574 is confirmed.
+1795257858.928,book,book_15u,15,api_search,10,200,31.6,ok,
+1795257858.938,book,book_15u,15,prepare,10,200,10.66,ok,
+1795257858.957,book,book_15u,15,api_search,13,200,35.05,ok,
+1795257858.971,book,book_15u,15,prepare,13,200,14.43,ok,
+1795257859.023,book,book_15u,15,book,10,200,85.05,success,Booking BK-000575 is confirmed.
+1795257859.06,book,book_15u,15,book,13,200,88.18,success,Booking BK-000576 is confirmed.
+1795257859.062,book,book_15u,15,api_search,6,200,32.24,ok,
+1795257859.087,book,book_15u,15,prepare,6,200,24.66,ok,
+1795257859.112,book,book_15u,15,api_search,3,200,19.68,ok,
+1795257859.131,book,book_15u,15,book,6,200,43.43,success,Booking BK-000577 is confirmed.
+1795257859.149,book,book_15u,15,api_search,2,200,23.22,ok,
+1795257859.152,book,book_15u,15,prepare,3,200,39.1,ok,
+1795257859.167,book,book_15u,15,api_search,8,200,34.9,ok,
+1795257859.184,book,book_15u,15,prepare,2,200,34.6,ok,
+1795257859.208,book,book_15u,15,api_search,7,200,47.22,ok,
+1795257859.212,book,book_15u,15,prepare,8,200,44.61,ok,
+1795257859.214,book,book_15u,15,book,3,200,62.52,success,Booking BK-000578 is confirmed.
+1795257859.252,book,book_15u,15,prepare,7,200,44.42,ok,
+1795257859.261,book,book_15u,15,book,2,200,76.46,success,Booking BK-000579 is confirmed.
+1795257859.292,book,book_15u,15,book,8,200,79.88,success,Booking BK-000580 is confirmed.
+1795257859.296,book,book_15u,15,api_search,4,200,15.22,ok,
+1795257859.321,book,book_15u,15,book,7,200,68.32,success,Booking BK-000581 is confirmed.
+1795257859.323,book,book_15u,15,prepare,4,200,26.92,ok,
+1795257859.354,book,book_15u,15,api_search,1,200,32.26,ok,
+1795257859.368,book,book_15u,15,prepare,1,200,13.55,ok,
+1795257859.401,book,book_15u,15,book,4,200,76.99,success,Booking BK-000582 is confirmed.
+1795257859.452,book,book_15u,15,book,1,200,84.08,success,Booking BK-000583 is confirmed.
+1795257859.453,book,book_15u,15,api_search,15,200,20.33,ok,
+1795257859.454,book,book_15u,15,api_search,11,200,31.47,ok,
+1795257859.456,book,book_15u,15,api_search,5,200,22.98,ok,
+1795257859.479,book,book_15u,15,prepare,11,200,25.04,ok,
+1795257859.479,book,book_15u,15,prepare,15,200,25.97,ok,
+1795257859.497,book,book_15u,15,prepare,5,200,41.66,ok,
+1795257859.555,book,book_15u,15,book,15,200,75.61,success,Booking BK-000585 is confirmed.
+1795257859.555,book,book_15u,15,book,11,200,76.08,success,Booking BK-000584 is confirmed.
+1795257859.566,book,book_15u,15,book,5,200,68.42,success,Booking BK-000586 is confirmed.
+1795257859.767,book,book_15u,15,api_search,12,200,10.83,ok,
+1795257859.8,book,book_15u,15,prepare,12,200,33.0,ok,
+1795257859.908,book,book_15u,15,book,12,200,107.75,success,Booking BK-000587 is confirmed.
+1795257860.007,book,book_15u,15,api_search,6,200,16.39,ok,
+1795257860.034,book,book_15u,15,prepare,6,200,26.65,ok,
+1795257860.103,book,book_15u,15,book,6,200,68.89,success,Booking BK-000588 is confirmed.
+1795257860.134,book,book_15u,15,api_search,14,200,43.78,ok,
+1795257860.172,book,book_15u,15,prepare,14,200,36.98,ok,
+1795257860.251,book,book_15u,15,book,14,200,79.65,success,Booking BK-000589 is confirmed.
+1795257860.269,book,book_15u,15,api_search,9,200,41.01,ok,
+1795257860.29,book,book_15u,15,prepare,9,200,20.8,ok,
+1795257860.348,book,book_15u,15,api_search,8,200,35.06,ok,
+1795257860.381,book,book_15u,15,prepare,8,200,32.73,ok,
+1795257860.407,book,book_15u,15,book,9,200,116.43,success,Booking BK-000590 is confirmed.
+1795257860.421,book,book_15u,15,api_search,13,200,63.49,ok,
+1795257860.424,book,book_15u,15,api_search,4,200,69.66,ok,
+1795257860.429,book,book_15u,15,api_search,10,200,54.38,ok,
+1795257860.471,book,book_15u,15,prepare,13,200,49.42,ok,
+1795257860.478,book,book_15u,15,prepare,4,200,53.59,ok,
+1795257860.48,book,book_15u,15,prepare,10,200,50.75,ok,
+1795257860.548,book,book_15u,15,book,8,200,167.1,success,Booking BK-000591 is confirmed.
+1795257860.55,book,book_15u,15,api_search,7,200,59.46,ok,
+1795257860.584,book,book_15u,15,api_search,2,200,46.62,ok,
+1795257860.594,book,book_15u,15,prepare,7,200,44.13,ok,
+1795257860.642,book,book_15u,15,book,10,200,161.67,success,Booking BK-000594 is confirmed.
+1795257860.644,book,book_15u,15,book,4,200,166.38,success,Booking BK-000592 is confirmed.
+1795257860.646,book,book_15u,15,book,13,200,174.7,success,Booking BK-000593 is confirmed.
+1795257860.653,book,book_15u,15,prepare,2,200,69.24,ok,
+1795257860.665,book,book_15u,15,api_search,3,200,46.18,ok,
+1795257860.69,book,book_15u,15,prepare,3,200,24.8,ok,
+1795257860.717,book,book_15u,15,book,7,200,122.99,success,Booking BK-000595 is confirmed.
+1795257860.753,book,book_15u,15,api_search,1,200,22.11,ok,
+1795257860.774,book,book_15u,15,book,2,200,120.7,success,Booking BK-000596 is confirmed.
+1795257860.781,book,book_15u,15,prepare,1,200,27.95,ok,
+1795257860.809,book,book_15u,15,book,3,200,118.91,success,Booking BK-000597 is confirmed.
+1795257860.823,book,book_15u,15,api_search,12,200,46.61,ok,
+1795257860.845,book,book_15u,15,prepare,12,200,22.22,ok,
+1795257860.882,book,book_15u,15,book,1,200,100.82,success,Booking BK-000598 is confirmed.
+1795257860.905,book,book_15u,15,book,12,200,59.26,success,Booking BK-000599 is confirmed.
+1795257860.938,book,book_15u,15,api_search,15,200,31.76,ok,
+1795257860.957,book,book_15u,15,prepare,15,200,19.19,ok,
+1795257861.039,book,book_15u,15,book,15,200,81.78,success,Booking BK-000600 is confirmed.
+1795257861.129,book,book_15u,15,api_search,11,200,43.21,ok,
+1795257861.162,book,book_15u,15,api_search,14,200,43.53,ok,
+1795257861.166,book,book_15u,15,prepare,11,200,36.7,ok,
+1795257861.179,book,book_15u,15,api_search,5,200,27.67,ok,
+1795257861.192,book,book_15u,15,prepare,14,200,30.07,ok,
+1795257861.23,book,book_15u,15,prepare,5,200,50.6,ok,
+1795257861.263,book,book_15u,15,book,11,200,96.2,success,Booking BK-000601 is confirmed.
+1795257861.291,book,book_15u,15,book,14,200,99.31,success,Booking BK-000602 is confirmed.
+1795257861.315,book,book_15u,15,book,5,200,84.99,success,Booking BK-000603 is confirmed.
+1795257861.419,book,book_15u,15,api_search,6,200,23.79,ok,
+1795257861.446,book,book_15u,15,prepare,6,200,27.2,ok,
+1795257861.522,book,book_15u,15,book,6,200,75.73,success,Booking BK-000604 is confirmed.
+1795257861.529,book,book_15u,15,api_search,10,200,23.72,ok,
+1795257861.565,book,book_15u,15,prepare,10,200,35.79,ok,
+1795257861.61,book,book_15u,15,api_search,9,200,39.48,ok,
+1795257861.63,book,book_15u,15,prepare,9,200,19.49,ok,
+1795257861.643,book,book_15u,15,book,10,200,77.52,success,Booking BK-000605 is confirmed.
+1795257861.644,book,book_15u,15,api_search,2,200,37.27,ok,
+1795257861.667,book,book_15u,15,prepare,2,200,22.61,ok,
+1795257861.72,book,book_15u,15,book,9,200,89.75,success,Booking BK-000606 is confirmed.
+1795257861.734,book,book_15u,15,book,2,200,66.87,success,Booking BK-000607 is confirmed.
+1795257861.798,book,book_15u,15,api_search,12,200,28.2,ok,
+1795257861.829,book,book_15u,15,prepare,12,200,31.41,ok,
+1795257861.862,book,book_15u,15,api_search,7,200,28.11,ok,
+1795257861.897,book,book_15u,15,prepare,7,200,34.6,ok,
+1795257861.915,book,book_15u,15,api_search,1,200,41.65,ok,
+1795257861.932,book,book_15u,15,book,12,200,103.01,success,Booking BK-000608 is confirmed.
+1795257861.947,book,book_15u,15,prepare,1,200,31.94,ok,
+1795257861.979,book,book_15u,15,book,7,200,82.03,success,Booking BK-000609 is confirmed.
+1795257862.002,book,book_15u,15,api_search,8,200,19.23,ok,
+1795257862.021,book,book_15u,15,prepare,8,200,18.69,ok,
+1795257862.031,book,book_15u,15,book,1,200,84.75,success,Booking BK-000610 is confirmed.
+1795257862.094,book,book_15u,15,api_search,3,200,37.22,ok,
+1795257862.105,book,book_15u,15,book,8,200,84.47,success,Booking BK-000611 is confirmed.
+1795257862.123,book,book_15u,15,prepare,3,200,28.77,ok,
+1795257862.16,book,book_15u,15,api_search,4,200,39.38,ok,
+1795257862.162,book,book_15u,15,api_search,13,200,33.76,ok,
+1795257862.18,book,book_15u,15,prepare,4,200,20.23,ok,
+1795257862.186,book,book_15u,15,api_search,5,200,34.06,ok,
+1795257862.216,book,book_15u,15,book,3,200,93.01,success,Booking BK-000612 is confirmed.
+1795257862.218,book,book_15u,15,prepare,13,200,56.45,ok,
+1795257862.227,book,book_15u,15,prepare,5,200,40.03,ok,
+1795257862.296,book,book_15u,15,book,13,200,77.22,success,Booking BK-000614 is confirmed.
+1795257862.311,book,book_15u,15,book,4,200,130.79,success,Booking BK-000613 is confirmed.
+1795257862.356,book,book_15u,15,book,5,200,129.26,success,Booking BK-000615 is confirmed.
+1795257862.481,book,book_15u,15,api_search,14,200,22.24,ok,
+1795257862.516,book,book_15u,15,prepare,14,200,35.42,ok,
+1795257862.601,book,book_15u,15,api_search,6,200,37.87,ok,
+1795257862.621,book,book_15u,15,book,14,200,104.03,success,Booking BK-000616 is confirmed.
+1795257862.657,book,book_15u,15,api_search,11,200,50.32,ok,
+1795257862.659,book,book_15u,15,api_search,10,200,53.46,ok,
+1795257862.66,book,book_15u,15,api_search,15,200,49.66,ok,
+1795257862.66,book,book_15u,15,prepare,6,200,58.82,ok,
+1795257862.693,book,book_15u,15,prepare,11,200,35.89,ok,
+1795257862.704,book,book_15u,15,prepare,10,200,44.84,ok,
+1795257862.707,book,book_15u,15,prepare,15,200,46.52,ok,
+1795257862.818,book,book_15u,15,book,6,200,157.61,success,Booking BK-000617 is confirmed.
+1795257862.826,book,book_15u,15,book,11,200,132.86,success,Booking BK-000620 is confirmed.
+1795257862.828,book,book_15u,15,book,10,200,124.3,success,Booking BK-000619 is confirmed.
+1795257862.834,book,book_15u,15,book,15,200,127.64,success,Booking BK-000618 is confirmed.
+1795257863.001,book,book_15u,15,api_search,1,200,30.11,ok,
+1795257863.03,book,book_15u,15,api_search,2,200,27.0,ok,
+1795257863.031,book,book_15u,15,prepare,1,200,30.32,ok,
+1795257863.059,book,book_15u,15,api_search,12,200,55.33,ok,
+1795257863.093,book,book_15u,15,prepare,2,200,62.82,ok,
+1795257863.094,book,book_15u,15,api_search,7,200,45.9,ok,
+1795257863.116,book,book_15u,15,prepare,12,200,56.83,ok,
+1795257863.156,book,book_15u,15,prepare,7,200,62.1,ok,
+1795257863.166,book,book_15u,15,book,1,200,134.66,success,Booking BK-000621 is confirmed.
+1795257863.231,book,book_15u,15,book,2,200,137.87,success,Booking BK-000622 is confirmed.
+1795257863.26,book,book_15u,15,api_search,9,200,63.6,ok,
+1795257863.261,book,book_15u,15,book,12,200,144.35,success,Booking BK-000623 is confirmed.
+1795257863.263,book,book_15u,15,api_search,3,200,44.81,ok,
+1795257863.298,book,book_15u,15,prepare,9,200,37.93,ok,
+1795257863.3,book,book_15u,15,book,7,200,143.19,success,Booking BK-000624 is confirmed.
+1795257863.316,book,book_15u,15,prepare,3,200,52.41,ok,
+1795257863.403,book,book_15u,15,book,9,200,104.82,success,Booking BK-000625 is confirmed.
+1795257863.442,book,book_15u,15,book,3,200,126.54,success,Booking BK-000626 is confirmed.
+1795257863.447,book,book_15u,15,api_search,4,200,40.27,ok,
+1795257863.47,book,book_15u,15,api_search,8,200,24.19,ok,
+1795257863.471,book,book_15u,15,prepare,4,200,23.25,ok,
+1795257863.496,book,book_15u,15,prepare,8,200,25.85,ok,
+1795257863.566,book,book_15u,15,api_search,13,200,44.33,ok,
+1795257863.566,book,book_15u,15,api_search,5,200,33.57,ok,
+1795257863.577,book,book_15u,15,book,4,200,105.99,success,Booking BK-000627 is confirmed.
+1795257863.587,book,book_15u,15,book,8,200,90.1,success,Booking BK-000628 is confirmed.
+1795257863.616,book,book_15u,15,prepare,13,200,49.78,ok,
+1795257863.616,book,book_15u,15,prepare,5,200,49.9,ok,
+1795257863.711,book,book_15u,15,book,13,200,95.08,success,Booking BK-000629 is confirmed.
+1795257863.719,book,book_15u,15,book,5,200,102.22,success,Booking BK-000630 is confirmed.
+1795257863.784,book,book_15u,15,api_search,15,200,46.16,ok,
+1795257863.814,book,book_15u,15,prepare,15,200,29.66,ok,
+1795257863.847,book,book_15u,15,api_search,6,200,41.55,ok,
+1795257863.867,book,book_15u,15,prepare,6,200,20.42,ok,
+1795257863.89,book,book_15u,15,book,15,200,75.71,success,Booking BK-000631 is confirmed.
+1795257863.953,book,book_15u,15,book,6,200,85.57,success,Booking BK-000632 is confirmed.
+1795257863.985,book,book_15u,15,api_search,14,200,16.68,ok,
+1795257864.003,book,book_15u,15,prepare,14,200,17.88,ok,
+1795257864.081,book,book_15u,15,book,14,200,77.73,success,Booking BK-000633 is confirmed.
+1795257864.084,book,book_15u,15,api_search,11,200,43.46,ok,
+1795257864.138,book,book_15u,15,prepare,11,200,53.28,ok,
+1795257864.217,book,book_15u,15,book,11,200,78.99,success,Booking BK-000634 is confirmed.
+1795257864.36,book,book_15u,15,api_search,7,200,34.34,ok,
+1795257864.389,book,book_15u,15,prepare,7,200,29.1,ok,
+1795257864.416,book,book_15u,15,api_search,2,200,52.71,ok,
+1795257864.418,book,book_15u,15,api_search,10,200,54.84,ok,
+1795257864.463,book,book_15u,15,prepare,2,200,46.77,ok,
+1795257864.464,book,book_15u,15,prepare,10,200,46.06,ok,
+1795257864.496,book,book_15u,15,book,7,200,106.47,success,Booking BK-000635 is confirmed.
+1795257864.539,book,book_15u,15,api_search,8,200,36.42,ok,
+1795257864.594,book,book_15u,15,book,10,200,129.86,success,Booking BK-000637 is confirmed.
+1795257864.595,book,book_15u,15,book,2,200,131.13,success,Booking BK-000636 is confirmed.
+1795257864.597,book,book_15u,15,prepare,8,200,58.1,ok,
+1795257864.652,book,book_15u,15,api_search,9,200,37.87,ok,
+1795257864.681,book,book_15u,15,api_search,12,200,50.5,ok,
+1795257864.682,book,book_15u,15,prepare,9,200,29.0,ok,
+1795257864.683,book,book_15u,15,book,8,200,85.56,success,Booking BK-000638 is confirmed.
+1795257864.707,book,book_15u,15,api_search,3,200,42.96,ok,
+1795257864.725,book,book_15u,15,prepare,12,200,43.75,ok,
+1795257864.762,book,book_15u,15,prepare,3,200,55.23,ok,
+1795257864.763,book,book_15u,15,book,9,200,81.25,success,Booking BK-000639 is confirmed.
+1795257864.794,book,book_15u,15,api_search,1,200,54.85,ok,
+1795257864.797,book,book_15u,15,api_search,4,200,57.32,ok,
+1795257864.834,book,book_15u,15,prepare,4,200,37.36,ok,
+1795257864.849,book,book_15u,15,prepare,1,200,54.77,ok,
+1795257864.851,book,book_15u,15,book,12,200,125.55,success,Booking BK-000640 is confirmed.
+1795257864.908,book,book_15u,15,api_search,13,200,61.79,ok,
+1795257864.919,book,book_15u,15,book,3,200,156.72,success,Booking BK-000641 is confirmed.
+1795257864.919,book,book_15u,15,api_search,5,200,70.87,ok,
+1795257864.949,book,book_15u,15,prepare,13,200,40.89,ok,
+1795257864.967,book,book_15u,15,prepare,5,200,47.72,ok,
+1795257864.98,book,book_15u,15,book,1,200,130.72,success,Booking BK-000642 is confirmed.
+1795257864.987,book,book_15u,15,book,4,200,152.21,success,Booking BK-000643 is confirmed.
+1795257865.064,book,book_15u,15,book,13,200,115.21,success,Booking BK-000644 is confirmed.
+1795257865.094,book,book_15u,15,api_search,11,200,16.82,ok,
+1795257865.124,book,book_15u,15,book,5,200,156.84,success,Booking BK-000645 is confirmed.
+1795257865.134,book,book_15u,15,prepare,11,200,39.77,ok,
+1795257865.234,book,book_15u,15,book,11,200,99.63,success,Booking BK-000646 is confirmed.
+1795257865.438,book,book_15u,15,api_search,14,200,33.77,ok,
+1795257865.479,book,book_15u,15,prepare,14,200,41.37,ok,
+1795257865.491,book,book_15u,15,api_search,2,200,48.35,ok,
+1795257865.499,book,book_15u,15,api_search,6,200,39.3,ok,
+1795257865.503,book,book_15u,15,api_search,15,200,39.97,ok,
+1795257865.551,book,book_15u,15,prepare,15,200,47.85,ok,
+1795257865.558,book,book_15u,15,prepare,6,200,58.95,ok,
+1795257865.558,book,book_15u,15,prepare,2,200,66.68,ok,
+1795257865.56,book,book_15u,15,api_search,10,200,51.42,ok,
+1795257865.603,book,book_15u,15,prepare,10,200,42.94,ok,
+1795257865.633,book,book_15u,15,book,14,200,154.18,success,Booking BK-000647 is confirmed.
+1795257865.68,book,book_15u,15,book,2,200,122.0,success,Booking BK-000649 is confirmed.
+1795257865.68,book,book_15u,15,book,6,200,122.46,success,Booking BK-000648 is confirmed.
+1795257865.73,book,book_15u,15,book,10,200,126.96,success,Booking BK-000650 is confirmed.
+1795257865.747,book,book_15u,15,book,15,200,195.98,success,Booking BK-000651 is confirmed.
+1795257865.779,book,book_15u,15,api_search,9,200,42.71,ok,
+1795257865.811,book,book_15u,15,prepare,9,200,31.66,ok,
+1795257865.828,book,book_15u,15,api_search,8,200,29.94,ok,
+1795257865.889,book,book_15u,15,prepare,8,200,61.17,ok,
+1795257865.893,book,book_15u,15,api_search,7,200,47.0,ok,
+1795257865.961,book,book_15u,15,book,9,200,150.37,success,Booking BK-000652 is confirmed.
+1795257865.962,book,book_15u,15,prepare,7,200,68.18,ok,
+1795257865.988,book,book_15u,15,book,8,200,98.4,success,Booking BK-000653 is confirmed.
+1795257866.01,book,book_15u,15,api_search,3,200,28.07,ok,
+1795257866.023,book,book_15u,15,api_search,12,200,29.06,ok,
+1795257866.052,book,book_15u,15,prepare,3,200,42.28,ok,
+1795257866.065,book,book_15u,15,book,7,200,103.21,success,Booking BK-000654 is confirmed.
+1795257866.071,book,book_15u,15,prepare,12,200,47.87,ok,
+1795257866.116,book,book_15u,15,api_search,5,200,50.6,ok,
+1795257866.137,book,book_15u,15,book,12,200,64.85,success,Booking BK-000655 is confirmed.
+1795257866.156,book,book_15u,15,prepare,5,200,39.76,ok,
+1795257866.18,book,book_15u,15,book,3,200,127.63,success,Booking BK-000656 is confirmed.
+1795257866.249,book,book_15u,15,book,5,200,92.01,success,Booking BK-000657 is confirmed.
+1795257866.277,book,book_15u,15,api_search,13,200,30.95,ok,
+1795257866.295,book,book_15u,15,prepare,13,200,18.69,ok,
+1795257866.371,book,book_15u,15,api_search,4,200,28.84,ok,
+1795257866.371,book,book_15u,15,book,13,200,76.05,success,Booking BK-000658 is confirmed.
+1795257866.4,book,book_15u,15,prepare,4,200,29.16,ok,
+1795257866.415,book,book_15u,15,api_search,1,200,39.4,ok,
+1795257866.455,book,book_15u,15,prepare,1,200,40.14,ok,
+1795257866.499,book,book_15u,15,book,4,200,98.9,success,Booking BK-000659 is confirmed.
+1795257866.562,book,book_15u,15,book,1,200,106.33,success,Booking BK-000660 is confirmed.
+1795257866.564,book,book_15u,15,api_search,11,200,33.1,ok,
+1795257866.611,book,book_15u,15,prepare,11,200,47.02,ok,
+1795257866.635,book,book_15u,15,api_search,14,200,37.02,ok,
+1795257866.661,book,book_15u,15,prepare,14,200,25.9,ok,
+1795257866.717,book,book_15u,15,book,11,200,106.17,success,Booking BK-000661 is confirmed.
+1795257866.735,book,book_15u,15,book,14,200,74.04,success,Booking BK-000662 is confirmed.
+1795257867.212,book,book_15u,15,api_search,12,200,44.5,ok,
+1795257867.214,book,book_15u,15,api_search,6,200,41.42,ok,
+1795257867.257,book,book_15u,15,prepare,12,200,45.14,ok,
+1795257867.262,book,book_15u,15,prepare,6,200,48.52,ok,
+1795257867.269,book,book_15u,15,api_search,7,200,36.94,ok,
+1795257867.271,book,book_15u,15,api_search,3,200,50.8,ok,
+1795257867.286,book,book_15u,15,api_search,10,200,54.53,ok,
+1795257867.329,book,book_15u,15,prepare,7,200,60.0,ok,
+1795257867.339,book,book_15u,15,api_search,2,200,64.35,ok,
+1795257867.342,book,book_15u,15,prepare,3,200,70.79,ok,
+1795257867.368,book,book_15u,15,api_search,9,200,85.61,ok,
+1795257867.372,book,book_15u,15,api_search,15,200,76.8,ok,
+1795257867.382,book,book_15u,15,prepare,10,200,95.58,ok,
+1795257867.408,book,book_15u,15,prepare,2,200,68.79,ok,
+1795257867.448,book,book_15u,15,prepare,15,200,75.66,ok,
+1795257867.451,book,book_15u,15,api_search,8,200,88.91,ok,
+1795257867.466,book,book_15u,15,prepare,9,200,97.7,ok,
+1795257867.535,book,book_15u,15,book,12,200,277.69,success,Booking BK-000663 is confirmed.
+1795257867.537,book,book_15u,15,book,6,200,274.73,success,Booking BK-000664 is confirmed.
+1795257867.57,book,book_15u,15,prepare,8,200,119.46,ok,
+1795257867.599,book,book_15u,15,api_search,1,200,92.52,ok,
+1795257867.613,book,book_15u,15,book,7,200,283.54,success,Booking BK-000666 is confirmed.
+1795257867.617,book,book_15u,15,book,3,200,275.39,success,Booking BK-000665 is confirmed.
+1795257867.621,book,book_15u,15,api_search,13,200,72.08,ok,
+1795257867.641,book,book_15u,15,api_search,5,200,90.86,ok,
+1795257867.701,book,book_15u,15,prepare,1,200,102.16,ok,
+1795257867.706,book,book_15u,15,book,10,200,323.99,success,Booking BK-000667 is confirmed.
+1795257867.729,book,book_15u,15,prepare,13,200,108.21,ok,
+1795257867.73,book,book_15u,15,book,2,200,322.25,success,Booking BK-000668 is confirmed.
+1795257867.741,book,book_15u,15,book,9,200,275.26,success,Booking BK-000670 is confirmed.
+1795257867.759,book,book_15u,15,prepare,5,200,117.97,ok,
+1795257867.762,book,book_15u,15,api_search,14,200,113.03,ok,
+1795257867.765,book,book_15u,15,book,15,200,316.39,success,Booking BK-000669 is confirmed.
+1795257867.775,book,book_15u,15,api_search,4,200,83.75,ok,
+1795257867.831,book,book_15u,15,prepare,14,200,69.4,ok,
+1795257867.847,book,book_15u,15,prepare,4,200,71.11,ok,
+1795257867.847,book,book_15u,15,book,8,200,276.62,success,Booking BK-000671 is confirmed.
+1795257867.914,book,book_15u,15,book,1,200,212.63,success,Booking BK-000672 is confirmed.
+1795257867.93,book,book_15u,15,book,13,200,200.57,success,Booking BK-000673 is confirmed.
+1795257867.93,book,book_15u,15,book,5,200,171.58,success,Booking BK-000674 is confirmed.
+1795257867.948,book,book_15u,15,book,4,200,101.8,success,Booking BK-000675 is confirmed.
+1795257867.977,book,book_15u,15,book,14,200,146.19,success,Booking BK-000676 is confirmed.
+1795257868.195,book,book_15u,15,api_search,11,200,33.9,ok,
+1795257868.233,book,book_15u,15,prepare,11,200,37.28,ok,
+1795257868.32,book,book_15u,15,book,11,200,86.84,success,Booking BK-000677 is confirmed.
+1795257868.637,book,book_15u,15,api_search,12,200,46.92,ok,
+1795257868.65,book,book_15u,15,api_search,15,200,39.62,ok,
+1795257868.667,book,book_15u,15,prepare,12,200,29.96,ok,
+1795257868.684,book,book_15u,15,prepare,15,200,33.06,ok,
+1795257868.762,book,book_15u,15,api_search,10,200,32.18,ok,
+1795257868.763,book,book_15u,15,book,12,200,95.31,success,Booking BK-000678 is confirmed.
+1795257868.779,book,book_15u,15,api_search,3,200,36.75,ok,
+1795257868.786,book,book_15u,15,prepare,10,200,24.12,ok,
+1795257868.792,book,book_15u,15,book,15,200,108.5,success,Booking BK-000679 is confirmed.
+1795257868.831,book,book_15u,15,prepare,3,200,52.55,ok,
+1795257868.849,book,book_15u,15,api_search,2,200,44.1,ok,
+1795257868.865,book,book_15u,15,api_search,5,200,49.52,ok,
+1795257868.867,book,book_15u,15,api_search,7,200,52.12,ok,
+1795257868.883,book,book_15u,15,api_search,9,200,44.54,ok,
+1795257868.927,book,book_15u,15,prepare,2,200,77.82,ok,
+1795257868.93,book,book_15u,15,prepare,7,200,63.42,ok,
+1795257868.934,book,book_15u,15,prepare,5,200,68.8,ok,
+1795257868.942,book,book_15u,15,book,10,200,155.65,success,Booking BK-000680 is confirmed.
+1795257868.943,book,book_15u,15,prepare,9,200,59.91,ok,
+1795257869.014,book,book_15u,15,book,3,200,182.32,success,Booking BK-000681 is confirmed.
+1795257869.051,book,book_15u,15,book,7,200,120.18,success,Booking BK-000684 is confirmed.
+1795257869.072,book,book_15u,15,book,2,200,144.54,success,Booking BK-000683 is confirmed.
+1795257869.072,book,book_15u,15,book,5,200,138.06,success,Booking BK-000682 is confirmed.
+1795257869.082,book,book_15u,15,book,9,200,138.77,success,Booking BK-000685 is confirmed.
+1795257869.144,book,book_15u,15,api_search,14,200,22.39,ok,
+1795257869.147,book,book_15u,15,api_search,6,200,33.03,ok,
+1795257869.165,book,book_15u,15,prepare,14,200,21.18,ok,
+1795257869.181,book,book_15u,15,api_search,8,200,47.65,ok,
+1795257869.182,book,book_15u,15,prepare,6,200,34.28,ok,
+1795257869.236,book,book_15u,15,prepare,8,200,54.55,ok,
+1795257869.261,book,book_15u,15,book,14,200,95.38,success,Booking BK-000686 is confirmed.
+1795257869.301,book,book_15u,15,book,6,200,119.32,success,Booking BK-000687 is confirmed.
+1795257869.319,book,book_15u,15,book,8,200,83.09,success,Booking BK-000688 is confirmed.
