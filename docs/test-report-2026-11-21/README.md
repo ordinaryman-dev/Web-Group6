@@ -1,43 +1,44 @@
-# Hero Hotel 测试报告（2026-11-21）
+# Hero Hotel Test Report — 2026-11-21
 
-本目录是 M2 的第二阶段测试交付物，对应被测版本 `main @ 17a21e4`
-（“重构页面代码结构并补充全项目中文注释”）。
+English edition of the Milestone 2 HTTP concurrency, stress and data-consistency
+test report for the Hero Hotel booking system.
 
-## 文件
+## Files
 
-| 文件 | 说明 |
+| File | Description |
 | --- | --- |
-| `测试报告.pdf` | 正式交付版，25 页，含封面、目录、16 张图表/截图；F1 已修复并更新验证 |
-| `测试报告.docx` | 可编辑版；目录是 Word 域，右键“更新域”可刷新页码 |
-| `测试报告.html` | 报告源文件，`loadtest/tools/html_to_docx.py` 的输入 |
-| `assets/charts/` | 由 `loadtest/tools/make_charts.py` 从原始 JSON 生成的 10 张图表 |
-| `assets/screenshots/` | 浏览器实际访问的 6 张页面截图 |
+| `Test-Report-2026-11-21.pdf` | Final report, 25 pages, with cover, contents, 10 charts and 6 screenshots |
+| `Test-Report-2026-11-21.docx` | Editable version; the contents page is a Word field and can be refreshed |
+| `Test-Report-2026-11-21.html` | Source HTML consumed by `loadtest/tools/html_to_docx.py` |
+| `assets/charts/` | 10 charts generated from the raw load-test JSON by `loadtest/tools/make_charts.py` |
+| `assets/screenshots/` | 6 browser screenshots from the same build and test database |
 
-## 与测试代码的关系
+## Test code
 
-测试代码在仓库根目录 `loadtest/`，与报告目录分开：
+The harness lives in the repository root at `loadtest/`:
 
-- `loadtest/run_conflict.py`：同房抢订、幂等、假售罄探针
-- `loadtest/run_stress.py` / `run_ramp.py`：S-browse / S-book / S-mixed 与阶梯压测
-- `loadtest/run_seed_check.py`：F1 种子数据回归检查（9 条）
-- `loadtest/run_dbcheck.py`：I1–I15 一致性 SQL
-- `loadtest/lib/`、`loadtest/scenarios/`：HTTP 流程、指标、夹具、场景
-- `loadtest/results/`：原始 CSV/JSON、pytest 基线、F1 证据、最终检查输出
+- `loadtest/run_conflict.py` — same-room contention, idempotency and false sold-out probe
+- `loadtest/run_stress.py` / `run_ramp.py` — S-browse, S-book, S-mixed and stepwise ramps
+- `loadtest/run_seed_check.py` — 9 seed-data checks guarding the F1 fix
+- `loadtest/run_dbcheck.py` — I1–I15 consistency SQL
+- `loadtest/lib/`, `loadtest/scenarios/` — HTTP flow, metrics, fixtures and scenarios
+- `loadtest/results/` — raw CSV/JSON, pytest baseline, F1 evidence, final check output
 
-## 重新生成
+## Regeneration
 
 ```powershell
-# 1) 重新生成图表
-python loadtest/tools/make_charts.py --results loadtest/results `
-  --output "<本目录>/assets/charts"
+# 1) English charts
+python loadtest/tools/make_charts.py --lang en --results loadtest/results `
+  --output "<this directory>/assets/charts"
 
-# 2) 从 HTML 重新排版 DOCX，并调用 LibreOffice 导出 PDF
-python loadtest/tools/html_to_docx.py --html "<本目录>/测试报告.html" `
-  --output "<本目录>/测试报告.docx"
+# 2) DOCX and PDF
+python loadtest/tools/html_to_docx.py --html "<this directory>/Test-Report-2026-11-21.html" `
+  --font "Segoe UI" --lang en --output "<this directory>/Test-Report-2026-11-21.docx"
 
-# 3) 可选：文档自检
-python "<docx-skill>/scripts/postcheck.py" "<本目录>/测试报告.docx"
+# 3) Optional document self-check
+python "<docx-skill>/scripts/postcheck.py" "<this directory>/Test-Report-2026-11-21.docx"
 ```
 
-排版脚本只读取 `测试报告.html` 的语义结构；正文、表格数字和图片说明都以 HTML 为准。
-修改报告内容后重新运行上面两条命令即可同步 PDF。
+The layout script reads the semantic structure of the English HTML only; narrative,
+table values and figure captions come from that file. Re-run the commands after
+editing the HTML to refresh the PDF.
