@@ -8,7 +8,7 @@
 {%- endmacro %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=5">
+<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=8">
 <link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
 <div class="desk{% if drawer_mode %} has-drawer{% endif %}"
      data-notify-feed="{{ url_for('frontdesk.notifications_feed') }}"
@@ -418,8 +418,19 @@
           </div>
           <span class="muted small">{{ task_rows|length }} pending</span>
         </div>
+        {% if task_pages > 1 %}
+        <nav class="pager task-pager" aria-label="Guest request pages">
+          {% if task_page > 1 %}
+          <a class="mini" href="{{ desk_url(view='tasks', request_page=task_page - 1, tab=None, booking=None, room=None) }}">Previous</a>
+          {% endif %}
+          <span class="muted small">{{ task_page }} / {{ task_pages }} · {{ task_rows|length }} pending</span>
+          {% if task_page < task_pages %}
+          <a class="mini" href="{{ desk_url(view='tasks', request_page=task_page + 1, tab=None, booking=None, room=None) }}">Next</a>
+          {% endif %}
+        </nav>
+        {% endif %}
 
-        {% for task in task_rows %}
+        {% for task in task_page_items %}
         {% set b = task.booking %}
         <article class="task-card" data-request-id="{{ task.request.id }}">
           <header class="task-head">
@@ -483,8 +494,19 @@
             </div>
             <span class="chip {{ 'chip-late' if late_arrivals else 'chip-checked_out' }}">{{ late_arrivals|length }}</span>
           </div>
-          {% for item in late_arrivals %}
-          <article class="task-card compact">
+          {% if late_pages > 1 %}
+          <nav class="pager task-pager late-pager" aria-label="Late arrival pages">
+            {% if late_page > 1 %}
+            <a class="mini" href="{{ desk_url(view='tasks', late_page=late_page - 1, tab=None, booking=None, room=None) }}">Previous</a>
+            {% endif %}
+            <span class="muted small">{{ late_page }} / {{ late_pages }} · {{ late_arrivals|length }} late</span>
+            {% if late_page < late_pages %}
+            <a class="mini" href="{{ desk_url(view='tasks', late_page=late_page + 1, tab=None, booking=None, room=None) }}">Next</a>
+            {% endif %}
+          </nav>
+          {% endif %}
+          {% for item in late_page_items %}
+          <article class="task-card compact" data-late-arrival="{{ item.booking.id }}">
             <header class="task-head">
               <b class="mono">{{ item.booking.reference }}</b>
               <span class="chip chip-late">Past ETA</span>

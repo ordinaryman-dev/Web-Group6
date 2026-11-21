@@ -284,7 +284,12 @@ def test_real_mysql_deadlock_rolls_back_then_retries_successfully(app, inventory
     finally:
         event.remove(engine, "handle_error", capture_error)
     assert errors == [1213]
-    assert sorted(len(sessions) for sessions in attempts.values()) == [1, 2]
+    # One request wins without a deadlock. The loser retries at least once; its
+    # retry can legitimately lose the candidate race again and need one more
+    # allocation retry, so accept 2 or 3 attempts as long as each uses a fresh
+    # Session and the two bookings still end up in different rooms.
+    counts = sorted(len(sessions) for sessions in attempts.values())
+    assert counts[0] == 1 and 2 <= counts[1] <= 3
     for sessions in attempts.values():
         assert len({id(session) for session in sessions}) == len(sessions)
     with app.app_context():
