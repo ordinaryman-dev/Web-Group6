@@ -138,6 +138,9 @@ class Booking(db.Model):
     request_digest = db.Column(db.String(64), nullable=False)
     check_in = db.Column(db.Date, nullable=False)
     check_out = db.Column(db.Date, nullable=False)
+    # Snapshot of the free-cancellation deadline agreed when the booking was made.
+    # A later date change may only bring it forward, never extend it.
+    cancel_by = db.Column(db.DateTime)
     guests = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="confirmed")
     total = db.Column(db.Numeric(12, 2), nullable=False)
@@ -242,6 +245,7 @@ class PaymentRecord(db.Model):
         db.CheckConstraint("kind IN ('payment', 'refund')", name="ck_payment_records_kind"),
         db.CheckConstraint("amount > 0", name="ck_payment_records_amount"),
         db.CheckConstraint("result IN ('success', 'failed')", name="ck_payment_records_result"),
+        db.UniqueConstraint("actor_user_id", "idempotency_key", name="uq_payment_actor_key"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -253,3 +257,4 @@ class PaymentRecord(db.Model):
     result = db.Column(db.String(12), nullable=False, default="success")
     occurred_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     reference = db.Column(db.String(64), nullable=False, unique=True)
+    idempotency_key = db.Column(db.String(64))

@@ -20,6 +20,66 @@
     window.setInterval(tick, 1000);
   }
 
+  var markRequestStale = function (card) {
+    if (!card || card.classList.contains("is-stale")) {
+      return;
+    }
+    card.classList.add("is-stale");
+    card.querySelectorAll("button, input[type='submit']").forEach(function (control) {
+      control.disabled = true;
+    });
+    if (!card.querySelector(".stale-note")) {
+      var note = document.createElement("p");
+      note.className = "stale-note";
+      note.textContent = "Handled in another tab. Refresh to see the result.";
+      card.appendChild(note);
+    }
+  };
+
+  var requestFeedShell = document.querySelector("[data-notify-feed]");
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.dataset.requestCheck ||
+        form.dataset.requestChecked === "1") {
+      return;
+    }
+    if (!requestFeedShell) {
+      return;
+    }
+    event.preventDefault();
+    var feed = requestFeedShell.dataset.notifyFeed;
+    var separator = feed.indexOf("?") === -1 ? "?" : "&";
+    window
+      .fetch(feed + separator + "t=" + Date.now(), {
+        headers: { Accept: "application/json" },
+        credentials: "same-origin"
+      })
+      .then(function (response) {
+        return response.ok ? response.json() : null;
+      })
+      .then(function (data) {
+        if (!data) {
+          form.dataset.requestChecked = "1";
+          form.requestSubmit();
+          return;
+        }
+        var stillPending = (data.pending || []).some(function (row) {
+          return String(row.id) === form.dataset.requestCheck;
+        });
+        if (stillPending) {
+          form.dataset.requestChecked = "1";
+          form.requestSubmit();
+        } else {
+          markRequestStale(form.closest("[data-request-id]"));
+        }
+      })
+      .catch(function () {
+        // The server still enforces the request state if this check fails.
+        form.dataset.requestChecked = "1";
+        form.requestSubmit();
+      });
+  }, true);
+
   document.addEventListener("submit", function (event) {
     var form = event.target;
     if (!(form instanceof HTMLFormElement)) {
@@ -43,16 +103,28 @@
   });
 
   document.querySelectorAll("tr[data-href]").forEach(function (row) {
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("role", "link");
     row.addEventListener("click", function (event) {
       if (event.target.closest("a, button, form, input, select, textarea")) {
         return;
       }
       window.location.href = row.dataset.href;
     });
+    row.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        window.location.href = row.dataset.href;
+      }
+    });
   });
 
   var drawer = document.querySelector(".drawer[data-close-url]");
   if (drawer) {
+    var drawerClose = drawer.querySelector(".drawer-close");
+    if (drawerClose) {
+      drawerClose.focus();
+    }
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
         window.location.href = drawer.dataset.closeUrl;
@@ -113,16 +185,7 @@
         if (waiting[card.dataset.requestId] || card.classList.contains("is-stale")) {
           return;
         }
-        card.classList.add("is-stale");
-        card.querySelectorAll("button, input[type='submit']").forEach(function (control) {
-          control.disabled = true;
-        });
-        if (!card.querySelector(".stale-note")) {
-          var note = document.createElement("p");
-          note.className = "stale-note";
-          note.textContent = "Handled in another tab. Refresh to see the result.";
-          card.appendChild(note);
-        }
+        markRequestStale(card);
       });
 
       var list = document.querySelector("[data-notify-items]");
@@ -175,6 +238,74 @@
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden) {
         poll();
+      }
+    });
+  }
+
+  // Check a maintenance block for overlapping bookings before it is submitted.
+  var blockForm = document.querySelector("form[data-block-preview]");
+  if (blockForm) {
+    var blockOut = blockForm.querySelector("[data-block-preview-out]");
+    var blockRoom = blockForm.dataset.blockRoom;
+    var blockStart = blockForm.querySelector('input[name="block-start_date"]');
+    var blockEnd = blockForm.querySelector('input[name="block-end_date"]');
+    var blockTimer = null;
+
+    var clearBlockPreview = function (message) {
+      blockOut.textContent = message;
+      blockOut.classList.remove("bad");
+    };
+
+    var previewBlock = function () {
+      if (!blockStart.value || !blockEnd.value) {
+        clearBlockPreview("Choose a date range to check for bookings.");
+        return;
+      }
+      var query = new URLSearchParams({
+        room_id: blockRoom,
+        start_date: blockStart.value,
+        end_date: blockEnd.value
+      });
+      window
+        .fetch(blockForm.dataset.blockPreview + "?" + query.toString(), {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin"
+        })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          if (!data) {
+            clearBlockPreview("Choose a valid date range.");
+            blockOut.classList.add("bad");
+            return;
+          }
+          if (!data.count) {
+            clearBlockPreview("No bookings fall inside this block.");
+            return;
+          }
+          var references = data.bookings.map(function (booking) {
+            return booking.reference;
+          });
+          clearBlockPreview(
+            data.count + " booking" + (data.count === 1 ? "" : "s") +
+            " conflict: " + references.join(", ") + ". They stay booked and will need a move."
+          );
+          blockOut.classList.add("bad");
+        })
+        .catch(function () {
+          clearBlockPreview("Could not check conflicts. The server checks again on save.");
+        });
+    };
+
+    var scheduleBlockPreview = function () {
+      window.clearTimeout(blockTimer);
+      blockTimer = window.setTimeout(previewBlock, 150);
+    };
+    [blockStart, blockEnd].forEach(function (input) {
+      if (input) {
+        input.addEventListener("change", scheduleBlockPreview);
+        input.addEventListener("input", scheduleBlockPreview);
       }
     });
   }

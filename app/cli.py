@@ -1,16 +1,18 @@
 ﻿import re
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
 import click
 from flask.cli import with_appcontext
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
+from .allocation import ranked_candidates
 from .audit import record_audit
-from .booking import hotel_now
+from .booking import HOTEL_ZONE, Stay, deadline_for, hotel_now
 from .extensions import db
 from .models import (
     Booking,
@@ -123,6 +125,7 @@ def seed_desk():
                 actor_user_id=staff.id, idempotency_key=f"seed-{customer.id}-{room.id}-{check_in}",
                 request_digest="seed", check_in=check_in, check_out=check_out, guests=2,
                 total=room_type.base_price * nights, expected_arrival=arrival,
+                cancel_by=deadline_for(check_in),
                 status=status,
                 checked_in_at=utc_now() if status != "confirmed" else None,
             )
@@ -203,7 +206,7 @@ def floor_room_number(floor, suffix):
 @click.command("seed-rooms")
 @with_appcontext
 def seed_rooms():
-    """Create an idempotent 288-room inventory: 12 floors x 24 rooms."""
+    """Create the 12 x 24 numbered floor inventory (293 rooms with the demo wing)."""
     with Session(db.engine) as session, session.begin():
         bed_types = {}
         for _, bed_type in FLOOR_BED_PLAN:
@@ -282,14 +285,115 @@ def seed_rooms():
         for room in session.scalars(db.select(Room)).all():
             room.has_window = type_bed.get(room.room_type_id) != "single"
         session.flush()
+        today = hotel_now().date()
         numbered = sum(
-            1 for number in session.scalars(db.select(Room.number)).all()
-            if re.fullmatch(r"\d{3,4}", number)
+            1 for room in session.scalars(db.select(Room)).all()
+            if re.fullmatch(r"\d{3,4}", room.number)
+            and (room.operational_until is None or room.operational_until > today)
         )
         click.echo(
-            f"{created} room(s) created. Floors 1-12 now hold {numbered} numbered rooms; "
+            f"{created} room(s) created. Floors 1-12 now hold {numbered} in-service numbered rooms; "
             "the existing wing rooms were kept and window flags were refreshed."
         )
+        if numbered > 12 * FLOOR_ROOM_COUNT:
+            click.echo(
+                "Legacy x25 rooms are still in service. "
+                "Run retire-legacy-rooms --apply to bring the hotel to 293 rooms."
+            )
+
+
+@click.command("retire-legacy-rooms")
+@click.option("--apply", is_flag=True, help="Write the changes; without this flag only show the plan.")
+@with_appcontext
+def retire_legacy_rooms(apply):
+    """Retire the legacy 25th room on every floor and keep the inventory at 293.
+
+    Older databases can still hold a Family Suite numbered x25 on each floor.
+    Those rooms are taken out of service on the next hotel day; current and
+    future stays move to a free room of the same type, and stale in-house stays
+    are closed out. Booking history stays attached to the retired rooms.
+    """
+    today = hotel_now().date()
+    with Session(db.engine) as session:
+        suites = session.scalars(
+            db.select(Room).join(RoomType).where(RoomType.bed_type == "suite")
+        ).all()
+        legacy = sorted(
+            (room for room in suites if re.fullmatch(r"\d+25", room.number)),
+            key=lambda room: room.number,
+        )
+        if not legacy:
+            click.echo("No legacy x25 rooms found; the inventory is already 293.")
+            return
+        legacy_ids = {room.id for room in legacy}
+        needs_retire = [
+            room for room in legacy
+            if room.operational_until is None or room.operational_until > today
+        ]
+        active = session.scalars(
+            db.select(Booking).where(
+                Booking.room_id.in_(legacy_ids),
+                Booking.status.in_(("confirmed", "checked_in")),
+                Booking.check_out >= today,
+            ).order_by(Booking.check_in, Booking.id)
+        ).all()
+        stale = session.scalars(
+            db.select(Booking).where(
+                Booking.room_id.in_(legacy_ids),
+                Booking.status == "checked_in",
+                Booking.check_out < today,
+            ).order_by(Booking.check_out, Booking.id)
+        ).all()
+        if not needs_retire and not active and not stale:
+            click.echo("Legacy x25 rooms are already retired; the inventory is 293.")
+            return
+
+        moves = []
+        for booking in active:
+            stay = Stay(booking.check_in, booking.check_out, booking.guests)
+            candidates = ranked_candidates(
+                session, booking.room_type_id, stay, today,
+                ignore_booking_id=booking.id, exclude_room_ids=legacy_ids,
+            )
+            if not candidates:
+                raise click.ClickException(
+                    f"No free room of the same type for {booking.reference}; nothing was changed."
+                )
+            target = session.get(Room, candidates[0].room_id)
+            # Move as we plan so the next booking cannot be sent to the same
+            # room for overlapping nights. A dry run rolls all of this back.
+            session.execute(
+                update(RoomNight)
+                .where(RoomNight.booking_id == booking.id)
+                .values(room_id=target.id)
+            )
+            old_number = booking.room.number
+            booking.room_id = target.id
+            moves.append((booking, old_number, target))
+
+        click.echo(f"{len(legacy)} legacy room(s): {', '.join(room.number for room in legacy)}")
+        for booking, old_number, target in moves:
+            click.echo(
+                f"  {booking.reference}: {old_number} -> {target.number} "
+                f"({booking.check_in} to {booking.check_out})"
+            )
+        for booking in stale:
+            click.echo(f"  {booking.reference}: close stale in-house stay in {booking.room.number}")
+
+        if not apply:
+            session.rollback()
+            click.echo("Dry run only. Re-run with --apply to write these changes.")
+            return
+
+        for booking in stale:
+            booking.status = "checked_out"
+            booking.checked_out_at = datetime.combine(
+                booking.check_out, time(12, 0), tzinfo=HOTEL_ZONE
+            ).astimezone(timezone.utc).replace(tzinfo=None)
+        for room in needs_retire:
+            room.operational_until = today
+        session.commit()
+        click.echo("Legacy rooms retired. Floors 1-12 keep 24 rooms each; with the 5-room wing the hotel has 293.")
 
 
 @click.command("seed-demo")

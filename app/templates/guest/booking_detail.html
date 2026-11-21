@@ -132,17 +132,16 @@
               <button class="action-button" type="button" data-open="modal-extension">Extend stay <span>›</span></button>
             {% endif %}
             {% if can_cancel %}
-              <button class="action-button danger" type="button" data-open="modal-cancel">Request cancellation <span>›</span></button>
-            {% elif booking.status == 'confirmed' and deadline_passed %}
-              <button class="action-button danger" type="button" disabled
-                      title="The online cancellation deadline has passed. Contact the hotel; only a manager can cancel.">
-                Request cancellation <span>closed</span>
+              <button class="action-button danger" type="button" data-open="modal-cancel">
+                Request cancellation{% if deadline_passed %} · late{% endif %} <span>›</span>
               </button>
             {% endif %}
           </div>
           <p class="action-note">
             {% if booking.status == 'checked_in' %}
               Room-type, date and cancellation changes close after check-in. Only the same room can be extended.
+            {% elif deadline_passed %}
+              The free cancellation deadline has passed. A late cancellation is still sent to the desk, but only a manager can approve it.
             {% else %}
               Requests are queued for the front desk. They do not change the booking until approved.
             {% endif %}
@@ -270,7 +269,13 @@
   <form method="post" action="{{ url_for('guest.request_cancel', booking_id=booking.id) }}" class="modal-card">
     {{ cancel_form.csrf_token }}
     <div class="modal-head">
-      <div><h2>Request cancellation</h2><p>Free cancellation request until {{ deadline.strftime('%a, %d %b at %H:%M') }} Beijing time.</p></div>
+      <div><h2>Request cancellation</h2>
+        {% if deadline_passed %}
+        <p>The free cancellation deadline has passed. This request will be queued for manager approval.</p>
+        {% else %}
+        <p>Free cancellation request until {{ deadline.strftime('%a, %d %b at %H:%M') }} Beijing time.</p>
+        {% endif %}
+      </div>
       <button class="modal-close" type="button" data-close aria-label="Close">×</button>
     </div>
     <div class="field">

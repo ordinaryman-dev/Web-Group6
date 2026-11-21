@@ -120,7 +120,16 @@ def select_room(session, room_type_id, stay, today, *, ignore_booking_id=None, e
         candidates = [candidate for candidate in candidates if candidate.room_id == requested_room_id]
     if not candidates:
         return None
+    # C07: when the room type did not change, the original room wins whenever it
+    # still covers the whole stay. Load only decides between other rooms.
+    prefer_original = original_room_id is not None and requested_room_id is None
     chosen = candidates[0].room_id
+    if prefer_original:
+        chosen = next(
+            (candidate.room_id for candidate in candidates
+             if candidate.room_id == original_room_id),
+            chosen,
+        )
     locks = {chosen}
     if original_room_id is not None:
         locks.add(original_room_id)
@@ -130,7 +139,16 @@ def select_room(session, room_type_id, stay, today, *, ignore_booking_id=None, e
     current = ranked_candidates(session, room_type_id, stay, today, **options)
     if requested_room_id is not None:
         current = [candidate for candidate in current if candidate.room_id == requested_room_id]
-    if not current or current[0].room_id != chosen:
+    if not current:
+        raise AllocationRetry()
+    current_chosen = current[0].room_id
+    if prefer_original:
+        current_chosen = next(
+            (candidate.room_id for candidate in current
+             if candidate.room_id == original_room_id),
+            current_chosen,
+        )
+    if current_chosen != chosen:
         raise AllocationRetry()
     return session.get(Room, chosen)
 

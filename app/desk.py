@@ -6,9 +6,9 @@ booking, its room nights, its payments and its requests exactly as they were.
 
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from zoneinfo import ZoneInfo
 from sqlalchemy.orm import lazyload
 
@@ -17,12 +17,15 @@ from .audit import record_audit
 from .booking import (
     Stay,
     add_night,
+    arrival_error,
     cancellation_deadline,
     customer_is_blocked,
+    deadline_for,
     free_room_conditions,
     hotel_now,
     nightly_rates,
     refundable_amount,
+    stay_error,
     total_for_rates,
 )
 from .extensions import db
@@ -90,7 +93,45 @@ def paid_totals(session, booking_ids):
     return totals
 
 
-def record_payment(session, booking, actor_id, amount=None):
+def _locked_booking(session, booking_id):
+    booking = session.get(
+        Booking, booking_id, options=(lazyload("*"),),
+        with_for_update=True, populate_existing=True,
+    )
+    if booking is None:
+        raise DeskError("This booking could not be found.")
+    return booking
+
+
+def _request_key(key):
+    if not key:
+        return None
+    try:
+        return str(UUID(str(key)))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DeskError("The payment form expired. Reload the page and try again.") from exc
+
+
+def _existing_payment(session, actor_id, key):
+    return session.scalar(
+        select(PaymentRecord).where(
+            PaymentRecord.actor_user_id == actor_id,
+            PaymentRecord.idempotency_key == key,
+        )
+    )
+
+
+def record_payment(session, booking, actor_id, amount=None, idempotency_key=None):
+    # Lock the booking before reading the balance. Two receptionists submitting at
+    # the same time then serialise instead of both seeing the old paid total.
+    booking = _locked_booking(session, booking.id)
+    key = _request_key(idempotency_key)
+    if key:
+        existing = _existing_payment(session, actor_id, key)
+        if existing is not None:
+            if existing.booking_id != booking.id or existing.kind != "payment":
+                raise DeskError("This request key was already used for another action.")
+            return existing
     if booking.status in (CANCELLED, CHECKED_OUT):
         raise DeskError("This booking can no longer take a payment.")
     due = booking.total - paid_total(session, booking.id)
@@ -108,6 +149,7 @@ def record_payment(session, booking, actor_id, amount=None):
         actor_user_id=actor_id,
         result="success",
         reference=f"pay-{uuid4()}",
+        idempotency_key=key,
     )
     session.add(payment)
     record_audit(session, actor_id, "record_payment", "booking", booking.id,
@@ -115,8 +157,16 @@ def record_payment(session, booking, actor_id, amount=None):
     return payment
 
 
-def record_refund(session, booking, actor_id, amount=None):
+def record_refund(session, booking, actor_id, amount=None, idempotency_key=None):
     """Return simulated money to the guest, never more than was collected."""
+    booking = _locked_booking(session, booking.id)
+    key = _request_key(idempotency_key)
+    if key:
+        existing = _existing_payment(session, actor_id, key)
+        if existing is not None:
+            if existing.booking_id != booking.id or existing.kind != "refund":
+                raise DeskError("This request key was already used for another action.")
+            return existing
     if booking.status not in (CANCELLED, CHECKED_OUT):
         raise DeskError("A refund is recorded after checkout or cancellation.")
     available = paid_total(session, booking.id)
@@ -136,6 +186,7 @@ def record_refund(session, booking, actor_id, amount=None):
         actor_user_id=actor_id,
         result="success",
         reference=f"refund-{uuid4()}",
+        idempotency_key=key,
     )
     session.add(payment)
     record_audit(session, actor_id, "record_refund", "booking", booking.id,
@@ -249,7 +300,12 @@ def desk_today(session, now):
 
 def room_board(session, start, days=4, room_type_id=None, room_query=None):
     end = start + timedelta(days=days)
-    room_stmt = select(Room)
+    # Only rooms in service on the first displayed night belong on the desk board.
+    # Retired rooms keep their history but must not inflate the inventory count.
+    room_stmt = select(Room).where(
+        Room.operational_from <= start,
+        or_(Room.operational_until.is_(None), Room.operational_until > start),
+    )
     if room_type_id:
         room_stmt = room_stmt.where(Room.room_type_id == room_type_id)
     if room_query:
@@ -413,6 +469,8 @@ def reassign(session, booking_id, actor_id, reason, room_type_id=None, today=Non
         raise DeskError("Give a reason for the reassignment.")
     stay = Stay(booking.check_in, booking.check_out, booking.guests)
     target_type_id = room_type_id or booking.room_type_id
+    if target_type_id != booking.room_type_id:
+        raise DeskError("A maintenance move must keep the same room type.")
     room_type = allocation_room_type(session, target_type_id, stay.guests, original_type_id=booking.room_type_id)
     old_room = booking.room.number
     target_room = allocation.select_room(
@@ -439,22 +497,85 @@ def reassign(session, booking_id, actor_id, reason, room_type_id=None, today=Non
     return booking
 
 
-def _reprice(session, booking, stay):
+def _reprice(session, booking, stay, *, keep_prices=False):
+    """Rebuild the nightly price lines, optionally keeping unchanged nights.
+
+    A date change keeps the confirmed amount for every night whose calendar date
+    is still in the stay; only new or moved nights take the current rate. A room
+    type change starts from the current rates because the product changed.
+    """
+    old_rows = session.execute(
+        select(
+            BookingPriceLine.stay_date,
+            BookingPriceLine.amount,
+            BookingPriceLine.price_rule_id,
+        ).where(BookingPriceLine.booking_id == booking.id)
+    ).all()
+    old_by_date = {stay_date: (amount, rule_id) for stay_date, amount, rule_id in old_rows}
     session.execute(db.delete(BookingPriceLine).where(BookingPriceLine.booking_id == booking.id))
     session.flush()
     rates = nightly_rates(session, booking.room_type, stay)
+    total = Decimal("0.00")
     for rate in rates:
         day = rate.start
         while day < rate.end:
+            if keep_prices and day in old_by_date:
+                amount, rule_id = old_by_date[day]
+            else:
+                amount, rule_id = rate.amount, rate.rule_id
             session.add(BookingPriceLine(booking_id=booking.id, stay_date=day,
-                                         amount=rate.amount, price_rule_id=rate.rule_id))
+                                         amount=amount, price_rule_id=rule_id))
+            total += amount
             day += timedelta(days=1)
-    booking.total = total_for_rates(rates)
+    booking.total = total
+    return total
+
+
+def _settle_price_difference(session, booking, old_total, actor_id, request_id=None):
+    """Record the cash difference after a re-price, so the ledger matches the total."""
+    delta = booking.total - old_total
+    if delta == 0:
+        return Decimal("0.00")
+    if delta > 0:
+        paid = paid_total(session, booking.id)
+        if paid <= 0:
+            # C04/M02/AC15: an unpaid booking only changes its amount due. There is
+            # no payment basis for a simulated receipt.
+            record_audit(session, actor_id, "settle_price_difference", "booking", booking.id,
+                         details={"direction": "due_only",
+                                  "amount": format(delta, ".2f"),
+                                  "old_total": format(old_total, ".2f"),
+                                  "new_total": format(booking.total, ".2f")})
+            return Decimal("0.00")
+        session.add(PaymentRecord(
+            booking_id=booking.id, kind="payment", amount=delta, actor_user_id=actor_id,
+            result="success", reference=f"pay-{uuid4()}", request_id=request_id,
+        ))
+        record_audit(session, actor_id, "settle_price_difference", "booking", booking.id,
+                     details={"direction": "charge",
+                              "amount": format(delta, ".2f"),
+                              "old_total": format(old_total, ".2f"),
+                              "new_total": format(booking.total, ".2f")})
+        return delta
+    refund = min(-delta, paid_total(session, booking.id))
+    if refund > 0:
+        session.add(PaymentRecord(
+            booking_id=booking.id, kind="refund", amount=refund, actor_user_id=actor_id,
+            result="success", reference=f"refund-{uuid4()}", request_id=request_id,
+        ))
+        record_audit(session, actor_id, "settle_price_difference", "booking", booking.id,
+                     details={"direction": "refund",
+                              "amount": format(refund, ".2f"),
+                              "old_total": format(old_total, ".2f"),
+                              "new_total": format(booking.total, ".2f")})
+    return -refund
 
 
 def _rehouse(session, booking, stay, room_type_id, today=None):
     if booking.status != CONFIRMED or booking.checked_in_at is not None:
         raise DeskError("Only a confirmed booking that has not arrived can change rooms or dates.")
+    old_total = booking.total
+    kept_prices = room_type_id == booking.room_type_id
     room_type = allocation_room_type(
         session, room_type_id, stay.guests, original_type_id=booking.room_type_id,
     )
@@ -477,10 +598,12 @@ def _rehouse(session, booking, stay, room_type_id, today=None):
                               booking_id=booking.id))
     allocation.record_assignment(target_room)
     session.flush()
-    _reprice(session, booking, stay)
+    _reprice(session, booking, stay, keep_prices=kept_prices)
+    return old_total
 
 
-def approve_request(session, request_id, actor_id, comment=None, actor_role=None, today=None):
+def approve_request(session, request_id, actor_id, comment=None, actor_role=None,
+                    today=None, now=None):
     row = session.get(BookingRequest, request_id, with_for_update=True)
     if row is None:
         raise DeskError("This request could not be found.")
@@ -505,11 +628,15 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
                 raise DeskError(
                     "This cancellation arrived after the deadline; only a manager can approve it."
                 )
-            # A manager exception is a deliberate override, so it is written to the audit
-            # trail with the same reason the guest gave.
+            exception_reason = (comment or "").strip()
+            if not exception_reason:
+                raise DeskError("A late cancellation needs the manager's reason in the decision note.")
+            # A manager exception is a deliberate override, so both the manager's
+            # reason and the guest's original reason are written to the audit trail.
             record_audit(session, actor_id, "late_cancellation_exception", "booking",
-                         booking.id, reason=row.reason,
+                         booking.id, reason=exception_reason,
                          details={"request_id": row.id,
+                                  "guest_reason": row.reason,
                                   "submitted_at": submitted_local.isoformat()})
         refund = refundable_amount(session, booking.id)
         if refund > 0:
@@ -531,17 +658,40 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
         stay = Stay(new_in, new_out, booking.guests)
         if stay.check_out <= stay.check_in:
             raise DeskError("The requested dates are invalid.")
-        _rehouse(session, booking, stay, booking.room_type_id, today=today)
+        # Re-check the rules that applied when the guest submitted the request:
+        # the request may have waited for days, or the arrival may now be today.
+        now = now or hotel_now()
+        submitted_local = (
+            row.submitted_at.replace(tzinfo=timezone.utc)
+            .astimezone(ZoneInfo("Asia/Shanghai")).replace(tzinfo=None)
+            if row.submitted_at else now
+        )
+        error = stay_error(stay, now, same_day_submitted_at=submitted_local)
+        if error:
+            raise DeskError(error)
+        if booking.expected_arrival is not None:
+            error = arrival_error(booking.expected_arrival, stay, now)
+            if error:
+                raise DeskError(error)
+        new_deadline = deadline_for(new_in)
+        if booking.cancel_by is None or new_deadline < booking.cancel_by:
+            booking.cancel_by = new_deadline
+        old_total = _rehouse(
+            session, booking, stay, booking.room_type_id, today=today or now.date(),
+        )
+        _settle_price_difference(session, booking, old_total, actor_id, request_id=row.id)
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "dates",
                                                  "check_in": stay.check_in.isoformat(),
-                                                 "check_out": stay.check_out.isoformat()})
+                                                 "check_out": stay.check_out.isoformat(),
+                                                 "cancel_by": booking.cancel_by.isoformat()})
     elif row.kind == "room_type":
         room_type_id = target.get("room_type_id")
         if not room_type_id or session.get(RoomType, room_type_id) is None:
             raise DeskError("The requested room type is unavailable.")
         stay = Stay(booking.check_in, booking.check_out, booking.guests)
-        _rehouse(session, booking, stay, room_type_id, today=today)
+        old_total = _rehouse(session, booking, stay, room_type_id, today=today)
+        _settle_price_difference(session, booking, old_total, actor_id, request_id=row.id)
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "room_type",
                                                  "room_type_id": room_type_id})
@@ -569,6 +719,7 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
         if room is None:
             raise DeskError("The room is not free for the added nights. The booking is unchanged.")
         rates = nightly_rates(session, booking.room_type, added)
+        added_total = total_for_rates(rates)
         old_check_out = booking.check_out
         for rate in rates:
             day = rate.start
@@ -576,12 +727,19 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
                 add_night(session, booking, day, rate)
                 day += timedelta(days=1)
         booking.check_out = new_check_out
-        booking.total = booking.total + total_for_rates(rates)
+        booking.total = booking.total + added_total
+        # E07/C05: the added nights are collected when the extension is approved.
+        session.add(PaymentRecord(
+            booking_id=booking.id, kind="payment", amount=added_total,
+            actor_user_id=actor_id, result="success", request_id=row.id,
+            reference=f"pay-{uuid4()}",
+        ))
         record_audit(session, actor_id, "apply_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id, "kind": "extend",
                                                  "old_check_out": old_check_out.isoformat(),
                                                  "new_check_out": new_check_out.isoformat(),
-                                                 "added_total": format(total_for_rates(rates), ".2f")})
+                                                 "added_total": format(added_total, ".2f"),
+                                                 "payment": format(added_total, ".2f")})
     else:
         raise DeskError("This request type cannot be approved here.")
     row.status = "approved"
@@ -670,6 +828,7 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
         request_digest=f"walkin-{customer.id}-{stay.check_in}-{stay.check_out}",
         check_in=stay.check_in,
         check_out=stay.check_out,
+        cancel_by=deadline_for(stay.check_in),
         guests=stay.guests,
         total=total,
         note=(note or "").strip() or None,
@@ -749,20 +908,29 @@ def mark_no_show(session, booking_id, actor_id, reason, now):
     reason = (reason or "").strip()
     if not reason:
         raise DeskError("Give a reason before marking a no-show.")
+    if booking.last_contact_at is None or not booking.last_contact_result:
+        raise DeskError("Record a contact attempt before marking a no-show.")
     if not no_show_ready(booking, now):
         deadline = contact_deadline(booking)
         raise DeskError(
             "The expected arrival time has not passed yet "
             f"({deadline:%d %b %H:%M}). Contact the guest first or update the expected time."
         )
+    refund = refundable_amount(session, booking.id)
     session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
     booking.status = NO_SHOW
     booking.no_show_at = utc_now()
     booking.no_show_reason = reason
+    if refund > 0:
+        # E08/AC16: a no-show returns the unrefunded balance in the same transaction.
+        session.add(PaymentRecord(
+            booking_id=booking.id, kind="refund", amount=refund,
+            actor_user_id=actor_id, result="success", reference=f"refund-{uuid4()}",
+        ))
     record_audit(session, actor_id, "mark_no_show", "booking", booking.id, reason=reason,
                  details={"room": booking.room.number,
                           "last_contact_result": booking.last_contact_result,
-                          "refund": "0.00"})
+                          "refund": format(refund, ".2f")})
     return booking
 
 

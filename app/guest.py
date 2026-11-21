@@ -18,7 +18,7 @@ from wtforms import (
     TextAreaField,
     TimeField,
 )
-from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional
+from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional, Regexp
 from wtforms.widgets import HiddenInput
 
 from .audit import record_audit
@@ -87,6 +87,18 @@ class PasswordForm(FlaskForm):
         validators=[InputRequired(), EqualTo("new_password", message="Passwords must match.")],
     )
     submit = SubmitField("Change password")
+
+
+class ProfileForm(FlaskForm):
+    name = StringField("Name", validators=[InputRequired(), Length(max=120)])
+    phone = StringField(
+        "Phone", validators=[
+            Optional(),
+            Length(max=40),
+            Regexp(r"^[0-9+\-() ]{5,40}$", message="Enter a valid phone number."),
+        ],
+    )
+    submit = SubmitField("Save profile")
 
 
 class ReasonForm(FlaskForm):
@@ -421,7 +433,9 @@ def booking_detail(booking_id):
     deadline = cancellation_deadline(booking)
     can_request = booking.status == "confirmed" and booking.checked_in_at is None and pending is None
     can_extend = booking.status in ("confirmed", "checked_in") and pending is None
-    can_cancel = can_request and now.replace(tzinfo=None) <= deadline
+    # A late cancellation is still a request: the desk records it and a manager
+    # decides. The guest is never told to leave the website to ask.
+    can_cancel = can_request
 
     room_type_choices = db.session.scalars(
         db.select(RoomType)
@@ -637,7 +651,42 @@ def account():
         customer=customer,
         blocked=blocked,
         form=PasswordForm(),
+        profile_form=ProfileForm(
+            name=customer.name if customer else "",
+            phone=customer.phone if customer else "",
+        ),
     )
+
+
+@guest.post("/account/profile")
+@guest_required
+def update_profile():
+    form = ProfileForm()
+    if not form.validate_on_submit():
+        flash("Check the profile form and try again.", "error")
+        return redirect(url_for("guest.account"))
+
+    changed = False
+    with Session(db.engine) as session, session.begin():
+        customer = session.scalar(
+            db.select(Customer).where(Customer.user_id == current_user.id).with_for_update()
+        )
+        if customer is not None:
+            before = {"name": customer.name, "phone": customer.phone}
+            customer.name = form.name.data.strip()
+            customer.phone = (form.phone.data or "").strip() or None
+            record_audit(
+                session, current_user.id, "update_profile", "customer", customer.id,
+                details={"before": before,
+                         "after": {"name": customer.name, "phone": customer.phone}},
+            )
+            changed = True
+
+    if changed:
+        flash("Profile updated.", "success")
+    else:
+        flash("This account has no guest profile to update.", "error")
+    return redirect(url_for("guest.account"))
 
 
 @guest.post("/account/password")
