@@ -138,6 +138,11 @@ def test_task_cards_name_their_request_so_a_stale_tab_can_grey_them(app):
 
     _, staff_email = new_user(app, STAFF)
     staff = sign_in(app, staff_email)
-    page = staff.get("/frontdesk?view=tasks").get_data(as_text=True)
-
-    assert f'data-request-id="{request_id}"' in page
+    marker = f'data-request-id="{request_id}"'
+    found = False
+    for page_number in range(1, 30):
+        page = staff.get(f"/frontdesk?view=tasks&request_page={page_number}").get_data(as_text=True)
+        if marker in page:
+            found = True
+            break
+    assert found

@@ -584,6 +584,8 @@
   gap: 8px;
   margin-top: 10px;
 }
+.task-pager { justify-content: space-between; flex-wrap: wrap; margin: 0 0 8px; }
+.late-pager { margin-bottom: 18px; }
 .order-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .order-table th {
   padding: 6px 7px;

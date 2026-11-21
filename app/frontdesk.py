@@ -62,6 +62,8 @@ frontdesk = Blueprint("frontdesk", __name__)
 
 TIMELINE_DAYS = 15  # today plus fourteen days
 MAX_STAY_DAYS = 21
+LATE_ARRIVAL_PAGE_SIZE = 5
+GUEST_REQUEST_PAGE_SIZE = 3
 STATE_LABELS = {
     "free": "Free",
     "arriving": "Arriving",
@@ -235,6 +237,15 @@ def _parse_date(value, fallback):
 
 def _clamp(value, low, high):
     return max(low, min(value, high))
+
+
+def _paginate(items, page, per_page):
+    """Slice a list for a small sidebar pager, keeping the page in range."""
+    items = list(items)
+    pages = max((len(items) + per_page - 1) // per_page, 1)
+    page = _clamp(page or 1, 1, pages)
+    start = (page - 1) * per_page
+    return items[start:start + per_page], page, pages
 
 
 def _booking_filter(query, statement=None):
@@ -726,6 +737,9 @@ def index():
     snapshot = desk_snapshot(db.session, now)
     pending = snapshot["pending"]
     late_arrivals = snapshot["late_arrivals"]
+    late_page_items, late_page, late_pages = _paginate(
+        late_arrivals, request.args.get("late_page", type=int), LATE_ARRIVAL_PAGE_SIZE,
+    )
 
     occupied_today = len(set(db.session.scalars(
         select(RoomNight.room_id).where(RoomNight.stay_date == today).distinct()
@@ -909,6 +923,9 @@ def index():
             page=order_page,
         )
     task_rows = _task_rows(db.session, pending, now) if view == "tasks" else []
+    task_page_items, task_page, task_pages = _paginate(
+        task_rows, request.args.get("request_page", type=int), GUEST_REQUEST_PAGE_SIZE,
+    )
     payment_form = PaymentForm(prefix="pay")
     payment_form.idempotency_key.data = uuid4().hex
     refund_form = RefundForm(prefix="ref")
@@ -947,6 +964,9 @@ def index():
         departures_today=departures_today,
         pending=pending,
         late_arrivals=late_arrivals,
+        late_page_items=late_page_items,
+        late_page=late_page,
+        late_pages=late_pages,
         dirty_rooms=dirty_rooms,
         conflicts=conflicts,
         notifications=notifications,
@@ -1006,6 +1026,9 @@ def index():
         order_page=order_page,
         order_pages=order_pages,
         task_rows=task_rows,
+        task_page_items=task_page_items,
+        task_page=task_page,
+        task_pages=task_pages,
         desk_url=_desk_url,
         check_in_from=desk.CHECK_IN_FROM.strftime("%H:%M"),
         check_out_by=desk.CHECK_OUT_BY.strftime("%H:%M"),
