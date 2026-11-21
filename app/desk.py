@@ -6,11 +6,15 @@ booking, its room nights, its payments and its requests exactly as they were.
 
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
+from hashlib import sha256
+import re
 from uuid import UUID, uuid4
 
 from sqlalchemy import case, func, or_, select
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 from zoneinfo import ZoneInfo
 from sqlalchemy.orm import lazyload
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import allocation
 from .audit import record_audit
@@ -19,6 +23,7 @@ from .booking import (
     add_night,
     arrival_error,
     cancellation_deadline,
+    close_pending_requests,
     customer_is_blocked,
     deadline_for,
     free_room_conditions,
@@ -35,11 +40,14 @@ from .models import (
     BookingPriceLine,
     BookingRequest,
     Customer,
+    CustomerPhoneLock,
     PaymentRecord,
     Room,
     RoomBlock,
     RoomNight,
     RoomType,
+    STAFF,
+    User,
     utc_now,
 )
 
@@ -57,6 +65,22 @@ CHECK_OUT_BY = time(12, 0)
 
 class DeskError(Exception):
     """A rule the desk must explain to the receptionist."""
+
+
+class ExistingCustomerRequired(DeskError):
+    def __init__(self, phone):
+        super().__init__("This phone already belongs to a guest record. Select the existing guest below.")
+        self.phone = phone
+
+
+def change_own_password(session, actor_id, current_password, new_password):
+    actor = session.get(User, actor_id, with_for_update=True, populate_existing=True)
+    if actor is None or not actor.active or actor.role not in (STAFF, MANAGER):
+        raise DeskError("An active front-desk account is required.")
+    if not check_password_hash(actor.password_hash, current_password):
+        raise DeskError("The current password is incorrect.")
+    actor.password_hash = generate_password_hash(new_password)
+    record_audit(session, actor.id, "change_password", "user", actor.id)
 
 
 def paid_total(session, booking_id):
@@ -261,6 +285,7 @@ def check_out(session, booking_id, actor_id, now):
     early = today < planned
     booking.status = CHECKED_OUT
     booking.checked_out_at = utc_now()
+    close_pending_requests(session, booking, actor_id, "Closed because the guest checked out.")
     booking.room.housekeeping = "dirty"
     if early:
         # The guest left before the booked departure: release the unused nights so the
@@ -381,6 +406,16 @@ def pending_requests(session):
     ).all()
 
 
+def maintenance_conflicts(session, room_id, start, end):
+    overdue = (Booking.status == CHECKED_IN) & (Booking.check_out <= hotel_now().date())
+    return session.scalars(select(Booking).where(
+        Booking.room_id == room_id,
+        Booking.status.in_((CONFIRMED, CHECKED_IN)),
+        Booking.check_in < end,
+        or_(Booking.check_out > start, overdue),
+    ).order_by(Booking.check_in, Booking.id)).all()
+
+
 def create_block(session, room_id, start, end, reason, actor_id):
     if end <= start:
         raise DeskError("The block must end after it starts.")
@@ -394,14 +429,7 @@ def create_block(session, room_id, start, end, reason, actor_id):
                       created_by_id=actor_id)
     session.add(block)
     session.flush()
-    conflicts = session.scalars(
-        select(Booking).where(
-            Booking.room_id == room.id,
-            Booking.status.in_((CONFIRMED, CHECKED_IN)),
-            Booking.check_in < end,
-            Booking.check_out > start,
-        )
-    ).all()
+    conflicts = maintenance_conflicts(session, room.id, start, end)
     record_audit(session, actor_id, "create_block", "room_block", block.id, reason=reason,
                  details={"room": room.number, "from": start.isoformat(), "to": end.isoformat(),
                           "operator": actor_id,
@@ -602,14 +630,23 @@ def _rehouse(session, booking, stay, room_type_id, today=None):
     return old_total
 
 
-def approve_request(session, request_id, actor_id, comment=None, actor_role=None,
-                    today=None, now=None):
-    row = session.get(BookingRequest, request_id, with_for_update=True)
+def locked_request(session, request_id):
+    # Use one lock order with checkout, no-show, cancellation and guest withdrawal.
+    booking_id = session.scalar(select(BookingRequest.booking_id).where(BookingRequest.id == request_id))
+    if booking_id is None:
+        raise DeskError("This request could not be found.")
+    booking = _locked_booking(session, booking_id)
+    row = session.get(BookingRequest, request_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise DeskError("This request could not be found.")
     if row.status != "pending":
         raise DeskError("This request has already been handled.")
-    booking = session.get(Booking, row.booking_id, options=(lazyload("*"),), with_for_update=True)
+    return row, booking
+
+
+def approve_request(session, request_id, actor_id, comment=None, actor_role=None,
+                    today=None, now=None):
+    row, booking = locked_request(session, request_id)
     if booking.status in (CANCELLED, CHECKED_OUT):
         raise DeskError("The booking is no longer active.")
     target = row.target or {}
@@ -646,6 +683,8 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
             ))
         session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
         booking.status = CANCELLED
+        close_pending_requests(session, booking, actor_id, "Closed because the booking was cancelled.",
+                               exclude_request_id=row.id)
         record_audit(session, actor_id, "cancel_by_request", "booking", booking.id,
                      reason=row.reason, details={"request_id": row.id,
                                                  "refund": format(refund, ".2f")})
@@ -750,11 +789,7 @@ def approve_request(session, request_id, actor_id, comment=None, actor_role=None
 
 
 def reject_request(session, request_id, actor_id, comment=None):
-    row = session.get(BookingRequest, request_id, with_for_update=True)
-    if row is None:
-        raise DeskError("This request could not be found.")
-    if row.status != "pending":
-        raise DeskError("This request has already been handled.")
+    row, _ = locked_request(session, request_id)
     row.status = "rejected"
     row.handled_by = actor_id
     row.handled_at = utc_now()
@@ -769,13 +804,51 @@ def find_customers(session, query, limit=8):
     query = (query or "").strip()
     if not query:
         return []
-    like = f"%{query}%"
+    matching = Customer.name.icontains(query, autoescape=True)
+    key = phone_key(query)
+    if key:
+        matching = matching | normalized_customer_phone().contains(key, autoescape=True)
     return session.scalars(
         select(Customer)
-        .where((Customer.phone.like(like)) | (Customer.name.like(like)))
+        .where(matching)
         .order_by(Customer.name, Customer.id)
         .limit(limit)
     ).all()
+
+
+def phone_key(phone):
+    # Ignore formatting, preserving the actual number and country prefix.
+    return re.sub(r"[\s()-]+", "", phone or "").lower()
+
+
+def normalized_customer_phone():
+    return func.lower(func.regexp_replace(Customer.phone, "[[:space:]()-]", ""))
+
+
+def new_walkin_customer(session, name, phone):
+    name, phone = (name or "").strip(), (phone or "").strip()
+    if not name:
+        raise DeskError("Enter the guest's name.")
+    if not phone or not phone_key(phone):
+        raise DeskError("Enter a contact phone for the walk-in.")
+    if len(name) > 120 or len(phone) > 40:
+        raise DeskError("The guest name or phone is too long.")
+    # A transaction-scoped row lock serialises two new registrations using the
+    # same phone, even when they are handled by different receptionists.
+    # Customer.phone itself stays non-unique: shared numbers need staff selection.
+    statement = mysql_insert(CustomerPhoneLock).values(
+        lock_key=sha256(phone_key(phone).encode()).hexdigest(),
+    )
+    session.execute(statement.on_duplicate_key_update(lock_key=statement.inserted.lock_key))
+    existing = session.scalar(select(Customer.id).where(
+        normalized_customer_phone() == phone_key(phone),
+    ).limit(1))
+    if existing is not None:
+        raise ExistingCustomerRequired(phone)
+    customer = Customer(name=name, phone=phone)
+    session.add(customer)
+    session.flush()
+    return customer
 
 
 def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
@@ -791,15 +864,7 @@ def create_walkin(session, actor_id, room_type_id, stay, *, customer_id=None,
         if customer is None:
             raise DeskError("That guest record no longer exists.")
     else:
-        name = (name or "").strip()
-        phone = (phone or "").strip()
-        if not name:
-            raise DeskError("Enter the guest's name.")
-        if not phone:
-            raise DeskError("Enter a contact phone for the walk-in.")
-        customer = Customer(name=name, phone=phone)
-        session.add(customer)
-        session.flush()
+        customer = new_walkin_customer(session, name, phone)
 
     if customer_is_blocked(session, customer.id, utc_now()):
         raise DeskError("This guest is blacklisted; the desk cannot book or check them in.")
@@ -919,6 +984,7 @@ def mark_no_show(session, booking_id, actor_id, reason, now):
     refund = refundable_amount(session, booking.id)
     session.execute(db.delete(RoomNight).where(RoomNight.booking_id == booking.id))
     booking.status = NO_SHOW
+    close_pending_requests(session, booking, actor_id, "Closed because the booking was marked no-show.")
     booking.no_show_at = utc_now()
     booking.no_show_reason = reason
     if refund > 0:

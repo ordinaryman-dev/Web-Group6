@@ -471,14 +471,17 @@ def withdraw_guest_request(actor_id, booking_id, request_id):
     """
 
     with Session(db.engine) as session, session.begin():
+        # Request decisions and terminal actions take the booking lock first.
+        owned = session.scalar(db.select(Booking).where(
+            Booking.id == booking_id, Booking.customer.has(Customer.user_id == actor_id),
+        ).options(lazyload("*")).with_for_update())
+        if owned is None:
+            raise BookingRejected("NOT_FOUND", "This request could not be found.")
         request = session.scalar(
             db.select(BookingRequest)
-            .join(Booking, Booking.id == BookingRequest.booking_id)
-            .join(Customer, Customer.id == Booking.customer_id)
             .where(
                 BookingRequest.id == request_id,
                 BookingRequest.booking_id == booking_id,
-                Customer.user_id == actor_id,
             )
             .options(lazyload("*"))
             .with_for_update()
@@ -534,6 +537,23 @@ def cancellation_deadline(booking):
     return booking.cancel_by or deadline_for(booking.check_in)
 
 
+def close_pending_requests(session, booking, actor_id, reason, *, exclude_request_id=None, handled_at=None):
+    """The caller holds Booking FOR UPDATE, as do request decisions/withdrawal."""
+    statement = select(BookingRequest).where(
+        BookingRequest.booking_id == booking.id, BookingRequest.status == "pending",
+    )
+    if exclude_request_id is not None:
+        statement = statement.where(BookingRequest.id != exclude_request_id)
+    pending = session.scalars(statement.order_by(BookingRequest.id).with_for_update()).all()
+    for row in pending:
+        row.status = "closed"
+        row.handled_by = actor_id
+        row.handled_at = handled_at or utc_now()
+        row.comment = reason
+        record_audit(session, actor_id, "close_request", "booking_request", row.id,
+                     reason=reason, details={"booking_id": booking.id, "status": "closed"})
+
+
 def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now):
     # Front-desk flows that write payment records must take the same booking lock.
     booking = session.get(Booking, booking_id, options=(lazyload("*"),), with_for_update=True)
@@ -555,14 +575,8 @@ def cancel_confirmed_booking(session, actor_id, booking_id, source, reason, now)
             occurred_at=cancelled_at, reference=f"refund-{uuid4()}",
         ))
     session.execute(delete(RoomNight).where(RoomNight.booking_id == booking.id))
-    pending = session.scalars(select(BookingRequest).where(
-        BookingRequest.booking_id == booking.id, BookingRequest.status == "pending",
-    ))
-    for booking_request in pending:
-        booking_request.status = "closed"
-        booking_request.handled_at = cancelled_at
-        booking_request.handled_by = actor_id
-        booking_request.comment = "Closed because the booking was cancelled."
+    close_pending_requests(session, booking, actor_id, "Closed because the booking was cancelled.",
+                           handled_at=cancelled_at)
     previous_status = booking.status
     booking.status = "cancelled"
     record_audit(

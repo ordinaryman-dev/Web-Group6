@@ -43,6 +43,13 @@ class Customer(db.Model):
     user = db.relationship(User)
 
 
+class CustomerPhoneLock(db.Model):
+    """Coordinate walk-in registration without making a phone a unique identity."""
+    __tablename__ = "customer_phone_locks"
+
+    lock_key = db.Column(db.String(64), primary_key=True)
+
+
 class RoomType(db.Model):
     __tablename__ = "room_types"
     __table_args__ = (

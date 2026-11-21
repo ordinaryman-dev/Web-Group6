@@ -23,12 +23,13 @@ from wtforms import (
     DecimalField,
     HiddenField,
     IntegerField,
+    PasswordField,
     SelectField,
     StringField,
     SubmitField,
     TimeField,
 )
-from wtforms.validators import InputRequired, Length, NumberRange, Optional
+from wtforms.validators import EqualTo, InputRequired, Length, NumberRange, Optional
 from wtforms.widgets import HiddenInput
 
 from . import allocation, desk
@@ -39,6 +40,7 @@ from .booking import (
     Stay,
     cancel_confirmed_booking,
     cancellation_deadline,
+    customer_is_blocked,
     hotel_now,
 )
 from .extensions import db
@@ -55,6 +57,7 @@ from .models import (
     RoomType,
     STAFF,
     User,
+    utc_now,
 )
 
 
@@ -102,7 +105,7 @@ class RefundForm(FlaskForm):
 
 
 class WalkInForm(FlaskForm):
-    customer_id = HiddenField()
+    customer_id = IntegerField(widget=HiddenInput(), validators=[Optional(), NumberRange(min=1)])
     room_id = IntegerField(widget=HiddenInput(), validators=[Optional()])
     name = StringField("Guest name", validators=[Optional(), Length(max=120)])
     phone = StringField("Phone", validators=[Optional(), Length(max=40)])
@@ -159,6 +162,13 @@ class CancelBookingForm(FlaskForm):
     submit = SubmitField("Cancel with manager authority")
 
 
+class PasswordForm(FlaskForm):
+    current_password = PasswordField("Current password", validators=[InputRequired(), Length(max=128)])
+    new_password = PasswordField("New password", validators=[InputRequired(), Length(min=8, max=128)])
+    confirm = PasswordField("Confirm new password", validators=[InputRequired(), EqualTo("new_password")])
+    submit = SubmitField("Change password")
+
+
 def desk_required(view):
     @wraps(view)
     @login_required
@@ -170,13 +180,13 @@ def desk_required(view):
     return wrapped
 
 
-def _run(action, success):
+def _run(action, success, *, change_own_password=False):
     """Retry only rolled-back attempts; every attempt owns a fresh Session."""
     engine = db.engine.execution_options(isolation_level="READ COMMITTED")
     for attempt in range(3):
         try:
             with Session(engine) as session, session.begin():
-                actor = session.get(User, current_user.id, with_for_update={"read": True})
+                actor = session.get(User, current_user.id, with_for_update={"read": not change_own_password})
                 if actor is None or not actor.active or actor.role not in (STAFF, MANAGER):
                     abort(403)
                 action(session)
@@ -833,14 +843,9 @@ def index():
         current_block = selected_cell["block"]
 
     if current_block is not None:
-        block_conflicts = db.session.scalars(
-            select(Booking).where(
-                Booking.room_id == current_block.room_id,
-                Booking.status == desk.CONFIRMED,
-                Booking.check_in < current_block.end_date,
-                Booking.check_out > current_block.start_date,
-            )
-        ).all()
+        block_conflicts = desk.maintenance_conflicts(
+            db.session, current_block.room_id, current_block.start_date, current_block.end_date,
+        )
 
     walk_form = WalkInForm(prefix="walk")
     walk_form.room_type_id.choices = _room_type_choices()
@@ -864,6 +869,10 @@ def index():
         desk.find_customers(db.session, request.args.get("lookup"))
         if not walk_customer else []
     )
+    walk_blocked_ids = {
+        customer.id for customer in walk_matches
+        if customer_is_blocked(db.session, customer.id, utc_now())
+    }
     if walk_customer is not None:
         walk_form.customer_id.data = walk_customer.id
     if selected_room is not None:
@@ -1008,6 +1017,7 @@ def index():
         walk_allowed=walk_allowed,
         walk_reason=walk_reason,
         walk_form=walk_form,
+        walk_blocked_ids=walk_blocked_ids,
         walk_customer=walk_customer,
         walk_matches=walk_matches,
         block_form=block_form,
@@ -1033,6 +1043,22 @@ def index():
         check_in_from=desk.CHECK_IN_FROM.strftime("%H:%M"),
         check_out_by=desk.CHECK_OUT_BY.strftime("%H:%M"),
     )
+
+
+@frontdesk.route("/frontdesk/profile", methods=["GET", "POST"])
+@desk_required
+def profile():
+    form = PasswordForm()
+    if form.validate_on_submit():
+        def action(session):
+            desk.change_own_password(session, current_user.id, form.current_password.data, form.new_password.data)
+
+        if _run(action, "Password updated.", change_own_password=True):
+            return redirect(url_for("frontdesk.profile"))
+        status = 400
+    else:
+        status = 400 if form.is_submitted() else 200
+    return render_template("frontdesk/profile.html", form=form), status
 
 
 @frontdesk.post("/frontdesk/bookings/<int:booking_id>/pay")
@@ -1198,17 +1224,24 @@ def walk_in():
         return _back()
 
     booking_id = {}
+    existing_guest = {}
 
     def action(session):
-        booking = desk.create_walkin(
-            session, current_user.id, form.room_type_id.data, stay,
-            customer_id=int(form.customer_id.data) if form.customer_id.data else None,
-            name=form.name.data, phone=form.phone.data, note=form.note.data,
-            room_id=form.room_id.data,
-        )
+        try:
+            booking = desk.create_walkin(
+                session, current_user.id, form.room_type_id.data, stay,
+                customer_id=form.customer_id.data,
+                name=form.name.data, phone=form.phone.data, note=form.note.data,
+                room_id=form.room_id.data,
+            )
+        except desk.ExistingCustomerRequired as error:
+            existing_guest["phone"] = error.phone
+            raise
         booking_id["id"] = booking.id
 
     succeeded = _run(action, "Walk-in booked, paid and checked in.")
+    if not succeeded and existing_guest:
+        return _back(room=form.room_id.data, booking=None, lookup=existing_guest["phone"], walk_customer=None)
     return _back(booking=booking_id.get("id") if succeeded else None, room=None)
 
 
@@ -1221,14 +1254,7 @@ def block_preview():
     end = _parse_date(request.args.get("end_date"), None)
     if not room_id or start is None or end is None or end <= start:
         return jsonify({"error": "Choose a valid date range."}), 400
-    conflicts = db.session.scalars(
-        select(Booking).where(
-            Booking.room_id == room_id,
-            Booking.status.in_((desk.CONFIRMED, desk.CHECKED_IN)),
-            Booking.check_in < end,
-            Booking.check_out > start,
-        ).order_by(Booking.check_in, Booking.id)
-    ).all()
+    conflicts = desk.maintenance_conflicts(db.session, room_id, start, end)
     return jsonify({
         "count": len(conflicts),
         "bookings": [
@@ -1261,7 +1287,7 @@ def create_block():
 
     succeeded = _run(action, "Out-of-service block saved.")
     if succeeded and conflicts:
-        flash(f"{len(conflicts)} booking(s) now conflict and need reassignment.", "info")
+        flash(f"{len(conflicts)} booking(s) now conflict. Review them; in-house guests need manager coordination.", "info")
     return _back(room=room_id, booking=None)
 
 

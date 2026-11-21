@@ -33,14 +33,15 @@ moves active stays to a free room of the same type and keeps the old booking his
 ## Schema
 
 Migrations are applied with `python -m flask --app app db upgrade`. The current head is
-`20261121_10`. Besides the original catalogue and booking tables, the migrations add
+`20261121_11`. Besides the original catalogue and booking tables, the migrations add
 booking notes/timestamps, manager request/payment records and actual-stay fields, the
 front-desk expected-arrival field, `room_types.bed_type` (`single`, `double`, `twin`,
 `king`, `studio`, `suite`) used by the guest filter, `rooms.housekeeping` (`clean` / `dirty`) and
 `rooms.has_window` used by the front-desk ventilation filter, microsecond-precision
 `rooms.last_allocated_at` used for allocation rotation, the snapped
 `bookings.cancel_by` cancellation deadline, and `payment_records.idempotency_key`
-with its per-actor unique constraint. After pulling this change, run
+with its per-actor unique constraint, and `customer_phone_locks` to coordinate
+walk-in registration. After pulling this change, run
 `python -m flask --app app db upgrade` before starting the site. The rotation migration
 initialises existing rooms from the latest known booking creation time; rooms without
 orders remain unassigned. Subsequent successful assignments record their own timestamps.
@@ -68,6 +69,21 @@ orders remain unassigned. Subsequent successful assignments record their own tim
   clean. The grid filters by state, bed type, room type, window and whole-stay availability.
   Check-in still requires a confirmed same-day booking, 14:00 or later, no maintenance
   block, a clean room and full simulated payment. No real payment provider is used.
+
+The front-desk account menu includes `/frontdesk/profile` for a staff member's own
+password change, with current-password validation and auditing. Walk-in registration
+ignores spaces, brackets and hyphens when looking for an existing phone. A matching
+number requires staff to select an existing guest; shared numbers are not silently
+merged or made globally unique. Restricted guests are marked in the selection list
+and checked again by the booking service. Concurrent new registrations for the same
+formatted number are coordinated by a transaction-scoped row lock.
+
+Maintenance can be registered from both room and booking drawers, including reserved
+and occupied rooms; existing reservations remain intact and conflicts are previewed.
+Checkout, no-show and cancellation close pending requests in the same transaction,
+recording the reason and handler. Request decisions and withdrawal take the booking
+lock before the request lock. The upgrade also closes legacy pending requests whose
+orders had already ended, identifying the automatic repair in their comments.
 
 The occupancy report uses completed Beijing-time nights from each room's operating
 period and actual stay records, with effective maintenance deducted once per room

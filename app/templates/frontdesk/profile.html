@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My profile · Hero Hotel{% endblock %}
+{% block content %}
+<section class="profile-banner">
+  <div class="profile-avatar">{{ current_user.email[:1]|upper }}</div>
+  <div>
+    <h1>My profile</h1>
+    <p>{{ current_user.email }} · {{ 'Manager' if current_user.role == 'manager' else 'Front desk' }}</p>
+  </div>
+  <a class="button secondary" href="{{ url_for('frontdesk.index') }}">Back to front desk</a>
+</section>
+<div class="account-simple">
+  <section class="account-panel">
+    <h2>Change password</h2>
+    <p>Enter your current password to update your account.</p>
+    <form method="post" class="stack">
+      {{ form.hidden_tag() }}
+      {% for field in (form.current_password, form.new_password, form.confirm) %}
+      <div class="field">
+        {{ field.label }}
+        {{ field(autocomplete='current-password' if field.name == 'current_password' else 'new-password') }}
+        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+      {{ form.submit(class='button') }}
+    </form>
+  </section>
+</div>
+{% endblock %}

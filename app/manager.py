@@ -378,12 +378,16 @@ def room_form(record_id):
     today = hotel_now().date()
     room = db.get_or_404(Room, record_id) if record_id is not None else None
     form = RoomForm(obj=room)
-    form.room_type_id.choices = room_type_choices()
+    preview_types = db.session.scalars(select(RoomType).order_by(RoomType.name, RoomType.id)).all()
+    form.room_type_id.choices = [SelectChoice(item.id, item.name) for item in preview_types]
+    preview_type = next((item for item in preview_types if item.id == form.room_type_id.data),
+                        preview_types[0] if preview_types else None)
     if room is None and not form.is_submitted():
         form.operational_from.data = today
     return edit_form(
         form, "Edit room" if room else "New room", "manager.rooms",
         "Room saved.", services.save_room, record_id, form, today,
+        room_preview_types=preview_types, room_preview_type=preview_type,
     )
 
 

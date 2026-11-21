@@ -206,6 +206,22 @@
 .manager-status.cancelled, .manager-status.maintenance_conflict, .manager-status.failed, .manager-status.inactive { background: #f6e5e2; color: #8b352e; }
 .manager-status.maintenance { background: #f8ebdf; color: #824b28; }
 .manager-form-panel { max-width: 570px; }
+.manager-room-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, .9fr);
+  align-items: start;
+  gap: 22px;
+  max-width: 1120px;
+}
+.manager-room-editor .manager-form-panel { max-width: none; }
+.manager-room-preview { margin: 0; padding: 0; overflow: hidden; }
+.manager-room-preview img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.manager-room-preview figcaption { padding: 18px; }
+.manager-room-preview h2 { margin: 4px 0 8px; font-size: 22px; overflow-wrap: anywhere; }
+.manager-room-preview p { margin: 0 0 12px; overflow-wrap: anywhere; }
+.manager-room-preview .manager-room-photo-label { margin: 0; color: var(--manager-navy); font-size: 14px; font-weight: 650; }
+.manager-room-photo-capacity { color: var(--manager-text); }
+.manager-room-preview .manager-room-photo-note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--manager-line); color: var(--manager-text); font-size: 14px; }
 .manager-form, .manager-field { display: grid; gap: 12px; }
 .manager-field { gap: 4px; min-width: 0; }
 .manager-field label, .manager-filters label { font-size: 14px; font-weight: 650; }
@@ -336,6 +352,11 @@
 .manager-grid { grid-template-columns: minmax(0, 1fr); }
 .manager-user { align-items: flex-start; flex-direction: column; }
 }
+@media (max-width: 900px) {
+.manager-room-editor { grid-template-columns: minmax(0, 1fr); }
+.manager-room-preview { grid-row: 1; padding: 0; }
+.manager-room-preview img { aspect-ratio: 16 / 9; }
+}
 @media (max-width: 650px) {
 .manager-shell { grid-template-columns: minmax(0, 1fr); }
 .manager-sidebar { position: static; min-width: 0; height: auto; border-right: 0; border-bottom: 1px solid var(--manager-line); padding: 12px; }
@@ -349,6 +370,7 @@
 .manager-field input:not([type="checkbox"]), .manager-field select, .manager-field textarea,
 .manager-filters input, .manager-filters select { font-size: 16px; }
 .manager-room-search > label { flex-basis: 100%; }
+.manager-room-preview { padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
 html:has(.manager-shell) { scroll-behavior: auto; }

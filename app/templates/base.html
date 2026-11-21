@@ -34,6 +34,7 @@
             <a href="{{ url_for('manager.overview') }}">Manager console</a>
           {% else %}
             <a href="{{ url_for('frontdesk.index') }}">Front desk</a>
+            <a href="{{ url_for('frontdesk.profile') }}">My profile</a>
           {% endif %}
           <span class="user-chip" title="{{ current_user.email }}">{{ current_user.email }}</span>
           <form class="inline-form" method="post" action="{{ url_for('auth.logout') }}">

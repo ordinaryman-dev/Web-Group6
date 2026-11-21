@@ -8,7 +8,7 @@
 {%- endmacro %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=8">
+<link rel="stylesheet" href="{{ url_for('static', filename='frontdesk.css') }}?v=9">
 <link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}?v=1">
 <div class="desk{% if drawer_mode %} has-drawer{% endif %}"
      data-notify-feed="{{ url_for('frontdesk.notifications_feed') }}"
@@ -59,6 +59,7 @@
     <div class="side-identity">
       <b>{{ current_user.email }}</b>
       <small>{{ 'Manager' if is_manager else 'Front desk' }} · shift open</small>
+      <a class="side-profile" href="{{ url_for('frontdesk.profile') }}">My profile</a>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="side-signout" type="submit">Sign out</button>
@@ -782,6 +783,7 @@
       </details>
       {% endif %}
 
+      {% if selected_room %}{% include 'frontdesk/_maintenance_form.html' %}{% endif %}
       <p class="drawer-foot">No price edits, no account creation and no real payment provider on this page.</p>
     </div>
 
@@ -839,14 +841,14 @@
           <span><b class="mono">{{ booking.reference }}</b> · {{ booking.customer.name }}<br>
             <small class="muted">{{ booking.check_in.strftime('%d %b') }} → {{ booking.check_out.strftime('%d %b') }}</small>
           </span>
-          {% if booking.check_in >= today %}
+          {% if booking.status == 'confirmed' and booking.check_in >= today %}
           <form method="post" action="{{ url_for('frontdesk.reassign', booking_id=booking.id) }}" data-guard>
             {{ csrf_back() }}
             <input type="hidden" name="re-reason" value="Displaced by maintenance block on room {{ room.number }}">
             <button class="mini primary" type="submit">Move to same-type room</button>
           </form>
           {% else %}
-          <span class="small muted">In house: handle manually.</span>
+          <span class="small muted">Manager coordination required; this booking cannot be moved here.</span>
           {% endif %}
         </div>
         {% endfor %}
@@ -892,7 +894,11 @@
           {% for guest in walk_matches %}
           <li>
             <span>{{ guest.name }} · <span class="mono">{{ guest.phone or 'no phone' }}</span></span>
+            {% if guest.id in walk_blocked_ids %}
+            <span class="chip chip-cancel">Restricted · no new walk-in</span>
+            {% else %}
             <a class="mini" href="{{ desk_url(walk_customer=guest.id, lookup=None, room=room.id) }}">Use this guest</a>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>
@@ -941,26 +947,8 @@
         {% endif %}
       </section>
 
-      {% if cell.state in ('free', 'dirty') %}
-      <details class="drawer-section">
-        <summary>Set out of service</summary>
-        <p class="hint">Existing bookings in this period stay and are flagged, never overwritten. You will be offered a same-type move for each one.</p>
-        <form method="post" action="{{ url_for('frontdesk.create_block') }}" data-guard
-              data-block-preview="{{ url_for('frontdesk.block_preview') }}"
-              data-block-room="{{ selected_room.id }}">
-          {{ block_form.hidden_tag() }}
-          <input type="hidden" name="back" value="{{ request.full_path }}">
-          <div class="form-grid">
-            <div class="field"><label>From</label>{{ block_form.start_date(class_="input") }}</div>
-            <div class="field"><label>To</label>{{ block_form.end_date(class_="input") }}</div>
-          </div>
-          <p class="hint block-preview" data-block-preview-out>Choose a date range to check for bookings.</p>
-          <div class="field"><label>Reason</label>{{ block_form.reason(class_="input", placeholder="Bathroom leak, repainting…") }}</div>
-          <button class="btn danger wide" type="submit">Set out of service</button>
-        </form>
-      </details>
       {% endif %}
-      {% endif %}
+      {% include 'frontdesk/_maintenance_form.html' %}
 
       <p class="drawer-foot">Room {{ room.number }} · {{ selected_room_type.name }}. Availability is checked again on every write.</p>
     </div>
@@ -969,5 +957,5 @@
   {% endif %}
 
 </div>
-<script defer src="{{ url_for('static', filename='frontdesk.js') }}?v=2"></script>
+<script defer src="{{ url_for('static', filename='frontdesk.js') }}?v=3"></script>
 {% endblock %}

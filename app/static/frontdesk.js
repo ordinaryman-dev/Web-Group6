@@ -289,7 +289,8 @@
           });
           clearBlockPreview(
             data.count + " booking" + (data.count === 1 ? "" : "s") +
-            " conflict: " + references.join(", ") + ". They stay booked and will need a move."
+            " conflict: " + references.join(", ") +
+            ". Bookings stay unchanged. Review each conflict; in-house guests need manager coordination."
           );
           blockOut.classList.add("bad");
         })
@@ -308,5 +309,6 @@
         input.addEventListener("input", scheduleBlockPreview);
       }
     });
+    previewBlock();
   }
 })();
