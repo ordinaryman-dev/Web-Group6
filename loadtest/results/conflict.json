@@ -1,0 +1,579 @@
+{
+  "fixture": {
+    "room_type_id": 7,
+    "room_id": 294,
+    "room_number": "LT901"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "kind": "book_2_clients",
+      "check_in": "2026-11-27",
+      "check_out": "2026-11-28",
+      "prepared": 2,
+      "clients": 2,
+      "outcomes": {
+        "sold_out": 1,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        8
+      ],
+      "prepare_latency_p50_ms": 50.95,
+      "post_latency_ms": [
+        248.41,
+        290.64
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 1,
+        "expected_nights": 1
+      }
+    },
+    {
+      "round": 2,
+      "kind": "book_2_clients",
+      "check_in": "2026-11-28",
+      "check_out": "2026-11-29",
+      "prepared": 2,
+      "clients": 2,
+      "outcomes": {
+        "sold_out": 1,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        9
+      ],
+      "prepare_latency_p50_ms": 46.07,
+      "post_latency_ms": [
+        97.3,
+        131.0
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 1,
+        "expected_nights": 1
+      }
+    },
+    {
+      "round": 3,
+      "kind": "book_2_clients",
+      "check_in": "2026-11-29",
+      "check_out": "2026-11-30",
+      "prepared": 2,
+      "clients": 2,
+      "outcomes": {
+        "sold_out": 1,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        10
+      ],
+      "prepare_latency_p50_ms": 55.66,
+      "post_latency_ms": [
+        90.22,
+        90.71
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 1,
+        "expected_nights": 1
+      }
+    },
+    {
+      "round": 4,
+      "kind": "book_2_clients",
+      "check_in": "2026-11-30",
+      "check_out": "2026-12-01",
+      "prepared": 2,
+      "clients": 2,
+      "outcomes": {
+        "sold_out": 1,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        11
+      ],
+      "prepare_latency_p50_ms": 46.87,
+      "post_latency_ms": [
+        71.05,
+        112.71
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 1,
+        "expected_nights": 1
+      }
+    },
+    {
+      "round": 5,
+      "kind": "book_20_clients",
+      "check_in": "2026-12-01",
+      "check_out": "2026-12-03",
+      "prepared": 20,
+      "clients": 20,
+      "outcomes": {
+        "sold_out": 19,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        12
+      ],
+      "prepare_latency_p50_ms": 32.41,
+      "post_latency_ms": [
+        1307.82,
+        1353.37,
+        1362.85,
+        1375.6,
+        1388.54,
+        1417.77,
+        1427.58,
+        1434.09,
+        1437.36,
+        1455.49,
+        1455.55,
+        1455.73,
+        1472.79,
+        1479.05,
+        1485.9,
+        1491.28,
+        1502.81,
+        1507.75,
+        1512.04,
+        1513.81
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 2,
+        "expected_nights": 2
+      }
+    },
+    {
+      "round": 6,
+      "kind": "book_20_clients",
+      "check_in": "2026-12-03",
+      "check_out": "2026-12-05",
+      "prepared": 20,
+      "clients": 20,
+      "outcomes": {
+        "sold_out": 19,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        13
+      ],
+      "prepare_latency_p50_ms": 29.95,
+      "post_latency_ms": [
+        941.85,
+        942.47,
+        1000.84,
+        1012.5,
+        1020.71,
+        1045.92,
+        1050.27,
+        1055.67,
+        1065.16,
+        1065.22,
+        1070.29,
+        1082.81,
+        1106.53,
+        1110.93,
+        1117.75,
+        1142.25,
+        1155.28,
+        1157.88,
+        1161.65,
+        1162.22
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 2,
+        "expected_nights": 2
+      }
+    },
+    {
+      "round": 7,
+      "kind": "book_20_clients",
+      "check_in": "2026-12-05",
+      "check_out": "2026-12-07",
+      "prepared": 20,
+      "clients": 20,
+      "outcomes": {
+        "sold_out": 19,
+        "success": 1
+      },
+      "successes": 1,
+      "only_one_booking": true,
+      "distinct_booking_ids": [
+        14
+      ],
+      "prepare_latency_p50_ms": 31.71,
+      "post_latency_ms": [
+        775.68,
+        830.31,
+        932.12,
+        943.2,
+        959.51,
+        1025.61,
+        1033.77,
+        1038.12,
+        1044.72,
+        1051.3,
+        1053.81,
+        1067.31,
+        1068.33,
+        1070.82,
+        1071.74,
+        1077.81,
+        1084.37,
+        1086.48,
+        1089.31,
+        1091.74
+      ],
+      "db": {
+        "bookings_for_round": 1,
+        "nights_for_round": 2,
+        "expected_nights": 2
+      }
+    }
+  ],
+  "fake_sold_out_checks": [
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 1
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 2
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 3
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 4
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 5
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 6
+    },
+    {
+      "booked_stay_available": 0,
+      "probe_stay_available": 1,
+      "booked_status": 200,
+      "probe_status": 200,
+      "round": 7
+    }
+  ],
+  "idempotency": {
+    "check_in": "2026-11-26",
+    "check_out": "2026-11-27",
+    "parallel_submissions": 10,
+    "outcomes": {
+      "success": 10
+    },
+    "distinct_booking_ids": [
+      15
+    ],
+    "stored_bookings_for_key": 1,
+    "mismatch_outcome": "idempotency_mismatch",
+    "mismatch_detail": "This request key belongs to a different booking.",
+    "stored_bookings_after_mismatch": 1
+  },
+  "summary": {
+    "scenario": "conflict",
+    "label": "conflict",
+    "users": 20,
+    "started_at": 1795257741.3566003,
+    "finished_at": 1795257751.704527,
+    "duration_s": 10.35,
+    "requests": 79,
+    "rps": 7.63,
+    "outcomes": {
+      "sold_out": 61,
+      "success": 17,
+      "idempotency_mismatch": 1
+    },
+    "success_rate": 0.2152,
+    "latency": {
+      "count": 79,
+      "min_ms": 38.36,
+      "mean_ms": 956.23,
+      "p50_ms": 1065.22,
+      "p90_ms": 1472.79,
+      "p95_ms": 1502.81,
+      "p99_ms": 1513.81,
+      "max_ms": 1513.81
+    },
+    "latency_success_only": {
+      "count": 17,
+      "min_ms": 71.05,
+      "mean_ms": 426.91,
+      "p50_ms": 375.31,
+      "p90_ms": 941.85,
+      "p95_ms": 1307.82,
+      "p99_ms": 1307.82,
+      "max_ms": 1307.82
+    },
+    "by_action": {
+      "book_20_clients": {
+        "requests": 60,
+        "outcomes": {
+          "sold_out": 57,
+          "success": 3
+        },
+        "count": 60,
+        "min_ms": 775.68,
+        "mean_ms": 1178.36,
+        "p50_ms": 1086.48,
+        "p90_ms": 1479.05,
+        "p95_ms": 1502.81,
+        "p99_ms": 1513.81,
+        "max_ms": 1513.81
+      },
+      "book_2_clients": {
+        "requests": 8,
+        "outcomes": {
+          "sold_out": 4,
+          "success": 4
+        },
+        "count": 8,
+        "min_ms": 71.05,
+        "mean_ms": 141.5,
+        "p50_ms": 97.3,
+        "p90_ms": 290.64,
+        "p95_ms": 290.64,
+        "p99_ms": 290.64,
+        "max_ms": 290.64
+      },
+      "book_same_key": {
+        "requests": 10,
+        "outcomes": {
+          "success": 10
+        },
+        "count": 10,
+        "min_ms": 277.43,
+        "mean_ms": 367.0,
+        "p50_ms": 375.31,
+        "p90_ms": 417.72,
+        "p95_ms": 423.86,
+        "p99_ms": 423.86,
+        "max_ms": 423.86
+      },
+      "book_same_key_different_body": {
+        "requests": 1,
+        "outcomes": {
+          "idempotency_mismatch": 1
+        },
+        "count": 1,
+        "min_ms": 38.36,
+        "mean_ms": 38.36,
+        "p50_ms": 38.36,
+        "p90_ms": 38.36,
+        "p95_ms": 38.36,
+        "p99_ms": 38.36,
+        "max_ms": 38.36
+      }
+    }
+  },
+  "db_counters": {
+    "before": {
+      "Aborted_connects": 5,
+      "Com_delete": 86,
+      "Com_insert": 13734,
+      "Com_select": 153492,
+      "Com_update": 2154,
+      "Innodb_row_lock_current_waits": 0,
+      "Innodb_row_lock_time": 20142,
+      "Innodb_row_lock_time_avg": 97,
+      "Innodb_row_lock_waits": 206,
+      "Questions": 218940,
+      "Slow_queries": 0,
+      "Threads_connected": 2,
+      "Threads_running": 2
+    },
+    "after": {
+      "Aborted_connects": 5,
+      "Com_delete": 86,
+      "Com_insert": 13820,
+      "Com_select": 156625,
+      "Com_update": 2163,
+      "Innodb_row_lock_current_waits": 0,
+      "Innodb_row_lock_time": 24914,
+      "Innodb_row_lock_time_avg": 107,
+      "Innodb_row_lock_waits": 232,
+      "Questions": 223762,
+      "Slow_queries": 0,
+      "Threads_connected": 21,
+      "Threads_running": 2
+    },
+    "delta": {
+      "Questions": 4822,
+      "Com_select": 3133,
+      "Com_insert": 86,
+      "Com_update": 9,
+      "Com_delete": 0,
+      "Innodb_row_lock_waits": 26,
+      "Innodb_row_lock_time": 4772,
+      "Slow_queries": 0,
+      "Aborted_connects": 0
+    }
+  },
+  "checks": [
+    {
+      "id": "I1",
+      "title": "同一房间同一晚出现两条房晚记录（超售）",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT room_id, stay_date FROM room_nights GROUP BY room_id, stay_date HAVING COUNT(*) > 1 ) duplicates",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I2",
+      "title": "同一房间存在时间段重叠的有效订单",
+      "sql": "SELECT COUNT(*) AS n FROM bookings a JOIN bookings b ON a.room_id = b.room_id AND a.id < b.id WHERE a.status IN ('confirmed', 'checked_in') AND b.status IN ('confirmed', 'checked_in') AND a.check_in < b.check_out AND b.check_in < a.check_out",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I3",
+      "title": "有效订单的房晚数与住宿天数不一致",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT b.id FROM bookings b LEFT JOIN room_nights rn ON rn.booking_id = b.id WHERE b.status IN ('confirmed', 'checked_in') GROUP BY b.id, b.check_in, b.check_out HAVING COUNT(rn.id) <> DATEDIFF(b.check_out, b.check_in) ) mismatched",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I4",
+      "title": "房晚落在订单入住区间之外",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn JOIN bookings b ON rn.booking_id = b.id WHERE rn.stay_date < b.check_in OR rn.stay_date >= b.check_out",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I5",
+      "title": "已取消/未到店订单仍占用房晚",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn JOIN bookings b ON rn.booking_id = b.id WHERE b.status NOT IN ('confirmed', 'checked_in')",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I6",
+      "title": "有效订单的逐晚金额合计与订单总额不一致",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT b.id FROM bookings b LEFT JOIN booking_price_lines pl ON pl.booking_id = b.id WHERE b.status IN ('confirmed', 'checked_in') GROUP BY b.id, b.check_in, b.check_out, b.total HAVING COUNT(pl.id) <> DATEDIFF(b.check_out, b.check_in) OR COALESCE(SUM(pl.amount), 0) <> b.total ) mismatched",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I7",
+      "title": "压测创建的订单落在维修封锁区间内",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn JOIN bookings b ON b.id = rn.booking_id JOIN users u ON u.id = b.actor_user_id JOIN room_blocks rb ON rb.room_id = rn.room_id AND rb.effective = 1 WHERE rn.stay_date >= rb.start_date AND rn.stay_date < rb.end_date AND u.email LIKE '%@load.test'",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I8",
+      "title": "同一操作人同一幂等键产生多张订单",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT actor_user_id, idempotency_key FROM bookings GROUP BY actor_user_id, idempotency_key HAVING COUNT(*) > 1 ) duplicates",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I9",
+      "title": "同一操作人同一幂等键产生多条收款/退款",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT actor_user_id, idempotency_key FROM payment_records WHERE idempotency_key IS NOT NULL GROUP BY actor_user_id, idempotency_key HAVING COUNT(*) > 1 ) duplicates",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I10",
+      "title": "单张订单退款金额超过成功收款金额",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT booking_id FROM payment_records WHERE result = 'success' GROUP BY booking_id HAVING SUM(CASE WHEN kind = 'refund' THEN amount ELSE 0 END) > SUM(CASE WHEN kind = 'payment' THEN amount ELSE 0 END) ) overpaid",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I11",
+      "title": "订单总额为负，或逐晚金额为负",
+      "sql": "SELECT (SELECT COUNT(*) FROM bookings WHERE total < 0) + (SELECT COUNT(*) FROM booking_price_lines WHERE amount < 0) AS n",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I12",
+      "title": "订单的房晚房间与订单房型不一致",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn JOIN bookings b ON b.id = rn.booking_id JOIN rooms r ON r.id = rn.room_id WHERE r.room_type_id <> b.room_type_id",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I13",
+      "title": "房晚落在房间停用期内",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn JOIN rooms r ON r.id = rn.room_id WHERE rn.stay_date < r.operational_from OR (r.operational_until IS NOT NULL AND rn.stay_date >= r.operational_until)",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I14",
+      "title": "孤儿房晚（订单或房间已不存在）",
+      "sql": "SELECT COUNT(*) AS n FROM room_nights rn LEFT JOIN bookings b ON b.id = rn.booking_id LEFT JOIN rooms r ON r.id = rn.room_id WHERE b.id IS NULL OR r.id IS NULL",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "id": "I15",
+      "title": "同名房型重复（演示数据会产生重复筛选行）",
+      "sql": "SELECT COUNT(*) AS n FROM ( SELECT name FROM room_types GROUP BY name HAVING COUNT(*) > 1 ) duplicates",
+      "expected": 0,
+      "actual": 0,
+      "passed": true
+    }
+  ]
+}

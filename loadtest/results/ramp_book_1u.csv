@@ -1,0 +1,46 @@
+﻿ts,scenario,label,users,action,vu,status_code,latency_ms,outcome,detail
+1795258091.161,book,ramp_book_1u,1,api_search,1,200,31.89,ok,
+1795258091.194,book,ramp_book_1u,1,prepare,1,200,33.19,ok,
+1795258091.288,book,ramp_book_1u,1,book,1,200,94.17,success,Booking BK-001518 is confirmed.
+1795258092.465,book,ramp_book_1u,1,api_search,1,200,9.62,ok,
+1795258092.497,book,ramp_book_1u,1,prepare,1,200,31.86,ok,
+1795258092.652,book,ramp_book_1u,1,book,1,200,154.84,success,Booking BK-001519 is confirmed.
+1795258093.571,book,ramp_book_1u,1,api_search,1,200,11.63,ok,
+1795258093.601,book,ramp_book_1u,1,prepare,1,200,29.73,ok,
+1795258093.628,book,ramp_book_1u,1,book,1,200,26.73,success,Booking BK-001520 is confirmed.
+1795258095.022,book,ramp_book_1u,1,api_search,1,200,11.65,ok,
+1795258095.049,book,ramp_book_1u,1,prepare,1,200,26.3,ok,
+1795258095.09,book,ramp_book_1u,1,book,1,200,41.25,success,Booking BK-001521 is confirmed.
+1795258096.634,book,ramp_book_1u,1,api_search,1,200,20.93,ok,
+1795258096.664,book,ramp_book_1u,1,prepare,1,200,30.02,ok,
+1795258096.741,book,ramp_book_1u,1,book,1,200,76.38,success,Booking BK-001522 is confirmed.
+1795258098.176,book,ramp_book_1u,1,api_search,1,200,33.28,ok,
+1795258098.206,book,ramp_book_1u,1,prepare,1,200,30.13,ok,
+1795258098.252,book,ramp_book_1u,1,book,1,200,45.22,success,Booking BK-001523 is confirmed.
+1795258099.832,book,ramp_book_1u,1,api_search,1,200,38.85,ok,
+1795258099.86,book,ramp_book_1u,1,prepare,1,200,28.37,ok,
+1795258099.937,book,ramp_book_1u,1,book,1,200,76.55,success,Booking BK-001524 is confirmed.
+1795258101.161,book,ramp_book_1u,1,api_search,1,200,26.07,ok,
+1795258101.195,book,ramp_book_1u,1,prepare,1,200,33.33,ok,
+1795258101.271,book,ramp_book_1u,1,book,1,200,76.0,success,Booking BK-001525 is confirmed.
+1795258102.716,book,ramp_book_1u,1,api_search,1,200,17.46,ok,
+1795258102.737,book,ramp_book_1u,1,prepare,1,200,21.06,ok,
+1795258102.808,book,ramp_book_1u,1,book,1,200,71.01,success,Booking BK-001526 is confirmed.
+1795258103.831,book,ramp_book_1u,1,api_search,1,200,44.34,ok,
+1795258103.852,book,ramp_book_1u,1,prepare,1,200,20.13,ok,
+1795258103.945,book,ramp_book_1u,1,book,1,200,93.18,success,Booking BK-001527 is confirmed.
+1795258104.888,book,ramp_book_1u,1,api_search,1,200,14.16,ok,
+1795258104.914,book,ramp_book_1u,1,prepare,1,200,25.42,ok,
+1795258104.977,book,ramp_book_1u,1,book,1,200,62.96,success,Booking BK-001528 is confirmed.
+1795258106.37,book,ramp_book_1u,1,api_search,1,200,12.59,ok,
+1795258106.401,book,ramp_book_1u,1,prepare,1,200,31.17,ok,
+1795258106.476,book,ramp_book_1u,1,book,1,200,74.42,success,Booking BK-001529 is confirmed.
+1795258107.749,book,ramp_book_1u,1,api_search,1,200,10.07,ok,
+1795258107.77,book,ramp_book_1u,1,prepare,1,200,21.08,ok,
+1795258107.817,book,ramp_book_1u,1,book,1,200,46.55,success,Booking BK-001530 is confirmed.
+1795258108.985,book,ramp_book_1u,1,api_search,1,200,12.91,ok,
+1795258109.024,book,ramp_book_1u,1,prepare,1,200,39.26,ok,
+1795258109.065,book,ramp_book_1u,1,book,1,200,40.62,success,Booking BK-001531 is confirmed.
+1795258110.378,book,ramp_book_1u,1,api_search,1,200,30.76,ok,
+1795258110.409,book,ramp_book_1u,1,prepare,1,200,30.78,ok,
+1795258110.472,book,ramp_book_1u,1,book,1,200,63.33,success,Booking BK-001532 is confirmed.

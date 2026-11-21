@@ -1,0 +1,75 @@
+# F1 演示种子数据缺陷：修复前 / 修复后证据
+
+复现命令（README 顺序）：
+    flask db upgrade && flask seed-demo && flask seed-rooms && flask seed-desk
+
+## 修复前（main @ 17a21e4）
+
+    SELECT COUNT(DISTINCT b.id) AS bookings, COUNT(rn.id) AS room_nights
+    FROM bookings b JOIN rooms r ON r.id = b.room_id
+    LEFT JOIN room_nights rn ON rn.booking_id = b.id
+    WHERE b.room_type_id <> r.room_type_id;
+    +----------+-------------+
+    | bookings | room_nights |
+    +----------+-------------+
+    |        7 |          13 |
+    +----------+-------------+
+
+    SELECT name, COUNT(*) AS types, GROUP_CONCAT(code ORDER BY id) AS codes
+    FROM room_types GROUP BY name HAVING COUNT(*) > 1;
+    +--------------+-------+-----------------------+
+    | City Twin    |     2 | std-twin,city-twin    |
+    | Harbour King |     2 | std-king,harbour-king |
+    +--------------+-------+-----------------------+
+
+## 修复后（seed-desk 复用实体房房型，并删除无房间/无订单的重复房型）
+
+    +-------+
+    | rooms |
+    +-------+
+    |   293 |
+    +-------+
+
+    +-------+
+    | types |
+    +-------+
+    |     6 |
+    +-------+
+
+    +-----------------------+
+    | duplicate_name_groups |
+    +-----------------------+
+    |                     0 |
+    +-----------------------+
+
+    +---------------------+-------------------+
+    | mismatched_bookings | mismatched_nights |
+    +---------------------+-------------------+
+    |                   0 |                 0 |
+    +---------------------+-------------------+
+
+    +----+--------+-------------+--------+--------+
+    | id | number | code        | guests | total  |
+    +----+--------+-------------+--------+--------+
+    |  1 | 301    | demo-single |      1 | 560.00 |
+    |  2 | 304    | demo-single |      1 | 280.00 |
+    |  3 | 302    | demo-single |      1 | 560.00 |
+    |  4 | 306    | demo-single |      1 | 280.00 |
+    |  5 | 305    | demo-single |      1 | 840.00 |
+    |  6 | 303    | demo-single |      1 | 560.00 |
+    |  7 | 303    | demo-single |      1 | 560.00 |
+    +----+--------+-------------+--------+--------+
+
+## 回归检查
+
+    python -m loadtest.run_seed_check
+    9/9 seed checks passed
+
+重复执行 seed-desk：
+    Front desk demo data is already present.
+    房间/房型/订单数保持不变（293 / 6 / 7）。
+
+旧脏数据自愈演练：
+    注入 1 张 Harbour King 的旧订单（总额 1360、2 位客人、逐晚 680、收款 1360）后执行 seed-desk
+    → Repaired 1 demo booking(s) to match their physical room type.
+    → 房型恢复 demo-single、总额 560、1 位客人、逐晚 280、收款 560，重复房型被删除。

@@ -1,0 +1,380 @@
+{
+  "scenario": "book",
+  "duration": 20,
+  "levels": [
+    {
+      "users": 1,
+      "summary": {
+        "scenario": "book",
+        "label": "ramp_book_1u",
+        "users": 1,
+        "started_at": 1795258091.1276994,
+        "finished_at": 1795258111.361283,
+        "duration_s": 20.23,
+        "requests": 45,
+        "rps": 2.22,
+        "outcomes": {
+          "ok": 30,
+          "success": 15
+        },
+        "success_rate": 1.0,
+        "latency": {
+          "count": 45,
+          "min_ms": 9.62,
+          "mean_ms": 40.03,
+          "p50_ms": 31.17,
+          "p90_ms": 76.38,
+          "p95_ms": 93.18,
+          "p99_ms": 154.84,
+          "max_ms": 154.84
+        },
+        "latency_success_only": {
+          "count": 45,
+          "min_ms": 9.62,
+          "mean_ms": 40.03,
+          "p50_ms": 31.17,
+          "p90_ms": 76.38,
+          "p95_ms": 93.18,
+          "p99_ms": 154.84,
+          "max_ms": 154.84
+        },
+        "by_action": {
+          "api_search": {
+            "requests": 15,
+            "outcomes": {
+              "ok": 15
+            },
+            "count": 15,
+            "min_ms": 9.62,
+            "mean_ms": 21.75,
+            "p50_ms": 17.46,
+            "p90_ms": 38.85,
+            "p95_ms": 44.34,
+            "p99_ms": 44.34,
+            "max_ms": 44.34
+          },
+          "book": {
+            "requests": 15,
+            "outcomes": {
+              "success": 15
+            },
+            "count": 15,
+            "min_ms": 26.73,
+            "mean_ms": 69.55,
+            "p50_ms": 71.01,
+            "p90_ms": 94.17,
+            "p95_ms": 154.84,
+            "p99_ms": 154.84,
+            "max_ms": 154.84
+          },
+          "prepare": {
+            "requests": 15,
+            "outcomes": {
+              "ok": 15
+            },
+            "count": 15,
+            "min_ms": 20.13,
+            "mean_ms": 28.79,
+            "p50_ms": 30.02,
+            "p90_ms": 33.33,
+            "p95_ms": 39.26,
+            "p99_ms": 39.26,
+            "max_ms": 39.26
+          }
+        }
+      },
+      "db_delta": {
+        "Questions": 936,
+        "Com_select": 606,
+        "Com_insert": 82,
+        "Com_update": 15,
+        "Com_delete": 0,
+        "Innodb_row_lock_waits": 0,
+        "Innodb_row_lock_time": 0,
+        "Slow_queries": 0,
+        "Aborted_connects": 0
+      }
+    },
+    {
+      "users": 5,
+      "summary": {
+        "scenario": "book",
+        "label": "ramp_book_5u",
+        "users": 5,
+        "started_at": 1795258111.820569,
+        "finished_at": 1795258132.9268289,
+        "duration_s": 21.11,
+        "requests": 237,
+        "rps": 11.23,
+        "outcomes": {
+          "ok": 158,
+          "success": 79
+        },
+        "success_rate": 1.0,
+        "latency": {
+          "count": 237,
+          "min_ms": 9.1,
+          "mean_ms": 36.74,
+          "p50_ms": 32.48,
+          "p90_ms": 63.71,
+          "p95_ms": 77.55,
+          "p99_ms": 87.02,
+          "max_ms": 102.06
+        },
+        "latency_success_only": {
+          "count": 237,
+          "min_ms": 9.1,
+          "mean_ms": 36.74,
+          "p50_ms": 32.48,
+          "p90_ms": 63.71,
+          "p95_ms": 77.55,
+          "p99_ms": 87.02,
+          "max_ms": 102.06
+        },
+        "by_action": {
+          "api_search": {
+            "requests": 79,
+            "outcomes": {
+              "ok": 79
+            },
+            "count": 79,
+            "min_ms": 9.57,
+            "mean_ms": 25.91,
+            "p50_ms": 26.48,
+            "p90_ms": 36.73,
+            "p95_ms": 40.85,
+            "p99_ms": 45.43,
+            "max_ms": 45.43
+          },
+          "book": {
+            "requests": 79,
+            "outcomes": {
+              "success": 79
+            },
+            "count": 79,
+            "min_ms": 27.07,
+            "mean_ms": 57.54,
+            "p50_ms": 53.42,
+            "p90_ms": 78.11,
+            "p95_ms": 86.89,
+            "p99_ms": 102.06,
+            "max_ms": 102.06
+          },
+          "prepare": {
+            "requests": 79,
+            "outcomes": {
+              "ok": 79
+            },
+            "count": 79,
+            "min_ms": 9.1,
+            "mean_ms": 26.78,
+            "p50_ms": 29.73,
+            "p90_ms": 35.18,
+            "p95_ms": 36.78,
+            "p99_ms": 54.94,
+            "max_ms": 54.94
+          }
+        }
+      },
+      "db_delta": {
+        "Questions": 4844,
+        "Com_select": 3190,
+        "Com_insert": 442,
+        "Com_update": 79,
+        "Com_delete": 0,
+        "Innodb_row_lock_waits": 0,
+        "Innodb_row_lock_time": 0,
+        "Slow_queries": 0,
+        "Aborted_connects": 0
+      }
+    },
+    {
+      "users": 10,
+      "summary": {
+        "scenario": "book",
+        "label": "ramp_book_10u",
+        "users": 10,
+        "started_at": 1795258133.6241472,
+        "finished_at": 1795258154.7302656,
+        "duration_s": 21.11,
+        "requests": 459,
+        "rps": 21.75,
+        "outcomes": {
+          "ok": 306,
+          "success": 153
+        },
+        "success_rate": 1.0,
+        "latency": {
+          "count": 459,
+          "min_ms": 8.35,
+          "mean_ms": 40.69,
+          "p50_ms": 32.56,
+          "p90_ms": 73.89,
+          "p95_ms": 79.7,
+          "p99_ms": 199.12,
+          "max_ms": 257.49
+        },
+        "latency_success_only": {
+          "count": 459,
+          "min_ms": 8.35,
+          "mean_ms": 40.69,
+          "p50_ms": 32.56,
+          "p90_ms": 73.89,
+          "p95_ms": 79.7,
+          "p99_ms": 199.12,
+          "max_ms": 257.49
+        },
+        "by_action": {
+          "api_search": {
+            "requests": 153,
+            "outcomes": {
+              "ok": 153
+            },
+            "count": 153,
+            "min_ms": 8.35,
+            "mean_ms": 26.34,
+            "p50_ms": 26.6,
+            "p90_ms": 38.41,
+            "p95_ms": 42.39,
+            "p99_ms": 53.18,
+            "max_ms": 54.0
+          },
+          "book": {
+            "requests": 153,
+            "outcomes": {
+              "success": 153
+            },
+            "count": 153,
+            "min_ms": 29.54,
+            "mean_ms": 68.45,
+            "p50_ms": 59.27,
+            "p90_ms": 81.69,
+            "p95_ms": 172.79,
+            "p99_ms": 231.7,
+            "max_ms": 257.49
+          },
+          "prepare": {
+            "requests": 153,
+            "outcomes": {
+              "ok": 153
+            },
+            "count": 153,
+            "min_ms": 9.12,
+            "mean_ms": 27.29,
+            "p50_ms": 28.78,
+            "p90_ms": 36.95,
+            "p95_ms": 65.41,
+            "p99_ms": 77.34,
+            "max_ms": 85.31
+          }
+        }
+      },
+      "db_delta": {
+        "Questions": 9496,
+        "Com_select": 6246,
+        "Com_insert": 872,
+        "Com_update": 153,
+        "Com_delete": 0,
+        "Innodb_row_lock_waits": 5,
+        "Innodb_row_lock_time": 102,
+        "Slow_queries": 0,
+        "Aborted_connects": 0
+      }
+    },
+    {
+      "users": 20,
+      "summary": {
+        "scenario": "book",
+        "label": "ramp_book_20u",
+        "users": 20,
+        "started_at": 1795258156.0589435,
+        "finished_at": 1795258177.7513552,
+        "duration_s": 21.69,
+        "requests": 666,
+        "rps": 30.7,
+        "outcomes": {
+          "ok": 444,
+          "success": 219,
+          "busy": 3
+        },
+        "success_rate": 0.9955,
+        "latency": {
+          "count": 666,
+          "min_ms": 16.94,
+          "mean_ms": 222.88,
+          "p50_ms": 140.18,
+          "p90_ms": 475.25,
+          "p95_ms": 581.19,
+          "p99_ms": 1337.71,
+          "max_ms": 1451.77
+        },
+        "latency_success_only": {
+          "count": 663,
+          "min_ms": 16.94,
+          "mean_ms": 218.11,
+          "p50_ms": 139.96,
+          "p90_ms": 466.61,
+          "p95_ms": 574.4,
+          "p99_ms": 1274.65,
+          "max_ms": 1389.97
+        },
+        "by_action": {
+          "api_search": {
+            "requests": 222,
+            "outcomes": {
+              "ok": 222
+            },
+            "count": 222,
+            "min_ms": 16.94,
+            "mean_ms": 101.3,
+            "p50_ms": 95.74,
+            "p90_ms": 164.92,
+            "p95_ms": 185.73,
+            "p99_ms": 211.0,
+            "max_ms": 293.32
+          },
+          "book": {
+            "requests": 222,
+            "outcomes": {
+              "success": 219,
+              "busy": 3
+            },
+            "count": 222,
+            "min_ms": 68.7,
+            "mean_ms": 440.21,
+            "p50_ms": 374.26,
+            "p90_ms": 729.26,
+            "p95_ms": 1197.62,
+            "p99_ms": 1365.88,
+            "max_ms": 1451.77
+          },
+          "prepare": {
+            "requests": 222,
+            "outcomes": {
+              "ok": 222
+            },
+            "count": 222,
+            "min_ms": 22.14,
+            "mean_ms": 127.11,
+            "p50_ms": 123.16,
+            "p90_ms": 196.35,
+            "p95_ms": 221.88,
+            "p99_ms": 257.29,
+            "max_ms": 280.85
+          }
+        }
+      },
+      "db_delta": {
+        "Questions": 14389,
+        "Com_select": 9455,
+        "Com_insert": 1214,
+        "Com_update": 219,
+        "Com_delete": 0,
+        "Innodb_row_lock_waits": 41,
+        "Innodb_row_lock_time": 2524,
+        "Slow_queries": 0,
+        "Aborted_connects": 0
+      }
+    }
+  ]
+}
